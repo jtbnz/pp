@@ -19,6 +19,7 @@ This stack matches the dlb project for seamless integration. No build tools requ
 
 - [spec.md](spec.md) - Comprehensive project specification
 - [dlb-api-integration.md](dlb-api-integration.md) - API spec for dlb attendance system integration
+- [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) - Phased development plan with sub-agent instructions
 
 ## Directory Structure
 
