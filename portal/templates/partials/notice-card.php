@@ -73,10 +73,10 @@ if (!$isActive) {
 
         <?php if ($showActions && hasRole('admin')): ?>
             <div class="notice-card-actions">
-                <a href="/notices/<?= (int)$notice['id'] ?>/edit" class="btn btn-sm" title="Edit">
+                <a href="<?= url('/notices/' . (int)$notice['id'] . '/edit') ?>" class="btn btn-sm" title="Edit">
                     &#9998;
                 </a>
-                <form action="/notices/<?= (int)$notice['id'] ?>" method="POST" class="inline-form" onsubmit="return confirm('Are you sure you want to delete this notice?')">
+                <form action="<?= url('/notices/' . (int)$notice['id']) ?>" method="POST" class="inline-form" onsubmit="return confirm('Are you sure you want to delete this notice?')">
                     <input type="hidden" name="_method" value="DELETE">
                     <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
                     <button type="submit" class="btn btn-sm btn-danger" title="Delete">
@@ -90,7 +90,7 @@ if (!$isActive) {
     <div class="notice-card-body">
         <?php if ($linkToDetail): ?>
             <h3 class="notice-card-title">
-                <a href="/notices/<?= (int)$notice['id'] ?>"><?= e($notice['title']) ?></a>
+                <a href="<?= url('/notices/' . (int)$notice['id']) ?>"><?= e($notice['title']) ?></a>
             </h3>
         <?php else: ?>
             <h3 class="notice-card-title"><?= e($notice['title']) ?></h3>

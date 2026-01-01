@@ -25,7 +25,7 @@ ob_start();
         <!-- Page Header -->
         <header class="page-header">
             <div class="page-header-left">
-                <a href="/leave" class="back-link">&larr; Back to Leave</a>
+                <a href="<?= url('/leave') ?>" class="back-link">&larr; Back to Leave</a>
                 <h1>Pending Approvals</h1>
             </div>
             <?php if ($pendingCount > 0): ?>
@@ -161,7 +161,7 @@ ob_start();
 $content = ob_get_clean();
 
 // Add extra scripts
-$extraScripts = '<script src="/assets/js/leave.js"></script>';
+$extraScripts = '<script src="' . url('/assets/js/leave.js') . '"></script>';
 
 // Include main layout
 require __DIR__ . '/../../layouts/main.php';

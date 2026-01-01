@@ -37,7 +37,7 @@ ob_start();
     <?php endif; ?>
 
     <!-- Back link -->
-    <a href="/calendar" class="back-link">&larr; Back to Calendar</a>
+    <a href="<?= url('/calendar') ?>" class="back-link">&larr; Back to Calendar</a>
 
     <div class="event-card">
         <!-- Event Header -->
@@ -121,16 +121,16 @@ ob_start();
 
         <!-- Event Actions -->
         <div class="event-actions">
-            <a href="/calendar/events/<?= (int)$event['id'] ?>/ics" class="btn btn-secondary">
+            <a href="<?= url('/calendar/' . (int)$event['id'] . '/ics') ?>" class="btn btn-secondary">
                 <span>&#128197;</span> Add to Calendar
             </a>
 
             <?php if ($isAdmin): ?>
-                <a href="/calendar/events/<?= (int)$event['id'] ?>/edit" class="btn">
+                <a href="<?= url('/calendar/' . (int)$event['id'] . '/edit') ?>" class="btn">
                     <span>&#9998;</span> Edit
                 </a>
 
-                <form action="/calendar/events/<?= (int)$event['id'] ?>" method="POST" class="delete-form"
+                <form action="<?= url('/calendar/' . (int)$event['id']) ?>" method="POST" class="delete-form"
                       onsubmit="return confirm('Are you sure you want to delete this event?');">
                     <input type="hidden" name="_method" value="DELETE">
                     <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
@@ -151,7 +151,7 @@ ob_start();
             <div class="card-body">
                 <p>Training nights are held every Monday at 7:00 PM at the Puke Fire Station.</p>
                 <p>If you cannot attend, please submit a leave request.</p>
-                <a href="/leave" class="btn btn-outline mt-3">Request Leave</a>
+                <a href="<?= url('/leave') ?>" class="btn btn-outline mt-3">Request Leave</a>
             </div>
         </div>
     <?php endif; ?>

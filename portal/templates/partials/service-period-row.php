@@ -56,7 +56,7 @@ if ($years > 0) {
                 Edit
             </button>
             <form
-                action="/members/<?= $member['id'] ?>/service-periods/<?= $period['id'] ?>"
+                action="<?= url('/members/' . $member['id'] . '/service-periods/' . $period['id']) ?>"
                 method="POST"
                 class="inline-form"
                 onsubmit="return confirm('Delete this service period?');"
@@ -76,7 +76,7 @@ if ($years > 0) {
 <tr class="edit-period-row" id="edit-period-<?= $period['id'] ?>" hidden>
     <td colspan="<?= $canEdit ? '5' : '4' ?>">
         <form
-            action="/members/<?= $member['id'] ?>/service-periods/<?= $period['id'] ?>"
+            action="<?= url('/members/' . $member['id'] . '/service-periods/' . $period['id']) ?>"
             method="POST"
             class="edit-period-form"
         >

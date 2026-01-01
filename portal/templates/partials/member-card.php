@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 ?>
 
-<a href="/members/<?= $member['id'] ?>" class="member-card card">
+<a href="<?= url('/members/' . $member['id']) ?>" class="member-card card">
     <div class="member-card-content">
         <div class="member-avatar">
             <?= strtoupper(substr($member['name'], 0, 1)) ?>

@@ -35,7 +35,7 @@ ob_start();
     <div class="page-header">
         <div class="page-header-content">
             <h1>Members</h1>
-            <a href="/admin/members/invite" class="btn btn-primary">
+            <a href="<?= url('/admin/members/invite') ?>" class="btn btn-primary">
                 <span class="btn-icon">+</span>
                 Invite Member
             </a>
@@ -51,7 +51,7 @@ ob_start();
 
     <!-- Filters -->
     <div class="filters-section card mb-4">
-        <form action="/members" method="GET" class="filters-form">
+        <form action="<?= url('/members') ?>" method="GET" class="filters-form">
             <div class="filter-group">
                 <label for="search" class="filter-label">Search</label>
                 <input
@@ -87,7 +87,7 @@ ob_start();
 
             <div class="filter-actions">
                 <button type="submit" class="btn btn-secondary">Filter</button>
-                <a href="/members" class="btn btn-text">Clear</a>
+                <a href="<?= url('/members') ?>" class="btn btn-text">Clear</a>
             </div>
         </form>
     </div>
@@ -98,7 +98,7 @@ ob_start();
             <div class="card-body text-center p-4">
                 <p class="text-secondary">No members found matching your criteria.</p>
                 <?php if (!empty($filters['search']) || !empty($filters['role']) || ($filters['status'] ?? 'active') !== 'active'): ?>
-                    <a href="/members" class="btn btn-text mt-2">Clear filters</a>
+                    <a href="<?= url('/members') ?>" class="btn btn-text mt-2">Clear filters</a>
                 <?php endif; ?>
             </div>
         </div>

@@ -35,14 +35,14 @@ ob_start();
         <div class="page-header-content">
             <div class="page-header-back">
                 <?php if (hasRole('admin')): ?>
-                    <a href="/members" class="btn-back" aria-label="Back to members">
+                    <a href="<?= url('/members') ?>" class="btn-back" aria-label="Back to members">
                         <span class="back-icon">&larr;</span>
                     </a>
                 <?php endif; ?>
                 <h1><?= e($member['name']) ?></h1>
             </div>
             <?php if ($canEdit): ?>
-                <a href="/members/<?= $member['id'] ?>/edit" class="btn btn-secondary">Edit</a>
+                <a href="<?= url('/members/' . $member['id'] . '/edit') ?>" class="btn btn-secondary">Edit</a>
             <?php endif; ?>
         </div>
     </div>
@@ -148,7 +148,7 @@ ob_start();
 
             <?php if ($canEdit): ?>
                 <!-- Add Service Period Form (hidden by default) -->
-                <form id="add-period-form" action="/members/<?= $member['id'] ?>/service-periods" method="POST" class="service-period-form" hidden>
+                <form id="add-period-form" action="<?= url('/members/' . $member['id'] . '/service-periods') ?>" method="POST" class="service-period-form" hidden>
                     <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
 
                     <div class="form-row">
@@ -214,7 +214,7 @@ ob_start();
                         <strong>Deactivate Member</strong>
                         <p class="text-secondary">This will revoke access and hide this member from active lists.</p>
                     </div>
-                    <form action="/members/<?= $member['id'] ?>" method="POST" onsubmit="return confirm('Are you sure you want to deactivate this member?');">
+                    <form action="<?= url('/members/' . $member['id']) ?>" method="POST" onsubmit="return confirm('Are you sure you want to deactivate this member?');">
                         <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
                         <input type="hidden" name="_method" value="DELETE">
                         <button type="submit" class="btn btn-danger">Deactivate</button>

@@ -148,7 +148,7 @@ ob_start();
                                     <?php if (!empty($day['events'])): ?>
                                         <div class="day-events">
                                             <?php foreach (array_slice($day['events'], 0, 3) as $event): ?>
-                                                <a href="/calendar/events/<?= (int)$event['id'] ?>"
+                                                <a href="<?= url('/calendar/' . (int)$event['id']) ?>"
                                                    class="day-event <?= $event['is_training'] ? 'training' : '' ?>"
                                                    title="<?= e($event['title']) ?>">
                                                     <?php if (!$event['all_day']): ?>
@@ -208,7 +208,7 @@ ob_start();
                     ?>
                         <div class="week-day-column <?= $isToday ? 'today' : '' ?>" data-date="<?= e($dayDate) ?>">
                             <?php foreach ($dayEvents as $event): ?>
-                                <a href="/calendar/events/<?= (int)$event['id'] ?>"
+                                <a href="<?= url('/calendar/' . (int)$event['id']) ?>"
                                    class="week-event <?= $event['is_training'] ? 'training' : '' ?>">
                                     <?php if (!$event['all_day']): ?>
                                         <span class="event-time"><?= date('H:i', strtotime($event['start_time'])) ?></span>
@@ -235,7 +235,7 @@ ob_start();
                         <p class="no-events">No events scheduled for this day.</p>
                     <?php else: ?>
                         <?php foreach ($events as $event): ?>
-                            <a href="/calendar/events/<?= (int)$event['id'] ?>"
+                            <a href="<?= url('/calendar/' . (int)$event['id']) ?>"
                                class="day-event-card <?= $event['is_training'] ? 'training' : '' ?>">
                                 <div class="event-time-block">
                                     <?php if ($event['all_day']): ?>
@@ -270,20 +270,20 @@ ob_start();
             <h2>Upcoming Trainings</h2>
             <div class="upcoming-list">
                 <?php foreach ($upcomingTrainings as $training): ?>
-                    <a href="/calendar/events/<?= (int)$training['id'] ?>" class="upcoming-item">
+                    <a href="<?= url('/calendar/' . (int)$training['id']) ?>" class="upcoming-item">
                         <span class="upcoming-date"><?= date('D, j M', strtotime($training['start_time'])) ?></span>
                         <span class="upcoming-time"><?= date('H:i', strtotime($training['start_time'])) ?></span>
                     </a>
                 <?php endforeach; ?>
             </div>
-            <a href="/calendar/trainings" class="btn btn-sm btn-outline mt-3">View All Trainings</a>
+            <a href="<?= url('/calendar/trainings') ?>" class="btn btn-sm btn-outline mt-3">View All Trainings</a>
         </aside>
     <?php endif; ?>
 
     <?php if ($isAdmin): ?>
         <!-- Admin Actions -->
         <div class="calendar-actions">
-            <a href="/calendar/events/create" class="btn btn-primary">
+            <a href="<?= url('/calendar/create') ?>" class="btn btn-primary">
                 <span>+</span> New Event
             </a>
         </div>
@@ -299,7 +299,7 @@ ob_start();
             from: '<?= e($dateRange['from']) ?>',
             to: '<?= e($dateRange['to']) ?>'
         },
-        eventsUrl: '/calendar/events',
+        eventsUrl: '<?= url('/api/events') ?>',
         isAdmin: <?= $isAdmin ? 'true' : 'false' ?>
     };
 </script>

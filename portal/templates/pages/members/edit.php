@@ -31,7 +31,7 @@ ob_start();
     <div class="page-header">
         <div class="page-header-content">
             <div class="page-header-back">
-                <a href="/members/<?= $member['id'] ?>" class="btn-back" aria-label="Back to member profile">
+                <a href="<?= url('/members/' . $member['id']) ?>" class="btn-back" aria-label="Back to member profile">
                     <span class="back-icon">&larr;</span>
                 </a>
                 <h1>Edit Member</h1>
@@ -46,7 +46,7 @@ ob_start();
         </div>
     <?php endif; ?>
 
-    <form action="/members/<?= $member['id'] ?>" method="POST" class="edit-form">
+    <form action="<?= url('/members/' . $member['id']) ?>" method="POST" class="edit-form">
         <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
         <input type="hidden" name="_method" value="PUT">
 
@@ -214,7 +214,7 @@ ob_start();
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Save Changes</button>
-            <a href="/members/<?= $member['id'] ?>" class="btn btn-secondary">Cancel</a>
+            <a href="<?= url('/members/' . $member['id']) ?>" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>

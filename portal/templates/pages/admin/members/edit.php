@@ -64,7 +64,7 @@ ob_start();
 
     <!-- Edit Form -->
     <div class="card">
-        <form method="POST" action="/admin/members/<?= $member['id'] ?>" class="form">
+        <form method="POST" action="<?= url('/admin/members/' . $member['id']) ?>" class="form">
             <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
             <input type="hidden" name="_method" value="PUT">
 
@@ -137,7 +137,7 @@ ob_start();
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a href="/admin/members" class="btn btn-secondary">Cancel</a>
+                <a href="<?= url('/admin/members') ?>" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
     </div>
@@ -208,7 +208,7 @@ ob_start();
     </section>
 
     <div class="admin-nav-back mt-4">
-        <a href="/admin/members" class="btn btn-text">&larr; Back to Members</a>
+        <a href="<?= url('/admin/members') ?>" class="btn btn-text">&larr; Back to Members</a>
     </div>
 </div>
 

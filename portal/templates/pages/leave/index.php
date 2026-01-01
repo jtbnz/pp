@@ -29,7 +29,7 @@ ob_start();
         <header class="page-header">
             <h1>Leave Requests</h1>
             <?php if ($isOfficer): ?>
-                <a href="/leave/pending" class="btn btn-outline btn-sm">
+                <a href="<?= url('/leave/pending') ?>" class="btn btn-outline btn-sm">
                     <span class="btn-icon">&#9989;</span>
                     View Pending Approvals
                 </a>
@@ -143,7 +143,7 @@ ob_start();
             <h2 class="modal-title">Request Leave</h2>
             <button type="button" class="modal-close" aria-label="Close">&times;</button>
         </div>
-        <form id="leave-request-form" method="POST" action="/leave">
+        <form id="leave-request-form" method="POST" action="<?= url('/leave') ?>">
             <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
             <input type="hidden" name="training_date" id="leave-training-date">
 
@@ -201,7 +201,7 @@ ob_start();
 $content = ob_get_clean();
 
 // Add extra scripts
-$extraScripts = '<script src="/assets/js/leave.js"></script>';
+$extraScripts = '<script src="' . url('/assets/js/leave.js') . '"></script>';
 
 // Include main layout
 require __DIR__ . '/../../layouts/main.php';

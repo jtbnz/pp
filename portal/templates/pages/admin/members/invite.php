@@ -42,7 +42,7 @@ ob_start();
     <?php endif; ?>
 
     <div class="card">
-        <form method="POST" action="/admin/members/invite" class="form">
+        <form method="POST" action="<?= url('/admin/members/invite') ?>" class="form">
             <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
 
             <div class="form-group <?= isset($formErrors['email']) ? 'has-error' : '' ?>">
@@ -110,7 +110,7 @@ ob_start();
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Send Invitation</button>
-                <a href="/admin/members" class="btn btn-secondary">Cancel</a>
+                <a href="<?= url('/admin/members') ?>" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
     </div>
