@@ -205,6 +205,20 @@ ob_start();
                 </div>
             </div>
         </div>
+
+        <!-- Resend Login Link -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h3 class="card-title">Send Login Link</h3>
+                <p class="text-secondary mb-2">Send a magic login link to this member's email address. Useful if they need to log in on a new device.</p>
+                <form method="POST" action="<?= url('/admin/members/' . $member['id'] . '/send-login-link') ?>">
+                    <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
+                    <button type="submit" class="btn btn-secondary">
+                        <span class="btn-icon">&#9993;</span> Send Login Link
+                    </button>
+                </form>
+            </div>
+        </div>
     </section>
 
     <div class="admin-nav-back mt-4">

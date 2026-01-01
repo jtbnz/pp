@@ -218,7 +218,7 @@ class Router
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Unauthorized'], 401);
             } else {
-                header('Location: /auth/login');
+                header('Location: ' . url('/auth/login'));
                 exit;
             }
             return false;
@@ -229,7 +229,7 @@ class Router
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Access expired'], 401);
             } else {
-                header('Location: /auth/login?expired=1');
+                header('Location: ' . url('/auth/login?expired=1'));
                 exit;
             }
             return false;

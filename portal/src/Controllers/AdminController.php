@@ -256,6 +256,79 @@ class AdminController
     }
 
     /**
+     * Send a login link to a member
+     */
+    public function sendLoginLink(string $id): void
+    {
+        $user = currentUser();
+        $brigadeId = $user['brigade_id'];
+        $memberId = (int)$id;
+
+        // Validate CSRF
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
+            $this->redirectWithError(url("/admin/members/{$id}"), 'Invalid request. Please try again.');
+            return;
+        }
+
+        $member = $this->memberModel->findById($memberId);
+
+        if (!$member || $member['brigade_id'] !== $brigadeId) {
+            http_response_code(404);
+            render('pages/errors/404', ['message' => 'Member not found']);
+            return;
+        }
+
+        try {
+            // Create magic link token
+            require_once __DIR__ . '/../Services/AuthService.php';
+            global $config;
+            $authService = new AuthService($this->db, $config);
+
+            $token = $authService->createInviteToken(
+                $brigadeId,
+                $member['email'],
+                $member['role']
+            );
+
+            // Send magic link email
+            require_once __DIR__ . '/../Services/EmailService.php';
+            $emailService = new EmailService($config);
+
+            $basePath = $config['base_path'] ?? '';
+            $magicLinkUrl = $config['app_url'] . $basePath . '/auth/verify/' . $token;
+
+            $emailSent = $emailService->sendMagicLink(
+                $member['email'],
+                $member['name'],
+                $magicLinkUrl
+            );
+
+            // Log the action
+            $this->auditLog->log($brigadeId, $user['id'], 'member.send_login_link', [
+                'member_id' => $memberId,
+                'email' => $member['email'],
+                'sent_by' => $user['id']
+            ]);
+
+            if ($emailSent) {
+                $_SESSION['flash_message'] = "Login link sent to {$member['email']}.";
+                $_SESSION['flash_type'] = 'success';
+            } else {
+                // Show the link if email failed
+                $_SESSION['flash_message'] = "Email could not be sent. Direct login link: {$magicLinkUrl}";
+                $_SESSION['flash_type'] = 'warning';
+            }
+
+        } catch (Exception $e) {
+            $_SESSION['flash_message'] = 'Failed to send login link. Please try again.';
+            $_SESSION['flash_type'] = 'error';
+        }
+
+        header('Location: ' . url("/admin/members/{$id}"));
+        exit;
+    }
+
+    /**
      * Update member
      */
     public function updateMember(string $id): void

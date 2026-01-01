@@ -335,6 +335,23 @@ Add the generated keys to your `config.php`:
 
 **Important:** Keep your private key secret. Never commit it to version control.
 
+### Testing VAPID Keys
+
+To verify your VAPID keys are correctly configured, download and run the test script:
+
+```bash
+# Download the test script (not included in deployment)
+curl -O https://raw.githubusercontent.com/jtbnz/pp/main/portal/test-vapid.php
+
+# Run the test
+php test-vapid.php
+
+# Delete after testing
+rm test-vapid.php
+```
+
+The script validates key format, length, and base64url encoding.
+
 ### Enabling Push Notifications for Users
 
 Once VAPID keys are configured:

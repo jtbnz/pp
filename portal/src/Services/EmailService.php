@@ -70,6 +70,33 @@ class EmailService
     }
 
     /**
+     * Send a magic login link to a member
+     *
+     * @param string $email Recipient email
+     * @param string $name Member name
+     * @param string $magicLinkUrl Full URL for the magic link
+     * @return bool Success
+     */
+    public function sendMagicLink(string $email, string $name, string $magicLinkUrl): bool
+    {
+        $appUrl = $this->config['app_url'] ?? '';
+        $appName = $this->config['app_name'] ?? 'Puke Portal';
+
+        $data = [
+            'memberName' => $name,
+            'magicLinkUrl' => $magicLinkUrl,
+            'appName' => $appName,
+            'appUrl' => $appUrl,
+            'expiryDays' => $this->config['auth']['invite_expiry_days'] ?? 7,
+        ];
+
+        $subject = "Sign in to {$appName}";
+        $html = $this->renderTemplate('magic-link', $data);
+
+        return $this->send($email, $subject, $html);
+    }
+
+    /**
      * Send leave request notification to officers
      *
      * @param array $officers Array of officer data (each with 'email', 'name')
@@ -306,6 +333,17 @@ class EmailService
                     <p>Your access to {$appName} will expire in <strong>{$data['daysRemaining']} days</strong>.</p>
                     <p>Please contact your brigade administrator to renew your access.</p>
                     <p><a href=\"{$data['profileUrl']}\" style=\"display:inline-block;padding:12px 24px;background:#D32F2F;color:white;text-decoration:none;border-radius:4px;\">View Profile</a></p>
+                ";
+                break;
+
+            case 'magic-link':
+                $content = "
+                    <h2>Sign In</h2>
+                    <p>Hi {$data['memberName']},</p>
+                    <p>Click the button below to sign in to {$appName}:</p>
+                    <p><a href=\"{$data['magicLinkUrl']}\" style=\"display:inline-block;padding:12px 24px;background:#D32F2F;color:white;text-decoration:none;border-radius:4px;\">Sign In</a></p>
+                    <p>This link expires in {$data['expiryDays']} days.</p>
+                    <p style=\"color:#888;font-size:12px;\">If you didn't request this link, you can safely ignore this email.</p>
                 ";
                 break;
 

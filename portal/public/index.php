@@ -20,6 +20,17 @@ $router = new Router();
 // Define routes
 // -------------
 
+// Profile route - redirect to current user's member profile
+$router->get('/profile', function() {
+    $user = currentUser();
+    if (!$user) {
+        header('Location: ' . url('/auth/login'));
+        exit;
+    }
+    header('Location: ' . url('/members/' . $user['id']));
+    exit;
+});
+
 // Home page
 $router->get('/', function() {
     global $db, $config;
@@ -238,6 +249,8 @@ $router->group('/admin', function(Router $router) {
     $router->post('/members/invite', 'AdminController@invite');
     $router->get('/members/{id}', 'AdminController@editMember');
     $router->put('/members/{id}', 'AdminController@updateMember');
+    $router->post('/members/{id}', 'AdminController@updateMember');  // For form submission with _method=PUT
+    $router->post('/members/{id}/send-login-link', 'AdminController@sendLoginLink');
     $router->get('/events', 'AdminController@events');
     $router->get('/events/create', 'AdminController@createEventForm');
     $router->post('/events', 'AdminController@createEvent');
