@@ -178,11 +178,42 @@ class AdminController
                 'role' => $role
             ]);
 
-            // TODO: Send invite email with magic link
+            // Create invite token
+            $inviteToken = bin2hex(random_bytes(32));
+            $tokenHash = hash('sha256', $inviteToken);
+            $inviteExpires = date('Y-m-d H:i:s', strtotime('+7 days'));
 
-            $_SESSION['flash_message'] = "Member invited successfully. An email has been sent to {$email}.";
+            $stmtToken = $this->db->prepare("
+                INSERT INTO invite_tokens (brigade_id, member_id, token_hash, expires_at, created_by)
+                VALUES (?, ?, ?, ?, ?)
+            ");
+            $stmtToken->execute([
+                $brigadeId,
+                $memberId,
+                $tokenHash,
+                $inviteExpires,
+                $user['id']
+            ]);
+
+            // Send invite email with magic link
+            global $config;
+            require_once __DIR__ . '/../Services/EmailService.php';
+            $emailService = new EmailService($config);
+
+            // Get brigade name
+            $stmtBrigade = $this->db->prepare('SELECT name FROM brigades WHERE id = ?');
+            $stmtBrigade->execute([$brigadeId]);
+            $brigadeName = $stmtBrigade->fetchColumn() ?: 'Puke Fire Brigade';
+
+            $emailSent = $emailService->sendInvite($email, $inviteToken, $brigadeName);
+
+            if ($emailSent) {
+                $_SESSION['flash_message'] = "Member invited successfully. An invitation email has been sent to {$email}.";
+            } else {
+                $_SESSION['flash_message'] = "Member created. Email could not be sent. Manual invite link: " . url('/auth/verify/' . $inviteToken);
+            }
             $_SESSION['flash_type'] = 'success';
-            header('Location: /admin/members');
+            header('Location: ' . url('/admin/members'));
             exit;
 
         } catch (Exception $e) {

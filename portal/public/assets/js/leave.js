@@ -11,6 +11,11 @@ const Leave = {
     // Current request ID for modals
     currentRequestId: null,
 
+    // Get base path for URLs
+    get basePath() {
+        return window.BASE_PATH || '';
+    },
+
     // Swipe state
     swipeState: {
         startX: 0,
@@ -158,7 +163,7 @@ const Leave = {
                 reason: formData.get('reason'),
             };
 
-            const response = await App.api('/api/leave', {
+            const response = await App.api(this.basePath + '/api/leave', {
                 method: 'POST',
                 body: data,
             });
@@ -198,7 +203,7 @@ const Leave = {
 
         this.currentRequestId = requestId;
         this.elements.cancelDateText.textContent = dateText;
-        this.elements.cancelForm.action = `/leave/${requestId}`;
+        this.elements.cancelForm.action = `${this.basePath}/leave/${requestId}`;
 
         this.elements.cancelModal.hidden = false;
         document.body.style.overflow = 'hidden';
@@ -256,7 +261,7 @@ const Leave = {
         btn.textContent = 'Approving...';
 
         try {
-            const response = await App.api(`/api/leave/${this.currentRequestId}/approve`, {
+            const response = await App.api(`${this.basePath}/api/leave/${this.currentRequestId}/approve`, {
                 method: 'PUT',
             });
 
@@ -313,7 +318,7 @@ const Leave = {
         btn.textContent = 'Denying...';
 
         try {
-            const response = await App.api(`/api/leave/${this.currentRequestId}/deny`, {
+            const response = await App.api(`${this.basePath}/api/leave/${this.currentRequestId}/deny`, {
                 method: 'PUT',
             });
 

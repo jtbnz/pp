@@ -13,24 +13,28 @@
 const CACHE_NAME = 'puke-portal-v1';
 const API_CACHE_NAME = 'puke-portal-api-v1';
 
-// Assets to precache on install
+// Derive base path from service worker scope
+// e.g., if scope is 'https://kiaora.tech/pp/', basePath is '/pp'
+const BASE_PATH = new URL(self.registration?.scope || self.location.href).pathname.replace(/\/$/, '') || '';
+
+// Assets to precache on install (with base path)
 const PRECACHE_ASSETS = [
-    '/',
-    '/offline.html',
-    '/assets/css/app.css',
-    '/assets/js/app.js',
-    '/assets/js/offline-storage.js',
-    '/assets/js/push.js',
-    '/manifest.json',
-    '/assets/icons/icon-192.png',
-    '/assets/icons/icon-512.png',
-    '/assets/icons/badge-72.png'
+    BASE_PATH + '/',
+    BASE_PATH + '/offline.html',
+    BASE_PATH + '/assets/css/app.css',
+    BASE_PATH + '/assets/js/app.js',
+    BASE_PATH + '/assets/js/offline-storage.js',
+    BASE_PATH + '/assets/js/push.js',
+    BASE_PATH + '/manifest.json',
+    BASE_PATH + '/assets/icons/icon-192.png',
+    BASE_PATH + '/assets/icons/icon-512.png',
+    BASE_PATH + '/assets/icons/badge-72.png'
 ];
 
 // API routes that should be network-only
 const API_ROUTES = [
-    '/api/',
-    '/auth/'
+    BASE_PATH + '/api/',
+    BASE_PATH + '/auth/'
 ];
 
 // Cache-first static assets
@@ -540,16 +544,16 @@ self.addEventListener('notificationclick', (event) => {
     }
 
     // Determine URL to open based on action and notification type
-    let urlToOpen = data.url || '/';
+    let urlToOpen = data.url || (BASE_PATH + '/');
 
     if (action === 'review' && data.type === 'leave_request') {
-        urlToOpen = '/leave/pending';
+        urlToOpen = BASE_PATH + '/leave/pending';
     } else if (action === 'view' && data.type === 'leave_decision') {
-        urlToOpen = '/leave';
+        urlToOpen = BASE_PATH + '/leave';
     } else if (data.type === 'urgent' && data.noticeId) {
-        urlToOpen = '/notices/' + data.noticeId;
+        urlToOpen = BASE_PATH + '/notices/' + data.noticeId;
     } else if (data.type === 'training_reminder' && data.eventId) {
-        urlToOpen = '/calendar?event=' + data.eventId;
+        urlToOpen = BASE_PATH + '/calendar?event=' + data.eventId;
     }
 
     event.waitUntil(

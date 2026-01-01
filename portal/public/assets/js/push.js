@@ -19,6 +19,13 @@ class PushManager {
     }
 
     /**
+     * Get base path for URLs
+     */
+    get basePath() {
+        return window.BASE_PATH || '';
+    }
+
+    /**
      * Initialize the push manager
      * @returns {Promise<boolean>} True if push is supported and ready
      */
@@ -45,7 +52,7 @@ class PushManager {
             console.log('[Push] Service worker is ready');
 
             // Fetch VAPID public key from server
-            const response = await fetch('/api/push/key');
+            const response = await fetch(this.basePath + '/api/push/key');
             if (!response.ok) {
                 console.log('[Push] Push notifications not enabled on server');
                 return false;
@@ -102,7 +109,7 @@ class PushManager {
             console.log('[Push] User is subscribed:', subscription);
 
             // Send subscription to server
-            const response = await fetch('/api/push/subscribe', {
+            const response = await fetch(this.basePath + '/api/push/subscribe', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -144,7 +151,7 @@ class PushManager {
             await subscription.unsubscribe();
 
             // Remove from server
-            const response = await fetch('/api/push/unsubscribe', {
+            const response = await fetch(this.basePath + '/api/push/unsubscribe', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -255,7 +262,7 @@ class PushManager {
      */
     async sendTest() {
         try {
-            const response = await fetch('/api/push/test', {
+            const response = await fetch(this.basePath + '/api/push/test', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

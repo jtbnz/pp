@@ -496,16 +496,49 @@ class LeaveController
      */
     private function notifyOfficers(array $member, string $trainingDate): void
     {
-        // TODO: Implement push notification to officers
-        // This will be done in Phase 9 (Push Notifications)
-        global $db;
+        global $db, $config;
 
-        // For now, just log that a notification should be sent
-        error_log(sprintf(
-            'Leave request notification: %s requested leave for %s',
-            $member['name'],
-            $trainingDate
-        ));
+        $brigadeId = $member['brigade_id'];
+        $formattedDate = date('l, j F', strtotime($trainingDate));
+
+        // Get officers to notify
+        $stmt = $db->prepare("
+            SELECT id, email, name FROM members
+            WHERE brigade_id = ? AND status = 'active' AND role IN ('officer', 'admin', 'superadmin')
+        ");
+        $stmt->execute([$brigadeId]);
+        $officers = $stmt->fetchAll();
+
+        if (empty($officers)) {
+            return;
+        }
+
+        // Send push notifications
+        require_once __DIR__ . '/../Services/PushService.php';
+        $pushService = new PushService($config['push'] ?? [], $db);
+
+        if ($pushService->isEnabled()) {
+            foreach ($officers as $officer) {
+                $pushService->send(
+                    $officer['id'],
+                    'New Leave Request',
+                    "{$member['name']} has requested leave for {$formattedDate}",
+                    [
+                        'type' => 'leave_request',
+                        'url' => ($config['base_path'] ?? '') . '/leave/pending'
+                    ]
+                );
+            }
+        }
+
+        // Send email notifications
+        require_once __DIR__ . '/../Services/EmailService.php';
+        $emailService = new EmailService($config);
+        $emailService->sendLeaveNotification($officers, [
+            'member_name' => $member['name'],
+            'training_date' => $trainingDate,
+            'reason' => ''
+        ]);
     }
 
     /**
@@ -513,16 +546,49 @@ class LeaveController
      */
     private function notifyMember(int $memberId, string $decision, string $trainingDate): void
     {
-        // TODO: Implement push notification to member
-        // This will be done in Phase 9 (Push Notifications)
+        global $db, $config;
 
-        // For now, just log that a notification should be sent
-        error_log(sprintf(
-            'Leave decision notification: member %d was %s for %s',
-            $memberId,
-            $decision,
-            $trainingDate
-        ));
+        $formattedDate = date('l, j F', strtotime($trainingDate));
+        $decisionText = $decision === 'approved' ? 'approved' : 'denied';
+
+        // Get member details
+        $stmt = $db->prepare("SELECT id, email, name, brigade_id FROM members WHERE id = ?");
+        $stmt->execute([$memberId]);
+        $member = $stmt->fetch();
+
+        if (!$member) {
+            return;
+        }
+
+        // Get who made the decision
+        $decidedBy = currentUser();
+        $decidedByName = $decidedBy ? $decidedBy['name'] : 'An officer';
+
+        // Send push notification
+        require_once __DIR__ . '/../Services/PushService.php';
+        $pushService = new PushService($config['push'] ?? [], $db);
+
+        if ($pushService->isEnabled()) {
+            $pushService->send(
+                $memberId,
+                "Leave Request {$decisionText}",
+                "Your leave request for {$formattedDate} has been {$decisionText}",
+                [
+                    'type' => 'leave_decision',
+                    'decision' => $decision,
+                    'url' => ($config['base_path'] ?? '') . '/leave'
+                ]
+            );
+        }
+
+        // Send email notification
+        require_once __DIR__ . '/../Services/EmailService.php';
+        $emailService = new EmailService($config);
+        $emailService->sendLeaveDecision($member, [
+            'training_date' => $trainingDate,
+            'decided_by_name' => $decidedByName,
+            'reason' => ''
+        ], $decision);
     }
 
     /**

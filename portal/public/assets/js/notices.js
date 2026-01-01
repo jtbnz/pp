@@ -11,12 +11,19 @@
 'use strict';
 
 const Notices = {
-    // Configuration
-    config: {
-        refreshThreshold: 80, // pixels to pull before refresh triggers
-        countdownInterval: 1000, // update every second
-        sseEndpoint: '/api/notices/stream',
-        apiEndpoint: '/api/notices',
+    // Get base path for URLs
+    get basePath() {
+        return window.BASE_PATH || '';
+    },
+
+    // Configuration (computed with base path)
+    get config() {
+        return {
+            refreshThreshold: 80, // pixels to pull before refresh triggers
+            countdownInterval: 1000, // update every second
+            sseEndpoint: this.basePath + '/api/notices/stream',
+            apiEndpoint: this.basePath + '/api/notices',
+        };
     },
 
     // State
@@ -409,7 +416,7 @@ const Notices = {
             </div>
             <div class="notice-card-body">
                 <h3 class="notice-card-title">
-                    <a href="/notices/${notice.id}">${this.escapeHtml(notice.title)}</a>
+                    <a href="${this.basePath}/notices/${notice.id}">${this.escapeHtml(notice.title)}</a>
                 </h3>
                 ${notice.excerpt ? `<div class="notice-card-excerpt">${this.escapeHtml(notice.excerpt)}</div>` : ''}
             </div>

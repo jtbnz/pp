@@ -270,12 +270,26 @@ class MemberController
                 'invited_by' => $user['id']
             ]);
 
-            // TODO: Send invite email with magic link
-            // For now, store the token for display
-            $_SESSION['flash_message'] = "Member invited successfully. Invite link: /auth/verify/{$inviteToken}";
+            // Send invite email with magic link
+            global $config;
+            require_once __DIR__ . '/../Services/EmailService.php';
+            $emailService = new EmailService($config);
+
+            // Get brigade name
+            $stmtBrigade = $this->db->prepare('SELECT name FROM brigades WHERE id = ?');
+            $stmtBrigade->execute([$user['brigade_id']]);
+            $brigadeName = $stmtBrigade->fetchColumn() ?: 'Puke Fire Brigade';
+
+            $emailSent = $emailService->sendInvite($email, $inviteToken, $brigadeName);
+
+            if ($emailSent) {
+                $_SESSION['flash_message'] = "Member invited successfully. An invitation email has been sent to {$email}.";
+            } else {
+                $_SESSION['flash_message'] = "Member invited successfully. Email could not be sent. Manual invite link: " . url('/auth/verify/' . $inviteToken);
+            }
             $_SESSION['flash_type'] = 'success';
 
-            header('Location: /members/' . $memberId);
+            header('Location: ' . url('/members/' . $memberId));
             exit;
 
         } catch (Exception $e) {
