@@ -123,6 +123,26 @@ ob_start();
         </div>
     </div>
 
+    <?php if ($isOwnProfile): ?>
+    <!-- Push Notifications Card -->
+    <div class="card notifications-card mb-4">
+        <div class="card-header">
+            <h3>Push Notifications</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-secondary mb-3">
+                Receive instant notifications for leave request updates, urgent notices, and other important alerts.
+            </p>
+            <div class="notification-controls">
+                <button type="button" id="push-toggle" class="btn btn-primary">
+                    Enable Notifications
+                </button>
+                <p id="push-status" class="push-status text-secondary mt-2"></p>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Service History Card -->
     <div class="card service-card">
         <div class="card-header">
@@ -510,6 +530,39 @@ ob_start();
     background: #b71c1c;
 }
 
+.notifications-card .card-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color, #eee);
+}
+
+.notifications-card .card-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+}
+
+.notifications-card .card-body {
+    padding: 1rem;
+}
+
+.notification-controls {
+    text-align: center;
+}
+
+.push-status {
+    font-size: 0.875rem;
+    min-height: 1.5em;
+}
+
+#push-toggle.subscribed {
+    background: var(--success, #4caf50);
+    border-color: var(--success, #4caf50);
+}
+
+#push-toggle:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 @media (max-width: 600px) {
     .profile-header {
         flex-direction: column;
@@ -551,6 +604,11 @@ function toggleAddPeriodForm() {
 
 <?php
 $content = ob_get_clean();
+
+// Include push.js for own profile
+if ($isOwnProfile) {
+    $extraScripts = '<script src="' . url('/assets/js/push.js') . '"></script>';
+}
 
 // Include main layout
 require __DIR__ . '/../../layouts/main.php';
