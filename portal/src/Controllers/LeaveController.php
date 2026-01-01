@@ -99,6 +99,48 @@ class LeaveController
     }
 
     /**
+     * Display a single leave request
+     * GET /leave/{id}
+     */
+    public function show(string $id): void
+    {
+        $user = currentUser();
+
+        if (!$user) {
+            header('Location: /auth/login');
+            exit;
+        }
+
+        $requestId = (int)$id;
+        $leaveRequest = $this->leaveModel->findById($requestId);
+
+        if (!$leaveRequest) {
+            http_response_code(404);
+            render('pages/errors/404', ['message' => 'Leave request not found']);
+            return;
+        }
+
+        // Check if user has access to this request
+        $isOwner = (int)$leaveRequest['member_id'] === (int)$user['id'];
+        $isOfficer = hasRole('officer');
+        $sameBrigade = (int)$leaveRequest['brigade_id'] === (int)$user['brigade_id'];
+
+        if (!$sameBrigade || (!$isOwner && !$isOfficer)) {
+            http_response_code(403);
+            render('pages/errors/403');
+            return;
+        }
+
+        render('pages/leave/show', [
+            'pageTitle' => 'Leave Request Details',
+            'leaveRequest' => $leaveRequest,
+            'isOwner' => $isOwner,
+            'isOfficer' => $isOfficer,
+            'canApprove' => $isOfficer && $leaveRequest['status'] === 'pending',
+        ]);
+    }
+
+    /**
      * Create a new leave request
      * POST /leave
      */
