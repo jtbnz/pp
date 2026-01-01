@@ -37,7 +37,7 @@ class AuthController
     {
         // If already logged in, redirect to home
         if ($this->isAuthenticated()) {
-            header('Location: /');
+            header('Location: ' . url('/'));
             exit;
         }
 
@@ -102,7 +102,7 @@ class AuthController
         if ($member['pin_hash']) {
             $_SESSION['pin_login_member_id'] = $member['id'];
             $_SESSION['pin_login_email'] = $email;
-            header('Location: /auth/pin');
+            header('Location: ' . url('/auth/pin'));
             exit;
         }
 
@@ -168,7 +168,7 @@ class AuthController
         $_SESSION['activation_role'] = $tokenData['role'];
         $_SESSION['activation_brigade_name'] = $tokenData['brigade_name'];
 
-        header('Location: /auth/activate');
+        header('Location: ' . url('/auth/activate'));
         exit;
     }
 
@@ -298,7 +298,7 @@ class AuthController
         $_SESSION['flash_message'] = "Welcome to {$brigadeName}, {$name}!";
         $_SESSION['flash_type'] = 'success';
 
-        header('Location: /');
+        header('Location: ' . url('/'));
         exit;
     }
 
@@ -310,7 +310,7 @@ class AuthController
     {
         // Check if we have PIN login data
         if (!isset($_SESSION['pin_login_member_id'])) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -330,7 +330,7 @@ class AuthController
     {
         // Verify CSRF token
         if (!$this->verifyCsrf()) {
-            header('Location: /auth/pin?error=' . urlencode('Invalid request. Please try again.'));
+            header('Location: ' . url('/auth/pin') . '?error=' . urlencode('Invalid request. Please try again.'));
             exit;
         }
 
@@ -359,7 +359,7 @@ class AuthController
         // Verify PIN
         if (!$this->authService->verifyPin($memberId, $pin)) {
             $this->authService->recordRateLimitAttempt($rateLimitKey);
-            header('Location: /auth/pin?error=' . urlencode('Incorrect PIN. Please try again.'));
+            header('Location: ' . url('/auth/pin') . '?error=' . urlencode('Incorrect PIN. Please try again.'));
             exit;
         }
 
@@ -403,7 +403,7 @@ class AuthController
     public function requestMagicLink(): void
     {
         if (!isset($_SESSION['pin_login_member_id'])) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -465,7 +465,7 @@ class AuthController
         $_SESSION['flash_message'] = 'You have been logged out.';
         $_SESSION['flash_type'] = 'info';
 
-        header('Location: /auth/login');
+        header('Location: ' . url('/auth/login'));
         exit;
     }
 
@@ -481,7 +481,8 @@ class AuthController
             $member['role']
         );
 
-        $magicLinkUrl = $this->config['app_url'] . '/auth/verify/' . $token;
+        $basePath = $this->config['base_path'] ?? '';
+        $magicLinkUrl = $this->config['app_url'] . $basePath . '/auth/verify/' . $token;
 
         // Prepare email data
         $emailData = [
@@ -545,7 +546,7 @@ class AuthController
         if ($email) {
             $params['email'] = $email;
         }
-        header('Location: /auth/' . $page . '?' . http_build_query($params));
+        header('Location: ' . url('/auth/' . $page) . '?' . http_build_query($params));
         exit;
     }
 
@@ -554,7 +555,7 @@ class AuthController
      */
     private function redirectWithSuccess(string $page, string $message): void
     {
-        header('Location: /auth/' . $page . '?success=' . urlencode($message));
+        header('Location: ' . url('/auth/' . $page) . '?success=' . urlencode($message));
         exit;
     }
 
@@ -567,7 +568,7 @@ class AuthController
         if ($name) {
             $params['name'] = $name;
         }
-        header('Location: /auth/activate?' . http_build_query($params));
+        header('Location: ' . url('/auth/activate') . '?' . http_build_query($params));
         exit;
     }
 
