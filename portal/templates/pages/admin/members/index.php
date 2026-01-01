@@ -30,9 +30,14 @@ ob_start();
                 <h1>Members</h1>
                 <p class="text-secondary"><?= $totalCount ?> member<?= $totalCount !== 1 ? 's' : '' ?></p>
             </div>
-            <a href="/admin/members/invite" class="btn btn-primary">
-                <span class="btn-icon">&#43;</span> Invite
-            </a>
+            <div class="header-actions">
+                <button type="button" id="import-dlb-btn" class="btn btn-secondary" title="Import members from DLB">
+                    <span class="btn-icon">&#128229;</span> Import from DLB
+                </button>
+                <a href="<?= url('/admin/members/invite') ?>" class="btn btn-primary">
+                    <span class="btn-icon">&#43;</span> Invite
+                </a>
+            </div>
         </div>
     </header>
 
@@ -43,9 +48,30 @@ ob_start();
     </div>
     <?php endif; ?>
 
+    <!-- Import Results Modal -->
+    <div id="import-modal" class="modal" hidden>
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Import from DLB</h3>
+                <button type="button" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="import-loading" class="text-center p-3">
+                    <div class="spinner"></div>
+                    <p>Importing members from DLB...</p>
+                </div>
+                <div id="import-results" hidden></div>
+            </div>
+            <div class="modal-footer" hidden>
+                <button type="button" class="btn btn-primary" id="import-close-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Filters -->
     <section class="filters-section mb-3">
-        <form method="GET" action="/admin/members" class="filters-form">
+        <form method="GET" action="<?= url('/admin/members') ?>" class="filters-form">
             <div class="filter-group">
                 <input type="text" name="search" placeholder="Search members..."
                        value="<?= e($filters['search'] ?? '') ?>" class="form-input">
@@ -69,7 +95,7 @@ ob_start();
             </div>
             <button type="submit" class="btn btn-secondary">Filter</button>
             <?php if (!empty($filters['search']) || !empty($filters['role']) || (isset($filters['status']) && $filters['status'] !== 'active')): ?>
-            <a href="/admin/members" class="btn btn-text">Clear</a>
+            <a href="<?= url('/admin/members') ?>" class="btn btn-text">Clear</a>
             <?php endif; ?>
         </form>
     </section>
@@ -80,7 +106,7 @@ ob_start();
         <div class="card">
             <div class="card-body text-center p-4">
                 <p class="text-secondary">No members found</p>
-                <a href="/admin/members/invite" class="btn btn-primary mt-2">Invite Member</a>
+                <a href="<?= url('/admin/members/invite') ?>" class="btn btn-primary mt-2">Invite Member</a>
             </div>
         </div>
         <?php else: ?>
@@ -128,7 +154,7 @@ ob_start();
                                 </span>
                             </td>
                             <td class="actions">
-                                <a href="/admin/members/<?= $member['id'] ?>" class="btn btn-sm btn-secondary">Edit</a>
+                                <a href="<?= url('/admin/members/' . $member['id']) ?>" class="btn btn-sm btn-secondary">Edit</a>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -140,7 +166,7 @@ ob_start();
     </section>
 
     <div class="admin-nav-back mt-4">
-        <a href="/admin" class="btn btn-text">&larr; Back to Dashboard</a>
+        <a href="<?= url('/admin') ?>" class="btn btn-text">&larr; Back to Dashboard</a>
     </div>
 </div>
 
@@ -284,7 +310,291 @@ ob_start();
 .table-responsive {
     overflow-x: auto;
 }
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Modal styles */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal[hidden] {
+    display: none;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    position: relative;
+    background: var(--bg-primary, white);
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border, #e0e0e0);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.5;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    opacity: 1;
+}
+
+.modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--border, #e0e0e0);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.modal-footer[hidden] {
+    display: none;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border, #e0e0e0);
+    border-top-color: var(--primary, #D32F2F);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.import-summary {
+    margin-bottom: 1rem;
+}
+
+.import-summary .stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border, #e0e0e0);
+}
+
+.import-summary .stat:last-child {
+    border-bottom: none;
+}
+
+.import-summary .stat-label {
+    color: var(--text-secondary);
+}
+
+.import-summary .stat-value {
+    font-weight: 600;
+}
+
+.import-summary .stat-value.success {
+    color: var(--success, #4caf50);
+}
+
+.import-summary .stat-value.info {
+    color: var(--info, #2196F3);
+}
+
+.import-details {
+    margin-top: 1rem;
+}
+
+.import-details summary {
+    cursor: pointer;
+    padding: 0.5rem 0;
+    color: var(--primary, #D32F2F);
+    font-weight: 500;
+}
+
+.import-details ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.import-details li {
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+}
+
+.import-error {
+    background: var(--error-bg, #ffebee);
+    color: var(--error, #f44336);
+    padding: 1rem;
+    border-radius: 4px;
+}
 </style>
+
+<script>
+(function() {
+    const importBtn = document.getElementById('import-dlb-btn');
+    const modal = document.getElementById('import-modal');
+    const modalClose = modal.querySelector('.modal-close');
+    const modalBackdrop = modal.querySelector('.modal-backdrop');
+    const modalFooter = modal.querySelector('.modal-footer');
+    const closeBtn = document.getElementById('import-close-btn');
+    const loadingEl = document.getElementById('import-loading');
+    const resultsEl = document.getElementById('import-results');
+
+    function showModal() {
+        modal.hidden = false;
+        loadingEl.hidden = false;
+        resultsEl.hidden = true;
+        modalFooter.hidden = true;
+    }
+
+    function hideModal() {
+        modal.hidden = true;
+    }
+
+    function showResults(data) {
+        loadingEl.hidden = true;
+        resultsEl.hidden = false;
+        modalFooter.hidden = false;
+
+        if (!data.success && data.error) {
+            resultsEl.innerHTML = `<div class="import-error">${escapeHtml(data.error)}</div>`;
+            return;
+        }
+
+        const r = data.results || {};
+        let html = `
+            <div class="import-summary">
+                <div class="stat">
+                    <span class="stat-label">Total in DLB</span>
+                    <span class="stat-value">${r.total_dlb || 0}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">New members imported</span>
+                    <span class="stat-value success">${r.imported || 0}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Existing members linked</span>
+                    <span class="stat-value info">${r.linked || 0}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Skipped</span>
+                    <span class="stat-value">${r.skipped || 0}</span>
+                </div>
+            </div>
+        `;
+
+        // Show details if any members were imported or linked
+        if ((r.imported_members && r.imported_members.length) || (r.linked_members && r.linked_members.length)) {
+            html += '<div class="import-details">';
+
+            if (r.imported_members && r.imported_members.length) {
+                html += `<details><summary>Imported Members (${r.imported_members.length})</summary><ul>`;
+                r.imported_members.forEach(m => {
+                    html += `<li>${escapeHtml(m.name)}</li>`;
+                });
+                html += '</ul></details>';
+            }
+
+            if (r.linked_members && r.linked_members.length) {
+                html += `<details><summary>Linked Members (${r.linked_members.length})</summary><ul>`;
+                r.linked_members.forEach(m => {
+                    html += `<li>${escapeHtml(m.name)}</li>`;
+                });
+                html += '</ul></details>';
+            }
+
+            html += '</div>';
+        }
+
+        if (r.errors && r.errors.length) {
+            html += '<div class="import-error" style="margin-top:1rem"><strong>Errors:</strong><ul>';
+            r.errors.forEach(err => {
+                html += `<li>${escapeHtml(err)}</li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        resultsEl.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    async function doImport() {
+        showModal();
+
+        try {
+            const basePath = window.BASE_PATH || '';
+            const response = await fetch(basePath + '/api/sync/import-members', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            showResults(data);
+
+            // Reload page if members were imported
+            if (data.results && (data.results.imported > 0 || data.results.linked > 0)) {
+                closeBtn.textContent = 'Close & Refresh';
+                closeBtn.onclick = function() {
+                    window.location.reload();
+                };
+            }
+
+        } catch (err) {
+            showResults({ success: false, error: 'Failed to connect to server: ' + err.message });
+        }
+    }
+
+    importBtn.addEventListener('click', doImport);
+    modalClose.addEventListener('click', hideModal);
+    modalBackdrop.addEventListener('click', hideModal);
+    closeBtn.addEventListener('click', hideModal);
+})();
+</script>
 
 <?php
 $content = ob_get_clean();
