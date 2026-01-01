@@ -59,14 +59,25 @@ if (!$member) {
 echo "Found member: {$member['name']} ({$member['email']})\n";
 echo "Role: {$member['role']}, Status: {$member['status']}\n\n";
 
-// Generate new access token
+// Generate token for invite_tokens table (this is what AuthService::verifyToken() checks)
 $token = bin2hex(random_bytes(32));
 $hashedToken = hash('sha256', $token);
-$expires = date('Y-m-d H:i:s', strtotime('+5 years'));
+$expiryDays = $config['auth']['invite_expiry_days'] ?? 7;
+$expires = date('Y-m-d H:i:s', strtotime("+{$expiryDays} days"));
 
-// Update the member's access token
-$stmt = $db->prepare('UPDATE members SET access_token = ?, access_expires = ? WHERE id = ?');
-$stmt->execute([$hashedToken, $expires, $member['id']]);
+// Insert into invite_tokens table
+$stmt = $db->prepare('
+    INSERT INTO invite_tokens (brigade_id, email, token_hash, role, expires_at, created_by)
+    VALUES (?, ?, ?, ?, ?, ?)
+');
+$stmt->execute([
+    $member['brigade_id'],
+    $member['email'],
+    $hashedToken,
+    $member['role'],
+    $expires,
+    $member['id']  // Self-created
+]);
 
 // Build the magic link URL
 $basePath = $config['base_path'] ?? '';
