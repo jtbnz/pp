@@ -1,0 +1,370 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/DlbClient.php';
+require_once __DIR__ . '/../Exceptions/DlbApiException.php';
+
+/**
+ * Sync Service
+ *
+ * Handles synchronization between Puke Portal and DLB attendance system.
+ * Manages leave requests, muster creation, and member synchronization.
+ */
+class SyncService
+{
+    private DlbClient $dlbClient;
+    private PDO $db;
+
+    /**
+     * Create a new SyncService
+     *
+     * @param DlbClient $dlbClient DLB API client
+     * @param PDO|null $db Database connection (uses global if not provided)
+     */
+    public function __construct(DlbClient $dlbClient, ?PDO $db = null)
+    {
+        $this->dlbClient = $dlbClient;
+
+        if ($db === null) {
+            global $db;
+            $this->db = $db;
+        } else {
+            $this->db = $db;
+        }
+    }
+
+    /**
+     * Sync an approved leave request to DLB
+     *
+     * Sets the member's attendance status to 'L' (Leave) for the training
+     * date in the leave request.
+     *
+     * @param array $leave Leave request data (must include training_date and member_id)
+     * @return bool True on success
+     * @throws DlbApiException
+     */
+    public function syncApprovedLeave(array $leave): bool
+    {
+        // Get the member's dlb_member_id
+        $stmt = $this->db->prepare('SELECT dlb_member_id FROM members WHERE id = ?');
+        $stmt->execute([$leave['member_id']]);
+        $member = $stmt->fetch();
+
+        if (!$member || empty($member['dlb_member_id'])) {
+            $this->logSync('leave', (int)$leave['id'], 'failed', 'Member not linked to DLB');
+            return false;
+        }
+
+        $dlbMemberId = (int)$member['dlb_member_id'];
+
+        // Get training date from the leave request
+        $trainingDate = $leave['training_date'] ?? null;
+
+        if (empty($trainingDate)) {
+            $this->logSync('leave', (int)$leave['id'], 'skipped', 'No training date specified');
+            return true;
+        }
+
+        try {
+            // Find or create muster for this date
+            $muster = $this->dlbClient->findMusterByDate($trainingDate);
+
+            if ($muster === null) {
+                // Create invisible muster for this training date
+                $muster = $this->dlbClient->createMuster($trainingDate, false);
+            }
+
+            // Set attendance status to Leave
+            $notes = sprintf(
+                'Approved leave - Portal #%d%s',
+                $leave['id'],
+                !empty($leave['reason']) ? ' - ' . $leave['reason'] : ''
+            );
+
+            $this->dlbClient->setAttendanceStatus(
+                (int)$muster['id'],
+                $dlbMemberId,
+                'L',
+                $notes
+            );
+
+            // Update the leave request to mark as synced
+            $updateStmt = $this->db->prepare('
+                UPDATE leave_requests
+                SET synced_to_dlb = 1, dlb_muster_id = ?
+                WHERE id = ?
+            ');
+            $updateStmt->execute([(int)$muster['id'], $leave['id']]);
+
+            $this->logSync('leave', (int)$leave['id'], 'success', 'Synced to muster ' . $muster['id']);
+            return true;
+
+        } catch (DlbApiException $e) {
+            $this->logSync('leave', (int)$leave['id'], 'failed', $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Create future musters in DLB for upcoming training nights
+     *
+     * Musters are created as invisible and will be revealed on training day.
+     *
+     * @param int $months Number of months ahead to generate
+     * @return array Results with counts and any errors
+     * @throws DlbApiException
+     */
+    public function createFutureMusters(int $months = 12): array
+    {
+        $results = [
+            'created' => 0,
+            'skipped' => 0,
+            'failed' => 0,
+            'errors' => []
+        ];
+
+        // Get training nights for the next N months
+        $startDate = date('Y-m-d');
+        $endDate = date('Y-m-d', strtotime("+{$months} months"));
+
+        $stmt = $this->db->prepare("
+            SELECT id, date(start_time) as event_date
+            FROM events
+            WHERE is_training = 1
+                AND date(start_time) >= ?
+                AND date(start_time) <= ?
+            ORDER BY start_time
+        ");
+        $stmt->execute([$startDate, $endDate]);
+        $trainings = $stmt->fetchAll();
+
+        foreach ($trainings as $training) {
+            try {
+                // Check if muster already exists
+                $existing = $this->dlbClient->findMusterByDate($training['event_date']);
+
+                if ($existing !== null) {
+                    $results['skipped']++;
+                    continue;
+                }
+
+                // Create invisible muster
+                $this->dlbClient->createMuster($training['event_date'], false);
+                $results['created']++;
+
+            } catch (DlbApiException $e) {
+                $results['failed']++;
+                $results['errors'][] = "Date {$training['event_date']}: " . $e->getMessage();
+            }
+        }
+
+        // Log the generation result
+        $status = $results['failed'] === 0 ? 'success' : ($results['created'] > 0 ? 'partial' : 'failed');
+        $details = sprintf(
+            'Created: %d, Skipped: %d, Failed: %d',
+            $results['created'],
+            $results['skipped'],
+            $results['failed']
+        );
+
+        $this->logSync('musters', 0, $status, $details);
+
+        return $results;
+    }
+
+    /**
+     * Reveal today's training muster in DLB
+     *
+     * Makes the muster visible in the DLB attendance UI.
+     *
+     * @return bool True if muster was revealed
+     * @throws DlbApiException
+     */
+    public function revealTodaysMuster(): bool
+    {
+        $today = date('Y-m-d');
+
+        // Check if today is a training day
+        $stmt = $this->db->prepare("
+            SELECT id FROM events
+            WHERE is_training = 1
+                AND date(start_time) = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$today]);
+
+        if (!$stmt->fetch()) {
+            $this->logSync('reveal', 0, 'skipped', 'No training scheduled for today');
+            return false;
+        }
+
+        // Find muster for today
+        $muster = $this->dlbClient->findMusterByDate($today);
+
+        if ($muster === null) {
+            // Create and immediately reveal muster
+            $muster = $this->dlbClient->createMuster($today, true);
+            $this->logSync('reveal', (int)$muster['id'], 'success', 'Created and revealed muster for today');
+            return true;
+        }
+
+        // Already visible?
+        if (!empty($muster['visible'])) {
+            $this->logSync('reveal', (int)$muster['id'], 'skipped', 'Muster already visible');
+            return true;
+        }
+
+        // Reveal the muster
+        $this->dlbClient->setMusterVisibility((int)$muster['id'], true);
+        $this->logSync('reveal', (int)$muster['id'], 'success', 'Revealed muster for today');
+
+        return true;
+    }
+
+    /**
+     * Sync members from DLB to local database
+     *
+     * Updates or creates local member records with dlb_member_id.
+     *
+     * @return array Results with counts and any errors
+     * @throws DlbApiException
+     */
+    public function syncMembersToDlb(): array
+    {
+        $results = [
+            'total' => 0,
+            'matched' => 0,
+            'unmatched' => 0,
+            'errors' => []
+        ];
+
+        // Get members from DLB
+        $dlbMembers = $this->dlbClient->getMembers();
+        $results['total'] = count($dlbMembers);
+
+        // Create lookup by name (case-insensitive)
+        $dlbByName = [];
+        foreach ($dlbMembers as $dlbMember) {
+            $key = strtolower(trim($dlbMember['name']));
+            $dlbByName[$key] = $dlbMember;
+        }
+
+        // Get local members
+        $stmt = $this->db->prepare('SELECT id, name, dlb_member_id FROM members WHERE status = ?');
+        $stmt->execute(['active']);
+        $localMembers = $stmt->fetchAll();
+
+        // Update matches for local members
+        $updateStmt = $this->db->prepare('UPDATE members SET dlb_member_id = ? WHERE id = ?');
+
+        foreach ($localMembers as $local) {
+            $key = strtolower(trim($local['name']));
+
+            if (isset($dlbByName[$key])) {
+                $dlbId = (int)$dlbByName[$key]['id'];
+
+                // Update if different or not set
+                if ((int)$local['dlb_member_id'] !== $dlbId) {
+                    $updateStmt->execute([$dlbId, $local['id']]);
+                }
+
+                $results['matched']++;
+            } else {
+                $results['unmatched']++;
+            }
+        }
+
+        // Log the sync result
+        $status = $results['unmatched'] === 0 ? 'success' : 'partial';
+        $details = sprintf(
+            'Total DLB: %d, Matched: %d, Unmatched: %d',
+            $results['total'],
+            $results['matched'],
+            $results['unmatched']
+        );
+
+        $this->logSync('members', 0, $status, $details);
+
+        return $results;
+    }
+
+    /**
+     * Get the last sync status for a given operation
+     *
+     * @param string $operation Operation type (leave, musters, reveal, members)
+     * @return array|null Last sync log entry or null
+     */
+    public function getLastSyncStatus(string $operation): ?array
+    {
+        $stmt = $this->db->prepare("
+            SELECT * FROM sync_logs
+            WHERE operation = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$operation]);
+
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * Get sync status summary
+     *
+     * @return array Status for each operation type
+     */
+    public function getSyncStatus(): array
+    {
+        $operations = ['leave', 'musters', 'reveal', 'members'];
+        $status = [];
+
+        foreach ($operations as $op) {
+            $status[$op] = $this->getLastSyncStatus($op);
+        }
+
+        // Add DLB connection test
+        try {
+            $this->dlbClient->testConnection();
+            $status['connection'] = ['status' => 'success', 'message' => 'Connected to DLB'];
+        } catch (DlbApiException $e) {
+            $status['connection'] = [
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+                'error_code' => $e->getApiErrorCode()
+            ];
+        }
+
+        return $status;
+    }
+
+    /**
+     * Log a sync operation
+     *
+     * @param string $operation Operation type
+     * @param int $referenceId Related record ID (leave_id, muster_id, etc.)
+     * @param string $status Result status (success, failed, partial, skipped)
+     * @param string|null $details Additional details
+     */
+    private function logSync(string $operation, int $referenceId, string $status, ?string $details = null): void
+    {
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO sync_logs (operation, reference_id, status, details, created_at)
+                VALUES (?, ?, ?, ?, datetime('now', 'localtime'))
+            ");
+            $stmt->execute([$operation, $referenceId, $status, $details]);
+        } catch (PDOException $e) {
+            // Log to error log if database logging fails
+            error_log("Sync log failed: {$operation} - {$status} - {$details}. Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get the DLB client instance
+     *
+     * @return DlbClient
+     */
+    public function getDlbClient(): DlbClient
+    {
+        return $this->dlbClient;
+    }
+}
