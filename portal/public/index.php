@@ -23,6 +23,46 @@ $router = new Router();
 // Home page
 $router->get('/', function() {
     global $db, $config;
+
+    $user = currentUser();
+    $nextTraining = null;
+    $upcomingEvents = [];
+    $recentNotices = [];
+    $pendingLeave = [];
+
+    if ($user) {
+        $brigadeId = (int)$user['brigade_id'];
+
+        // Get next training night
+        require_once __DIR__ . '/../src/Models/Event.php';
+        $eventModel = new Event();
+        $trainings = $eventModel->findTrainingNights($brigadeId, date('Y-m-d'), date('Y-m-d', strtotime('+3 months')));
+        $nextTraining = !empty($trainings) ? $trainings[0] : null;
+
+        // Get upcoming events (next 5)
+        $upcomingEvents = $eventModel->findByDateRange($brigadeId, date('Y-m-d'), date('Y-m-d', strtotime('+1 month')));
+        $upcomingEvents = array_slice($upcomingEvents, 0, 5);
+
+        // Get recent notices
+        require_once __DIR__ . '/../src/Models/Notice.php';
+        $noticeModel = new Notice();
+        $recentNotices = $noticeModel->findActive($brigadeId, 3);
+
+        // Get pending leave requests for this member
+        require_once __DIR__ . '/../src/Models/LeaveRequest.php';
+        $leaveModel = new LeaveRequest();
+        $pendingLeave = $leaveModel->findByMember((int)$user['id'], 'pending');
+    }
+
+    // Pass data to template
+    $homeData = [
+        'nextTraining' => $nextTraining,
+        'upcomingEvents' => $upcomingEvents,
+        'recentNotices' => $recentNotices,
+        'pendingLeave' => $pendingLeave,
+    ];
+
+    extract($homeData);
     require __DIR__ . '/../templates/pages/home.php';
 });
 
