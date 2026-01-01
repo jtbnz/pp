@@ -1,0 +1,9 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /pp/
+
+    # Redirect everything to portal/public/
+    # Except for actual files in portal/public/assets/
+    RewriteCond %{REQUEST_URI} !^/pp/portal/public/
+    RewriteRule ^(.*)$ portal/public/$1 [L]
+</IfModule>

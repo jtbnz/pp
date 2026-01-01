@@ -5,9 +5,8 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Set RewriteBase if running in a subdirectory
-    # Uncomment and adjust if your app runs at /pp/ instead of root
-    # RewriteBase /pp/
+    # Set RewriteBase for subdirectory installation
+    RewriteBase /pp/portal/public/
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
