@@ -102,7 +102,7 @@ ob_start();
                     <span class="detail-icon">&#128260;</span>
                     <div class="detail-content">
                         <span class="detail-label">Repeats</span>
-                        <span class="detail-value"><?= e($this->formatRecurrence($event['recurrence_rule'] ?? '')) ?></span>
+                        <span class="detail-value"><?= e(formatRecurrence($event['recurrence_rule'] ?? '')) ?></span>
                     </div>
                 </div>
             <?php endif; ?>

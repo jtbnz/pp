@@ -188,7 +188,6 @@ ob_start();
             <button type="button" class="btn" onclick="Leave.closeCancelModal()">Keep Request</button>
             <form id="cancel-form" method="POST" action="" style="display: inline;">
                 <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
-                <input type="hidden" name="_method" value="DELETE">
                 <button type="submit" class="btn btn-primary" style="background: var(--color-error); border-color: var(--color-error);">
                     Cancel Request
                 </button>

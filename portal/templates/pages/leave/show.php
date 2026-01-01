@@ -140,9 +140,8 @@ ob_start();
                     <?php endif; ?>
 
                     <?php if ($isOwner && $status === 'pending'): ?>
-                        <form method="POST" action="<?= url('/leave/' . (int)$leaveRequest['id']) ?>" class="inline-form">
+                        <form method="POST" action="<?= url('/leave/' . (int)$leaveRequest['id'] . '/cancel') ?>" class="inline-form">
                             <input type="hidden" name="_csrf_token" value="<?= e(csrfToken()) ?>">
-                            <input type="hidden" name="_method" value="DELETE">
                             <button type="submit" class="btn btn-outline" onclick="return confirm('Cancel this leave request?')">
                                 Cancel Request
                             </button>

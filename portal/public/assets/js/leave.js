@@ -203,7 +203,7 @@ const Leave = {
 
         this.currentRequestId = requestId;
         this.elements.cancelDateText.textContent = dateText;
-        this.elements.cancelForm.action = `${this.basePath}/leave/${requestId}`;
+        this.elements.cancelForm.action = `${this.basePath}/leave/${requestId}/cancel`;
 
         this.elements.cancelModal.hidden = false;
         document.body.style.overflow = 'hidden';

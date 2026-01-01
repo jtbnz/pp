@@ -187,6 +187,7 @@ $router->group('/leave', function(Router $router) {
     $router->put('/{id}/deny', 'LeaveController@deny');          // Officers only
     $router->post('/{id}/deny', 'LeaveController@deny');         // For form submission
     $router->delete('/{id}', 'LeaveController@destroy');
+    $router->post('/{id}/cancel', 'LeaveController@destroy');    // For form submission (cancel)
 }, ['middleware' => ['auth', 'csrf']]);
 
 // API routes (Protected - Phase 2+)
@@ -268,6 +269,14 @@ $router->group('/admin', function(Router $router) {
 // Dispatch the request
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = $_SERVER['REQUEST_URI'];
+
+// Support method override for HTML forms (PUT, DELETE, PATCH via POST with _method field)
+if ($method === 'POST' && isset($_POST['_method'])) {
+    $overrideMethod = strtoupper($_POST['_method']);
+    if (in_array($overrideMethod, ['PUT', 'DELETE', 'PATCH'], true)) {
+        $method = $overrideMethod;
+    }
+}
 
 // Remove query string from URI
 if (($pos = strpos($uri, '?')) !== false) {
