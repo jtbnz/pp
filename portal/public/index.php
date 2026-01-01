@@ -230,8 +230,11 @@ $router->group('/api', function(Router $router) {
     $router->delete('/leave/{id}', 'Api/LeaveApiController@destroy');
 
     // Push notifications (API)
+    $router->get('/push/key', 'Api/PushApiController@key');
+    $router->get('/push/status', 'Api/PushApiController@status');
     $router->post('/push/subscribe', 'Api/PushApiController@subscribe');
-    $router->delete('/push/unsubscribe', 'Api/PushApiController@unsubscribe');
+    $router->post('/push/unsubscribe', 'Api/PushApiController@unsubscribe');
+    $router->post('/push/test', 'Api/PushApiController@test');
 
     // Sync with DLB
     $router->get('/sync/status', 'SyncController@status');
