@@ -45,7 +45,7 @@ ob_start();
 
 <div class="page-notice-detail">
     <nav class="breadcrumb-nav mb-3">
-        <a href="/notices" class="breadcrumb-link">&larr; Back to Notices</a>
+        <a href="<?= url('/notices') ?>" class="breadcrumb-link">&larr; Back to Notices</a>
     </nav>
 
     <?php if ($flashMessage): ?>
@@ -125,10 +125,10 @@ ob_start();
 
         <?php if ($isAdmin): ?>
             <footer class="notice-detail-actions">
-                <a href="/notices/<?= (int)$notice['id'] ?>/edit" class="btn btn-primary">
+                <a href="<?= url('/notices/' . (int)$notice['id'] . '/edit') ?>" class="btn btn-primary">
                     Edit Notice
                 </a>
-                <form action="/notices/<?= (int)$notice['id'] ?>" method="POST" class="inline-form" onsubmit="return confirm('Are you sure you want to delete this notice? This action cannot be undone.')">
+                <form action="<?= url('/notices/' . (int)$notice['id']) ?>" method="POST" class="inline-form" onsubmit="return confirm('Are you sure you want to delete this notice? This action cannot be undone.')">
                     <input type="hidden" name="_method" value="DELETE">
                     <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
                     <button type="submit" class="btn btn-danger">
@@ -144,7 +144,7 @@ ob_start();
 $content = ob_get_clean();
 
 // Extra scripts
-$extraScripts = '<script src="/assets/js/notices.js"></script>';
+$extraScripts = '<script src="' . url('/assets/js/notices.js') . '"></script>';
 
 // Include main layout
 require __DIR__ . '/../../layouts/main.php';

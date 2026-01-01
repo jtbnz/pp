@@ -30,7 +30,7 @@ ob_start();
                 <h1>Events</h1>
                 <p class="text-secondary"><?= count($events) ?> event<?= count($events) !== 1 ? 's' : '' ?></p>
             </div>
-            <a href="/admin/events/create" class="btn btn-primary">
+            <a href="<?= url('/admin/events/create') ?>" class="btn btn-primary">
                 <span class="btn-icon">&#43;</span> Create
             </a>
         </div>
@@ -45,7 +45,7 @@ ob_start();
 
     <!-- Date Range Filter -->
     <section class="filters-section mb-3">
-        <form method="GET" action="/admin/events" class="filters-form">
+        <form method="GET" action="<?= url('/admin/events') ?>" class="filters-form">
             <div class="filter-group">
                 <label for="from" class="form-label-inline">From:</label>
                 <input type="date" id="from" name="from" class="form-input"
@@ -66,7 +66,7 @@ ob_start();
         <div class="card">
             <div class="card-body text-center p-4">
                 <p class="text-secondary">No events in this date range</p>
-                <a href="/admin/events/create" class="btn btn-primary mt-2">Create Event</a>
+                <a href="<?= url('/admin/events/create') ?>" class="btn btn-primary mt-2">Create Event</a>
             </div>
         </div>
         <?php else: ?>
@@ -118,7 +118,7 @@ ob_start();
                     <?php endif; ?>
                 </div>
                 <div class="event-actions">
-                    <a href="/api/events/<?= $event['id'] ?>" class="btn btn-sm btn-secondary">Edit</a>
+                    <a href="<?= url('/calendar/' . $event['id'] . '/edit') ?>" class="btn btn-sm btn-secondary">Edit</a>
                 </div>
             </div>
             <?php endforeach; ?>
@@ -127,7 +127,7 @@ ob_start();
     </section>
 
     <div class="admin-nav-back mt-4">
-        <a href="/admin" class="btn btn-text">&larr; Back to Dashboard</a>
+        <a href="<?= url('/admin') ?>" class="btn btn-text">&larr; Back to Dashboard</a>
     </div>
 </div>
 

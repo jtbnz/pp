@@ -33,7 +33,7 @@ ob_start();
 
 <div class="page-notice-form">
     <nav class="breadcrumb-nav mb-3">
-        <a href="/notices/<?= (int)$notice['id'] ?>" class="breadcrumb-link">&larr; Back to Notice</a>
+        <a href="<?= url('/notices/' . (int)$notice['id']) ?>" class="breadcrumb-link">&larr; Back to Notice</a>
     </nav>
 
     <header class="page-header mb-4">
@@ -42,7 +42,7 @@ ob_start();
 
     <div class="card">
         <div class="card-body">
-            <form action="/notices/<?= (int)$notice['id'] ?>" method="POST" class="notice-form">
+            <form action="<?= url('/notices/' . (int)$notice['id']) ?>" method="POST" class="notice-form">
                 <input type="hidden" name="_method" value="PUT">
                 <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
 
@@ -140,7 +140,7 @@ ob_start();
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Save Changes</button>
-                    <a href="/notices/<?= (int)$notice['id'] ?>" class="btn">Cancel</a>
+                    <a href="<?= url('/notices/' . (int)$notice['id']) ?>" class="btn">Cancel</a>
                 </div>
             </form>
         </div>
@@ -154,7 +154,7 @@ ob_start();
                     <strong>Delete this notice</strong>
                     <p class="text-secondary text-sm mb-0">Once deleted, this notice cannot be recovered.</p>
                 </div>
-                <form action="/notices/<?= (int)$notice['id'] ?>" method="POST" class="inline-form" onsubmit="return confirm('Are you sure you want to delete this notice? This action cannot be undone.')">
+                <form action="<?= url('/notices/' . (int)$notice['id']) ?>" method="POST" class="inline-form" onsubmit="return confirm('Are you sure you want to delete this notice? This action cannot be undone.')">
                     <input type="hidden" name="_method" value="DELETE">
                     <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
                     <button type="submit" class="btn btn-danger">Delete Notice</button>

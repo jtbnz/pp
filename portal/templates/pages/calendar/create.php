@@ -19,14 +19,14 @@ ob_start();
 ?>
 
 <div class="page-event-form">
-    <a href="/calendar" class="back-link">&larr; Back to Calendar</a>
+    <a href="<?= url('/calendar') ?>" class="back-link">&larr; Back to Calendar</a>
 
     <div class="card">
         <div class="card-header">
             <h1 class="card-title">Create Event</h1>
         </div>
         <div class="card-body">
-            <form action="/calendar/events" method="POST" class="event-form">
+            <form action="<?= url('/calendar') ?>" method="POST" class="event-form">
                 <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
 
                 <div class="form-group">
@@ -107,7 +107,7 @@ ob_start();
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Create Event</button>
-                    <a href="/calendar" class="btn">Cancel</a>
+                    <a href="<?= url('/calendar') ?>" class="btn">Cancel</a>
                 </div>
             </form>
         </div>

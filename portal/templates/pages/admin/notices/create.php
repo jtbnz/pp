@@ -2,13 +2,9 @@
 declare(strict_types=1);
 
 /**
- * Create Notice Page
+ * Admin Create Notice Template
  *
  * Form to create a new notice (admin only).
- *
- * Variables:
- * - $notice: array - Form data (empty or with previous values)
- * - $errors: array - Validation errors
  */
 
 global $config;
@@ -16,14 +12,20 @@ global $config;
 $pageTitle = $pageTitle ?? 'Create Notice';
 $appName = $config['app_name'] ?? 'Puke Portal';
 $appUrl = $config['app_url'] ?? '';
+$user = currentUser();
+
+// Get form errors and data from session
+$errors = $_SESSION['form_errors'] ?? [];
+$formData = $_SESSION['form_data'] ?? [];
+unset($_SESSION['form_errors'], $_SESSION['form_data']);
 
 // Start output buffering for content
 ob_start();
 ?>
 
-<div class="page-notice-form">
+<div class="page-admin-notice-form">
     <nav class="breadcrumb-nav mb-3">
-        <a href="<?= url('/notices') ?>" class="breadcrumb-link">&larr; Back to Notices</a>
+        <a href="<?= url('/admin/notices') ?>" class="breadcrumb-link">&larr; Back to Notices</a>
     </nav>
 
     <header class="page-header mb-4">
@@ -32,7 +34,7 @@ ob_start();
 
     <div class="card">
         <div class="card-body">
-            <form action="<?= url('/notices') ?>" method="POST" class="notice-form">
+            <form action="<?= url('/admin/notices') ?>" method="POST" class="notice-form">
                 <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
 
                 <div class="form-group">
@@ -42,7 +44,7 @@ ob_start();
                         id="title"
                         name="title"
                         class="form-input <?= !empty($errors['title']) ? 'error' : '' ?>"
-                        value="<?= e($notice['title'] ?? '') ?>"
+                        value="<?= e($formData['title'] ?? '') ?>"
                         required
                         maxlength="200"
                         placeholder="Enter notice title"
@@ -55,16 +57,16 @@ ob_start();
                 <div class="form-group">
                     <label for="type" class="form-label">Type <span class="required">*</span></label>
                     <select id="type" name="type" class="form-select <?= !empty($errors['type']) ? 'error' : '' ?>">
-                        <option value="standard" <?= ($notice['type'] ?? 'standard') === 'standard' ? 'selected' : '' ?>>
+                        <option value="standard" <?= ($formData['type'] ?? 'standard') === 'standard' ? 'selected' : '' ?>>
                             Standard - Regular notice
                         </option>
-                        <option value="sticky" <?= ($notice['type'] ?? '') === 'sticky' ? 'selected' : '' ?>>
+                        <option value="sticky" <?= ($formData['type'] ?? '') === 'sticky' ? 'selected' : '' ?>>
                             Sticky - Always shown at top
                         </option>
-                        <option value="timed" <?= ($notice['type'] ?? '') === 'timed' ? 'selected' : '' ?>>
+                        <option value="timed" <?= ($formData['type'] ?? '') === 'timed' ? 'selected' : '' ?>>
                             Timed - Shows countdown until expiry
                         </option>
-                        <option value="urgent" <?= ($notice['type'] ?? '') === 'urgent' ? 'selected' : '' ?>>
+                        <option value="urgent" <?= ($formData['type'] ?? '') === 'urgent' ? 'selected' : '' ?>>
                             Urgent - Highlighted importance
                         </option>
                     </select>
@@ -82,7 +84,7 @@ ob_start();
                         class="form-textarea"
                         rows="8"
                         placeholder="Enter notice content (supports markdown: **bold**, *italic*, [links](url), lists)"
-                    ><?= e($notice['content'] ?? '') ?></textarea>
+                    ><?= e($formData['content'] ?? '') ?></textarea>
                     <span class="form-hint">
                         Supports basic markdown: **bold**, *italic*, [link text](url), bullet lists (- item)
                     </span>
@@ -99,7 +101,7 @@ ob_start();
                                 id="display_from"
                                 name="display_from"
                                 class="form-input <?= !empty($errors['display_from']) ? 'error' : '' ?>"
-                                value="<?= e($notice['display_from'] ?? '') ?>"
+                                value="<?= e($formData['display_from'] ?? '') ?>"
                             >
                             <?php if (!empty($errors['display_from'])): ?>
                                 <span class="form-error"><?= e($errors['display_from']) ?></span>
@@ -117,7 +119,7 @@ ob_start();
                                 id="display_to"
                                 name="display_to"
                                 class="form-input <?= !empty($errors['display_to']) ? 'error' : '' ?>"
-                                value="<?= e($notice['display_to'] ?? '') ?>"
+                                value="<?= e($formData['display_to'] ?? '') ?>"
                             >
                             <?php if (!empty($errors['display_to'])): ?>
                                 <span class="form-error"><?= e($errors['display_to']) ?></span>
@@ -129,12 +131,47 @@ ob_start();
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Create Notice</button>
-                    <a href="<?= url('/notices') ?>" class="btn">Cancel</a>
+                    <a href="<?= url('/admin/notices') ?>" class="btn">Cancel</a>
                 </div>
             </form>
         </div>
     </div>
+
+    <div class="admin-nav-back mt-4">
+        <a href="<?= url('/admin') ?>" class="btn btn-text">&larr; Back to Dashboard</a>
+    </div>
 </div>
+
+<style>
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.form-fieldset {
+    border: 1px solid var(--border, #e0e0e0);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.form-fieldset legend {
+    padding: 0 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.required {
+    color: var(--error, #D32F2F);
+}
+</style>
 
 <script>
     // Toggle required indicator for display_to when type is "timed"
@@ -161,5 +198,5 @@ ob_start();
 $content = ob_get_clean();
 
 // Include main layout
-require __DIR__ . '/../../layouts/main.php';
+require __DIR__ . '/../../../layouts/main.php';
 ?>

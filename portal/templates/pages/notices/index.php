@@ -36,7 +36,7 @@ ob_start();
         <div class="page-header-content">
             <h1><?= e($pageTitle) ?></h1>
             <?php if ($isAdmin): ?>
-                <a href="/notices/create" class="btn btn-primary">
+                <a href="<?= url('/notices/create') ?>" class="btn btn-primary">
                     + New Notice
                 </a>
             <?php endif; ?>
@@ -54,7 +54,7 @@ ob_start();
         <!-- Filter controls for admins -->
         <div class="notice-filters card mb-4">
             <div class="card-body">
-                <form method="GET" action="/notices" class="filter-form">
+                <form method="GET" action="<?= url('/notices') ?>" class="filter-form">
                     <div class="filter-row">
                         <div class="form-group mb-0">
                             <label for="filter-type" class="form-label">Type</label>
@@ -72,7 +72,7 @@ ob_start();
                         </div>
                         <div class="form-group mb-0 filter-actions">
                             <button type="submit" class="btn btn-secondary">Filter</button>
-                            <a href="/notices" class="btn">Clear</a>
+                            <a href="<?= url('/notices') ?>" class="btn">Clear</a>
                         </div>
                     </div>
                 </form>
@@ -86,7 +86,7 @@ ob_start();
                 <div class="card-body text-center p-5">
                     <p class="text-secondary mb-3">No notices to display</p>
                     <?php if ($isAdmin): ?>
-                        <a href="/notices/create" class="btn btn-primary">Create your first notice</a>
+                        <a href="<?= url('/notices/create') ?>" class="btn btn-primary">Create your first notice</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -115,7 +115,7 @@ ob_start();
 $content = ob_get_clean();
 
 // Extra scripts
-$extraScripts = '<script src="/assets/js/notices.js"></script>';
+$extraScripts = '<script src="' . url('/assets/js/notices.js') . '"></script>';
 
 // Include main layout
 require __DIR__ . '/../../layouts/main.php';
