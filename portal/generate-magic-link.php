@@ -72,8 +72,8 @@ $stmt->execute([$hashedToken, $expires, $member['id']]);
 $basePath = $config['base_path'] ?? '';
 $appUrl = rtrim($config['app_url'] ?? 'https://kiaora.tech', '/');
 
-// Construct the full URL
-$magicLink = "{$appUrl}{$basePath}/auth/magic?token={$token}";
+// Construct the full URL - route is /auth/verify/{token}
+$magicLink = "{$appUrl}{$basePath}/auth/verify/{$token}";
 
 echo "============================================================\n";
 echo "NEW MAGIC LINK GENERATED\n";
