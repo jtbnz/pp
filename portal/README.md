@@ -30,42 +30,114 @@ No build tools required.
 
 ## Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/jtbnz/pp.git
-   cd pp/portal
-   ```
+### 1. Clone the repository
 
-2. **Create configuration file**
-   ```bash
-   cp config/config.example.php config/config.php
-   ```
+```bash
+git clone https://github.com/jtbnz/pp.git
+cd pp/portal
+```
 
-3. **Edit configuration**
-   Update `config/config.php` with your settings:
-   - `app_url` - Your full application URL (e.g., `https://kiaora.tech/pp`)
-   - `base_path` - Subdirectory path if applicable (e.g., `/pp`)
-   - `database_path` - SQLite database file path
-   - `email` - SMTP settings for sending emails
-   - `push` - VAPID keys for push notifications
-   - `dlb` - DLB API integration settings
+### 2. Create configuration file
 
-4. **Run setup**
-   ```bash
-   php setup.php
-   ```
+```bash
+cp config/config.example.php config/config.php
+```
 
-5. **Configure web server**
+### 3. Edit configuration
 
-   For Apache, ensure mod_rewrite is enabled. The `.htaccess` file handles URL rewriting.
+Update `config/config.php` with your settings:
 
-   For Nginx, add appropriate rewrite rules to your server block.
+| Setting | Description | Example |
+|---------|-------------|---------|
+| `app_url` | Full application URL | `https://kiaora.tech/pp` |
+| `base_path` | Subdirectory path (if applicable) | `/pp` or empty string |
+| `database_path` | SQLite database file path | `__DIR__ . '/../data/portal.db'` |
+| `email` | SMTP settings for sending emails | See config.example.php |
+| `push` | VAPID keys for push notifications | See [Generating VAPID Keys](#generating-vapid-keys) |
+| `dlb` | DLB API integration settings | See [DLB Integration](#dlb-integration) |
 
-6. **Set permissions**
-   ```bash
-   chmod 755 data/
-   chmod 644 data/portal.db
-   ```
+**Important subdirectory configuration:** If deploying to a subdirectory like `https://kiaora.tech/pp/`, you MUST set:
+```php
+'app_url' => 'https://kiaora.tech/pp',
+'base_path' => '/pp',
+```
+
+### 4. Create data directories
+
+```bash
+mkdir -p data/logs
+chmod 755 data/
+chmod 755 data/logs/
+```
+
+### 5. Run setup script
+
+```bash
+php setup.php
+```
+
+This will:
+- Create the SQLite database with all required tables
+- Set up the default brigade
+- Create the initial superadmin user
+
+**First-time setup:** The script will prompt you for superadmin details or you can set environment variables:
+```bash
+ADMIN_EMAIL=admin@example.com ADMIN_NAME="Admin User" php setup.php
+```
+
+### 6. Configure web server
+
+**For Apache:**
+- Ensure `mod_rewrite` is enabled: `a2enmod rewrite`
+- The `.htaccess` file in `public/` handles URL rewriting
+- Set `AllowOverride All` for the document root
+
+**For Nginx:**
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+    root /path/to/pp/portal/public;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(ht|git) {
+        deny all;
+    }
+}
+```
+
+### 7. Set file permissions
+
+```bash
+chmod 755 data/
+chmod 644 data/portal.db
+chmod 755 data/logs/
+```
+
+### 8. Verify installation
+
+Visit your app URL. You should see the login page. Use the magic link sent to your admin email to log in.
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| 500 Internal Server Error | Check `data/logs/app.log` and PHP error logs |
+| Redirects to wrong URL | Verify `base_path` matches your subdirectory |
+| Database errors | Ensure `data/` directory is writable |
+| Push notifications not working | Verify VAPID keys are correctly configured |
+| Emails not sending | Check SMTP credentials and test with debug mode |
 
 ## Directory Structure
 
@@ -99,6 +171,28 @@ portal/
 | **Admin** | Brigade management, invite members, manage events/notices, extended leave |
 | **Officer** | Approve/deny leave requests |
 | **Firefighter** | View calendar/notices, request leave for up to 3 trainings |
+
+### Role Hierarchy
+
+Roles are hierarchical - higher roles inherit all permissions from lower roles:
+
+```
+Superadmin (level 4)
+    └── Admin (level 3)
+        └── Officer (level 2)
+            └── Firefighter (level 1)
+```
+
+This means:
+- **Admins** can do everything Officers can do (including approving leave requests)
+- **Superadmins** can do everything Admins can do
+- When checking `hasRole('officer')`, both Officers and Admins will pass
+
+### Leave Request Notifications
+
+When a firefighter submits a leave request, notifications are sent to all users with Officer role or higher (Officers, Admins, and Superadmins) in the same brigade. This includes:
+- Push notifications (if enabled and subscribed)
+- Email notifications (if email is configured)
 
 ## Authentication
 
@@ -173,13 +267,108 @@ return [
 
 ## Generating VAPID Keys
 
-For push notifications, generate VAPID keys:
+For push notifications, you need to generate VAPID (Voluntary Application Server Identification) keys. These can be generated on any machine and copied to your server.
+
+### Option 1: Using Node.js (if available)
 
 ```bash
 npx web-push generate-vapid-keys
 ```
 
-Add the generated keys to your `config.php`.
+### Option 2: Using OpenSSL
+
+```bash
+# Step 1: Generate the EC private key
+openssl ecparam -genkey -name prime256v1 -noout -out vapid_private.pem
+
+# Step 2: Create DER files (suppresses spurious output)
+openssl ec -in vapid_private.pem -outform DER -out vapid_private.der 2>/dev/null
+openssl ec -in vapid_private.pem -pubout -outform DER -out vapid_public.der 2>/dev/null
+
+# Step 3: Extract private key (Base64 URL-safe format)
+tail -c +8 vapid_private.der | head -c 32 | base64 -w 0 | tr -d '=' | tr '/+' '_-' && echo
+
+# Step 4: Extract public key (Base64 URL-safe format)
+tail -c 65 vapid_public.der | base64 -w 0 | tr -d '=' | tr '/+' '_-' && echo
+
+# Step 5: Clean up temporary files
+rm vapid_private.der vapid_public.der
+```
+
+Steps 3 and 4 each output a single Base64 URL-safe encoded string. Copy each to your config.
+
+### Option 3: Online Generator
+
+Use a web-based VAPID key generator (search for "VAPID key generator online").
+
+### Option 4: Using PHP
+
+Create a temporary PHP script and run it once:
+
+```php
+<?php
+// generate-vapid-keys.php
+$keyPair = sodium_crypto_box_keypair();
+$publicKey = sodium_crypto_box_publickey($keyPair);
+$privateKey = sodium_crypto_box_secretkey($keyPair);
+
+echo "Public Key: " . rtrim(strtr(base64_encode($publicKey), '+/', '-_'), '=') . "\n";
+echo "Private Key: " . rtrim(strtr(base64_encode($privateKey), '+/', '-_'), '=') . "\n";
+```
+
+```bash
+php generate-vapid-keys.php
+```
+
+### Adding Keys to Configuration
+
+Add the generated keys to your `config.php`:
+
+```php
+'push' => [
+    'enabled' => true,
+    'subject' => 'mailto:admin@yourdomain.com',
+    'public_key' => 'YOUR_PUBLIC_KEY_HERE',
+    'private_key' => 'YOUR_PRIVATE_KEY_HERE',
+],
+```
+
+**Important:** Keep your private key secret. Never commit it to version control.
+
+### Enabling Push Notifications for Users
+
+Once VAPID keys are configured:
+
+1. Users must grant browser permission for notifications
+2. The browser must support the Push API (most modern browsers do)
+3. Users can subscribe/unsubscribe from their profile settings
+
+Push notifications are sent for:
+- New leave requests (to Officers/Admins)
+- Leave request approvals/denials (to the requesting member)
+- Urgent notices (to all brigade members)
+
+## Email Configuration
+
+Configure email settings in `config.php` for:
+- Magic link invitations
+- Leave request notifications
+- Password reset (if implemented)
+
+```php
+'email' => [
+    'driver' => 'smtp',           // smtp, sendmail, or mail
+    'host' => 'smtp.example.com',
+    'port' => 587,
+    'encryption' => 'tls',        // tls, ssl, or null
+    'username' => 'your-smtp-user',
+    'password' => 'your-smtp-password',
+    'from_address' => 'portal@yourdomain.com',
+    'from_name' => 'Puke Fire Portal',
+],
+```
+
+**Testing email:** Set `'debug' => true` in config to see email output in logs instead of sending.
 
 ## Timezone
 
