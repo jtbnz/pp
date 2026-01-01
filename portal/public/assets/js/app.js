@@ -62,9 +62,13 @@ const App = {
         }
 
         try {
-            // Register service worker
-            const registration = await navigator.serviceWorker.register('/sw.js', {
-                scope: '/'
+            // Register service worker with correct base path
+            const basePath = window.BASE_PATH || '';
+            const swPath = basePath + '/sw.js';
+            const swScope = basePath + '/';
+
+            const registration = await navigator.serviceWorker.register(swPath, {
+                scope: swScope
             });
 
             this.state.swRegistration = registration;

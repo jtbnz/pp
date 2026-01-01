@@ -36,6 +36,42 @@ $router->get('/health', function() {
     ]);
 });
 
+// Dynamic manifest.json with correct base_path
+$router->get('/manifest.json', function() {
+    global $config;
+    $basePath = $config['base_path'] ?? '';
+
+    header('Content-Type: application/manifest+json');
+    echo json_encode([
+        'name' => $config['app_name'] ?? 'Puke Fire Portal',
+        'short_name' => 'Puke Portal',
+        'description' => 'Puke Volunteer Fire Brigade member portal for calendar, notices, and leave management',
+        'start_url' => $basePath . '/',
+        'display' => 'standalone',
+        'theme_color' => $config['theme']['primary_color'] ?? '#D32F2F',
+        'background_color' => '#ffffff',
+        'orientation' => 'portrait-primary',
+        'scope' => $basePath . '/',
+        'lang' => 'en-NZ',
+        'categories' => ['utilities', 'productivity'],
+        'icons' => [
+            ['src' => $basePath . '/assets/icons/icon-72.svg', 'sizes' => '72x72', 'type' => 'image/svg+xml'],
+            ['src' => $basePath . '/assets/icons/icon-96.svg', 'sizes' => '96x96', 'type' => 'image/svg+xml'],
+            ['src' => $basePath . '/assets/icons/icon-128.svg', 'sizes' => '128x128', 'type' => 'image/svg+xml'],
+            ['src' => $basePath . '/assets/icons/icon-144.svg', 'sizes' => '144x144', 'type' => 'image/svg+xml'],
+            ['src' => $basePath . '/assets/icons/icon-152.svg', 'sizes' => '152x152', 'type' => 'image/svg+xml'],
+            ['src' => $basePath . '/assets/icons/icon-192.svg', 'sizes' => '192x192', 'type' => 'image/svg+xml', 'purpose' => 'any maskable'],
+            ['src' => $basePath . '/assets/icons/icon-384.svg', 'sizes' => '384x384', 'type' => 'image/svg+xml'],
+            ['src' => $basePath . '/assets/icons/icon-512.svg', 'sizes' => '512x512', 'type' => 'image/svg+xml', 'purpose' => 'any maskable'],
+        ],
+        'shortcuts' => [
+            ['name' => 'Calendar', 'short_name' => 'Calendar', 'description' => 'View the training calendar', 'url' => $basePath . '/calendar', 'icons' => [['src' => $basePath . '/assets/icons/icon-96.svg', 'sizes' => '96x96', 'type' => 'image/svg+xml']]],
+            ['name' => 'Notices', 'short_name' => 'Notices', 'description' => 'View brigade notices', 'url' => $basePath . '/notices', 'icons' => [['src' => $basePath . '/assets/icons/icon-96.svg', 'sizes' => '96x96', 'type' => 'image/svg+xml']]],
+            ['name' => 'Leave Requests', 'short_name' => 'Leave', 'description' => 'Manage leave requests', 'url' => $basePath . '/leave', 'icons' => [['src' => $basePath . '/assets/icons/icon-96.svg', 'sizes' => '96x96', 'type' => 'image/svg+xml']]],
+        ]
+    ], JSON_UNESCAPED_SLASHES);
+});
+
 // Auth routes (Phase 2)
 $router->group('/auth', function(Router $router) {
     $router->get('/login', 'AuthController@loginForm');
@@ -150,6 +186,8 @@ $router->group('/api', function(Router $router) {
     $router->get('/sync/status', 'SyncController@status');
     $router->post('/sync/members', 'SyncController@members');
     $router->post('/sync/musters', 'SyncController@musters');
+    $router->post('/sync/import-members', 'SyncController@importMembers');
+    $router->post('/sync/test-connection', 'SyncController@testConnection');
 }, ['middleware' => ['auth']]);
 
 // Admin routes (Protected - Phase 10)

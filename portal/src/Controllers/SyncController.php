@@ -219,6 +219,53 @@ class SyncController
     }
 
     /**
+     * POST /api/sync/import-members
+     *
+     * Import members from DLB into Portal.
+     * Creates new members and links existing ones.
+     * Requires admin role.
+     */
+    public function importMembers(): void
+    {
+        // Check admin permission
+        if (!hasRole('admin')) {
+            jsonResponse(['error' => 'Forbidden'], 403);
+            return;
+        }
+
+        try {
+            $brigadeId = $_SESSION['brigade_id'] ?? 1;
+
+            $syncService = $this->getSyncService();
+            $results = $syncService->importMembersFromDlb($brigadeId);
+
+            jsonResponse([
+                'success' => empty($results['errors']),
+                'message' => sprintf(
+                    'Import completed: %d imported, %d linked, %d skipped',
+                    $results['imported'],
+                    $results['linked'],
+                    $results['skipped']
+                ),
+                'results' => $results
+            ]);
+
+        } catch (RuntimeException $e) {
+            jsonResponse([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 400);
+
+        } catch (DlbApiException $e) {
+            jsonResponse([
+                'success' => false,
+                'error' => 'DLB API error',
+                'details' => $e->getSummary()
+            ], $e->getHttpCode() ?: 500);
+        }
+    }
+
+    /**
      * Test DLB connection
      *
      * Requires admin role.

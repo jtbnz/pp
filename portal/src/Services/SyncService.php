@@ -367,4 +367,123 @@ class SyncService
     {
         return $this->dlbClient;
     }
+
+    /**
+     * Import members from DLB into Portal
+     *
+     * Creates new member records for DLB members that don't exist locally.
+     * Existing members (matched by name) are updated with dlb_member_id.
+     *
+     * @param int $brigadeId Brigade to import members into
+     * @return array Results with counts and details
+     * @throws DlbApiException
+     */
+    public function importMembersFromDlb(int $brigadeId): array
+    {
+        $results = [
+            'total_dlb' => 0,
+            'imported' => 0,
+            'linked' => 0,
+            'skipped' => 0,
+            'errors' => [],
+            'imported_members' => [],
+            'linked_members' => [],
+            'skipped_members' => []
+        ];
+
+        // Get members from DLB
+        $dlbMembers = $this->dlbClient->getMembers();
+        $results['total_dlb'] = count($dlbMembers);
+
+        // Get existing local members for this brigade (by name and by dlb_member_id)
+        $stmt = $this->db->prepare('SELECT id, name, email, dlb_member_id FROM members WHERE brigade_id = ?');
+        $stmt->execute([$brigadeId]);
+        $localMembers = $stmt->fetchAll();
+
+        // Create lookup tables
+        $localByName = [];
+        $localByDlbId = [];
+        foreach ($localMembers as $local) {
+            $localByName[strtolower(trim($local['name']))] = $local;
+            if (!empty($local['dlb_member_id'])) {
+                $localByDlbId[(int)$local['dlb_member_id']] = $local;
+            }
+        }
+
+        // Process each DLB member
+        foreach ($dlbMembers as $dlbMember) {
+            $dlbId = (int)$dlbMember['id'];
+            $name = trim($dlbMember['name']);
+            $nameKey = strtolower($name);
+            $rank = $dlbMember['rank'] ?? null;
+            $isActive = !empty($dlbMember['is_active']);
+
+            // Skip inactive DLB members
+            if (!$isActive) {
+                $results['skipped']++;
+                $results['skipped_members'][] = ['name' => $name, 'reason' => 'Inactive in DLB'];
+                continue;
+            }
+
+            // Check if already linked by dlb_member_id
+            if (isset($localByDlbId[$dlbId])) {
+                $results['skipped']++;
+                $results['skipped_members'][] = ['name' => $name, 'reason' => 'Already linked'];
+                continue;
+            }
+
+            // Check if exists by name
+            if (isset($localByName[$nameKey])) {
+                $local = $localByName[$nameKey];
+
+                // Link existing member to DLB
+                $updateStmt = $this->db->prepare('UPDATE members SET dlb_member_id = ?, rank = COALESCE(rank, ?) WHERE id = ?');
+                $updateStmt->execute([$dlbId, $rank, $local['id']]);
+
+                $results['linked']++;
+                $results['linked_members'][] = ['name' => $name, 'local_id' => $local['id']];
+                continue;
+            }
+
+            // Create new member (without email - they'll need to be invited separately)
+            try {
+                $insertStmt = $this->db->prepare("
+                    INSERT INTO members (brigade_id, email, name, role, rank, status, dlb_member_id, created_at)
+                    VALUES (?, ?, ?, 'firefighter', ?, 'active', ?, datetime('now', 'localtime'))
+                ");
+
+                // Generate placeholder email - member will need to update it
+                $placeholderEmail = 'dlb_import_' . $dlbId . '@placeholder.local';
+
+                $insertStmt->execute([
+                    $brigadeId,
+                    $placeholderEmail,
+                    $name,
+                    $rank,
+                    $dlbId
+                ]);
+
+                $newId = (int)$this->db->lastInsertId();
+                $results['imported']++;
+                $results['imported_members'][] = ['name' => $name, 'local_id' => $newId, 'dlb_id' => $dlbId];
+
+            } catch (PDOException $e) {
+                $results['errors'][] = "Failed to import {$name}: " . $e->getMessage();
+            }
+        }
+
+        // Log the import
+        $status = empty($results['errors']) ? 'success' : 'partial';
+        $details = sprintf(
+            'DLB Total: %d, Imported: %d, Linked: %d, Skipped: %d',
+            $results['total_dlb'],
+            $results['imported'],
+            $results['linked'],
+            $results['skipped']
+        );
+
+        $this->logSync('import', 0, $status, $details);
+
+        return $results;
+    }
 }
