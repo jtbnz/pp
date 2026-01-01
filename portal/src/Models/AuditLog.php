@@ -33,7 +33,7 @@ class AuditLog
     public function log(int $brigadeId, ?int $memberId, string $action, array $details): int
     {
         $sql = "
-            INSERT INTO audit_logs (brigade_id, member_id, action, details, created_at, ip_address, user_agent)
+            INSERT INTO audit_log (brigade_id, member_id, action, details, created_at, ip_address, user_agent)
             VALUES (?, ?, ?, ?, datetime('now', 'localtime'), ?, ?)
         ";
 
@@ -61,7 +61,7 @@ class AuditLog
     {
         $sql = "
             SELECT al.*, m.name as member_name
-            FROM audit_logs al
+            FROM audit_log al
             LEFT JOIN members m ON al.member_id = m.id
             WHERE al.brigade_id = ?
             ORDER BY al.created_at DESC
@@ -92,7 +92,7 @@ class AuditLog
     {
         $sql = "
             SELECT al.*, m.name as member_name
-            FROM audit_logs al
+            FROM audit_log al
             LEFT JOIN members m ON al.member_id = m.id
             WHERE al.brigade_id = ?
         ";
@@ -169,7 +169,7 @@ class AuditLog
      */
     public function count(int $brigadeId, array $filters = []): int
     {
-        $sql = "SELECT COUNT(*) FROM audit_logs WHERE brigade_id = ?";
+        $sql = "SELECT COUNT(*) FROM audit_log WHERE brigade_id = ?";
         $params = [$brigadeId];
 
         if (!empty($filters['action'])) {
@@ -213,7 +213,7 @@ class AuditLog
     {
         $sql = "
             SELECT al.*, m.name as member_name
-            FROM audit_logs al
+            FROM audit_log al
             LEFT JOIN members m ON al.member_id = m.id
             WHERE al.id = ?
         ";
@@ -240,7 +240,7 @@ class AuditLog
     public function prune(int $brigadeId, int $daysToKeep = 365): int
     {
         $sql = "
-            DELETE FROM audit_logs
+            DELETE FROM audit_log
             WHERE brigade_id = ?
             AND created_at < datetime('now', '-' || ? || ' days')
         ";
