@@ -40,7 +40,7 @@ ob_start();
             <p><strong>Email:</strong> <?= e($email ?? '') ?></p>
         </div>
 
-        <form action="/auth/activate" method="POST" class="auth-form">
+        <form action="<?= url('/auth/activate') ?>" method="POST" class="auth-form">
             <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
 
             <div class="form-group">

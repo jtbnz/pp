@@ -130,10 +130,18 @@ class Router
      */
     public function dispatch(string $method, string $uri): void
     {
+        global $config;
+
         // Handle OPTIONS requests for CORS
         if ($method === 'OPTIONS') {
             $this->handleOptions();
             return;
+        }
+
+        // Strip base path if configured (for subdirectory installations)
+        $basePath = $config['base_path'] ?? '';
+        if ($basePath !== '' && str_starts_with($uri, $basePath)) {
+            $uri = substr($uri, strlen($basePath)) ?: '/';
         }
 
         // Normalize URI

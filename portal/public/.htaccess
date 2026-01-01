@@ -5,6 +5,10 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Set RewriteBase if running in a subdirectory
+    # Uncomment and adjust if your app runs at /pp/ instead of root
+    # RewriteBase /pp/
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

@@ -267,6 +267,26 @@ function e(string $string): string
     return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
 }
 
+// Helper function to generate URLs with base path prefix
+function url(string $path = ''): string
+{
+    global $config;
+    $basePath = rtrim($config['base_path'] ?? '', '/');
+
+    // Ensure path starts with /
+    if ($path !== '' && $path[0] !== '/') {
+        $path = '/' . $path;
+    }
+
+    return $basePath . $path;
+}
+
+// Helper function to generate asset URLs
+function asset(string $path): string
+{
+    return url('/assets/' . ltrim($path, '/'));
+}
+
 // Helper function for relative time formatting
 function timeAgo(string $datetime): string
 {

@@ -15,6 +15,7 @@ return [
 
     'app_name' => 'Puke Fire Portal',
     'app_url' => 'https://portal.kiaora.tech',
+    'base_path' => '', // Set to '/pp' if running in a subdirectory like https://kiaora.tech/pp/
     'debug' => false, // Set to true for development (shows detailed errors)
 
     // =========================================================================

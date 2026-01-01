@@ -24,21 +24,21 @@ $user = currentUser();
     <meta name="description" content="Puke Volunteer Fire Brigade member portal">
 
     <!-- PWA -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="<?= url('/manifest.json') ?>">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="<?= e($appName) ?>">
-    <link rel="apple-touch-icon" href="/assets/icons/icon-192.svg">
+    <link rel="apple-touch-icon" href="<?= url('/assets/icons/icon-192.svg') ?>">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon-32.svg">
-    <link rel="icon" type="image/svg+xml" sizes="16x16" href="/assets/icons/favicon-16.svg">
+    <link rel="icon" type="image/svg+xml" href="<?= url('/assets/icons/favicon-32.svg') ?>">
+    <link rel="icon" type="image/svg+xml" sizes="16x16" href="<?= url('/assets/icons/favicon-16.svg') ?>">
 
     <title><?= e($fullTitle) ?></title>
 
     <!-- Styles -->
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= url('/assets/css/app.css') ?>">
 
     <!-- Preload critical fonts if any -->
     <!-- <link rel="preload" href="/assets/fonts/..." as="font" type="font/woff2" crossorigin> -->
@@ -65,7 +65,7 @@ $user = currentUser();
                 <span class="hamburger-icon"></span>
             </button>
 
-            <a href="/" class="logo">
+            <a href="<?= url('/') ?>" class="logo">
                 <?php if (!empty($config['theme']['logo_url'] ?? '')): ?>
                     <img src="<?= e($config['theme']['logo_url']) ?>" alt="<?= e($appName) ?>" class="logo-img">
                 <?php else: ?>
@@ -88,11 +88,11 @@ $user = currentUser();
                             <span class="user-name"><?= e($user['name']) ?></span>
                             <span class="user-role"><?= ucfirst(e($user['role'])) ?></span>
                         </div>
-                        <a href="/profile" class="dropdown-item">Profile</a>
+                        <a href="<?= url('/profile') ?>" class="dropdown-item">Profile</a>
                         <?php if (hasRole('admin')): ?>
-                            <a href="/admin" class="dropdown-item">Admin</a>
+                            <a href="<?= url('/admin') ?>" class="dropdown-item">Admin</a>
                         <?php endif; ?>
-                        <form action="/auth/logout" method="POST" class="logout-form">
+                        <form action="<?= url('/auth/logout') ?>" method="POST" class="logout-form">
                             <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
                             <button type="submit" class="dropdown-item logout-btn">Logout</button>
                         </form>
@@ -103,33 +103,45 @@ $user = currentUser();
     </header>
 
     <!-- Navigation sidebar -->
+    <?php
+    // Get current path without base_path for active state checking
+    $currentPath = $_SERVER['REQUEST_URI'];
+    $basePath = $config['base_path'] ?? '';
+    if ($basePath !== '' && str_starts_with($currentPath, $basePath)) {
+        $currentPath = substr($currentPath, strlen($basePath)) ?: '/';
+    }
+    // Remove query string
+    if (($pos = strpos($currentPath, '?')) !== false) {
+        $currentPath = substr($currentPath, 0, $pos);
+    }
+    ?>
     <nav class="sidebar" aria-label="Main navigation">
         <div class="sidebar-content">
-            <a href="/" class="nav-item <?= ($_SERVER['REQUEST_URI'] === '/') ? 'active' : '' ?>">
+            <a href="<?= url('/') ?>" class="nav-item <?= ($currentPath === '/') ? 'active' : '' ?>">
                 <span class="nav-icon">&#127968;</span>
                 <span class="nav-text">Home</span>
             </a>
-            <a href="/calendar" class="nav-item <?= str_starts_with($_SERVER['REQUEST_URI'], '/calendar') ? 'active' : '' ?>">
+            <a href="<?= url('/calendar') ?>" class="nav-item <?= str_starts_with($currentPath, '/calendar') ? 'active' : '' ?>">
                 <span class="nav-icon">&#128197;</span>
                 <span class="nav-text">Calendar</span>
             </a>
-            <a href="/notices" class="nav-item <?= str_starts_with($_SERVER['REQUEST_URI'], '/notices') ? 'active' : '' ?>">
+            <a href="<?= url('/notices') ?>" class="nav-item <?= str_starts_with($currentPath, '/notices') ? 'active' : '' ?>">
                 <span class="nav-icon">&#128240;</span>
                 <span class="nav-text">Notices</span>
             </a>
-            <a href="/leave" class="nav-item <?= str_starts_with($_SERVER['REQUEST_URI'], '/leave') ? 'active' : '' ?>">
+            <a href="<?= url('/leave') ?>" class="nav-item <?= str_starts_with($currentPath, '/leave') ? 'active' : '' ?>">
                 <span class="nav-icon">&#128198;</span>
                 <span class="nav-text">Leave</span>
             </a>
             <?php if (hasRole('officer')): ?>
-                <a href="/leave/pending" class="nav-item <?= str_starts_with($_SERVER['REQUEST_URI'], '/leave/pending') ? 'active' : '' ?>">
+                <a href="<?= url('/leave/pending') ?>" class="nav-item <?= str_starts_with($currentPath, '/leave/pending') ? 'active' : '' ?>">
                     <span class="nav-icon">&#9989;</span>
                     <span class="nav-text">Approvals</span>
                 </a>
             <?php endif; ?>
             <?php if (hasRole('admin')): ?>
                 <hr class="nav-divider">
-                <a href="/admin" class="nav-item <?= str_starts_with($_SERVER['REQUEST_URI'], '/admin') ? 'active' : '' ?>">
+                <a href="<?= url('/admin') ?>" class="nav-item <?= str_starts_with($currentPath, '/admin') ? 'active' : '' ?>">
                     <span class="nav-icon">&#9881;</span>
                     <span class="nav-text">Admin</span>
                 </a>
@@ -158,19 +170,19 @@ $user = currentUser();
     <?php if ($user): ?>
     <!-- Bottom navigation for mobile -->
     <nav class="bottom-nav" aria-label="Mobile navigation">
-        <a href="/" class="bottom-nav-item <?= ($_SERVER['REQUEST_URI'] === '/') ? 'active' : '' ?>">
+        <a href="<?= url('/') ?>" class="bottom-nav-item <?= ($currentPath === '/') ? 'active' : '' ?>">
             <span class="nav-icon">&#127968;</span>
             <span class="nav-label">Home</span>
         </a>
-        <a href="/calendar" class="bottom-nav-item <?= str_starts_with($_SERVER['REQUEST_URI'], '/calendar') ? 'active' : '' ?>">
+        <a href="<?= url('/calendar') ?>" class="bottom-nav-item <?= str_starts_with($currentPath, '/calendar') ? 'active' : '' ?>">
             <span class="nav-icon">&#128197;</span>
             <span class="nav-label">Calendar</span>
         </a>
-        <a href="/notices" class="bottom-nav-item <?= str_starts_with($_SERVER['REQUEST_URI'], '/notices') ? 'active' : '' ?>">
+        <a href="<?= url('/notices') ?>" class="bottom-nav-item <?= str_starts_with($currentPath, '/notices') ? 'active' : '' ?>">
             <span class="nav-icon">&#128240;</span>
             <span class="nav-label">Notices</span>
         </a>
-        <a href="/leave" class="bottom-nav-item <?= str_starts_with($_SERVER['REQUEST_URI'], '/leave') ? 'active' : '' ?>">
+        <a href="<?= url('/leave') ?>" class="bottom-nav-item <?= str_starts_with($currentPath, '/leave') ? 'active' : '' ?>">
             <span class="nav-icon">&#128198;</span>
             <span class="nav-label">Leave</span>
         </a>
@@ -181,8 +193,9 @@ $user = currentUser();
     <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
     <!-- Scripts -->
-    <script src="/assets/js/offline-storage.js"></script>
-    <script src="/assets/js/app.js"></script>
+    <script>window.BASE_PATH = '<?= e($config['base_path'] ?? '') ?>';</script>
+    <script src="<?= url('/assets/js/offline-storage.js') ?>"></script>
+    <script src="<?= url('/assets/js/app.js') ?>"></script>
 
     <?php if (isset($extraScripts)): ?>
         <?= $extraScripts ?>

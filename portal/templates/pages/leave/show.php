@@ -51,7 +51,7 @@ ob_start();
     <div class="container">
         <!-- Back Link -->
         <nav class="breadcrumb mb-4">
-            <a href="/leave" class="breadcrumb-link">
+            <a href="<?= url('/leave') ?>" class="breadcrumb-link">
                 <span>&larr;</span> Back to Leave Requests
             </a>
         </nav>
@@ -123,14 +123,14 @@ ob_start();
             <div class="card-footer">
                 <div class="action-buttons">
                     <?php if ($canApprove): ?>
-                        <form method="POST" action="/leave/<?= (int)$leaveRequest['id'] ?>/approve" class="inline-form">
+                        <form method="POST" action="<?= url('/leave/' . (int)$leaveRequest['id'] . '/approve') ?>" class="inline-form">
                             <input type="hidden" name="_csrf_token" value="<?= e(csrfToken()) ?>">
                             <button type="submit" class="btn btn-success">
                                 <span class="btn-icon">&#10003;</span>
                                 Approve
                             </button>
                         </form>
-                        <form method="POST" action="/leave/<?= (int)$leaveRequest['id'] ?>/deny" class="inline-form">
+                        <form method="POST" action="<?= url('/leave/' . (int)$leaveRequest['id'] . '/deny') ?>" class="inline-form">
                             <input type="hidden" name="_csrf_token" value="<?= e(csrfToken()) ?>">
                             <button type="submit" class="btn btn-danger">
                                 <span class="btn-icon">&#10007;</span>
@@ -140,7 +140,7 @@ ob_start();
                     <?php endif; ?>
 
                     <?php if ($isOwner && $status === 'pending'): ?>
-                        <form method="POST" action="/leave/<?= (int)$leaveRequest['id'] ?>" class="inline-form">
+                        <form method="POST" action="<?= url('/leave/' . (int)$leaveRequest['id']) ?>" class="inline-form">
                             <input type="hidden" name="_csrf_token" value="<?= e(csrfToken()) ?>">
                             <input type="hidden" name="_method" value="DELETE">
                             <button type="submit" class="btn btn-outline" onclick="return confirm('Cancel this leave request?')">

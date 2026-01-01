@@ -54,7 +54,7 @@ ob_start();
             </div>
         <?php endif; ?>
 
-        <form action="/auth/login" method="POST" class="auth-form">
+        <form action="<?= url('/auth/login') ?>" method="POST" class="auth-form">
             <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
 
             <div class="form-group">

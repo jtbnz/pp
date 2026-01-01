@@ -45,7 +45,7 @@ ob_start();
         <section class="upcoming-events mb-4">
             <div class="section-header">
                 <h2>Upcoming Events</h2>
-                <a href="/calendar" class="section-link">View all</a>
+                <a href="<?= url('/calendar') ?>" class="section-link">View all</a>
             </div>
             <div class="card">
                 <div class="card-body">
@@ -58,7 +58,7 @@ ob_start();
         <section class="notices-section mb-4">
             <div class="section-header">
                 <h2>Notices</h2>
-                <a href="/notices" class="section-link">View all</a>
+                <a href="<?= url('/notices') ?>" class="section-link">View all</a>
             </div>
             <div class="card">
                 <div class="card-body">
@@ -71,7 +71,7 @@ ob_start();
         <section class="leave-section">
             <div class="section-header">
                 <h2>Your Leave Status</h2>
-                <a href="/leave" class="section-link">Manage</a>
+                <a href="<?= url('/leave') ?>" class="section-link">Manage</a>
             </div>
             <div class="card">
                 <div class="card-body">
@@ -85,7 +85,7 @@ ob_start();
         <section class="welcome-section text-center" style="padding: 3rem 1rem;">
             <h1><?= e($appName) ?></h1>
             <p class="text-secondary mb-4">Fire brigade member portal</p>
-            <a href="/auth/login" class="btn btn-primary btn-lg">Sign In</a>
+            <a href="<?= url('/auth/login') ?>" class="btn btn-primary btn-lg">Sign In</a>
         </section>
     <?php endif; ?>
 </div>

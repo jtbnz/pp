@@ -36,7 +36,7 @@ ob_start();
             </div>
         <?php endif; ?>
 
-        <form action="/auth/pin" method="POST" class="auth-form" id="pin-form">
+        <form action="<?= url('/auth/pin') ?>" method="POST" class="auth-form" id="pin-form">
             <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
 
             <div class="form-group">
@@ -69,10 +69,10 @@ ob_start();
 
         <div class="auth-alternatives">
             <p>Forgot your PIN?</p>
-            <a href="/auth/magic-link" class="btn btn-outline btn-block">
+            <a href="<?= url('/auth/magic-link') ?>" class="btn btn-outline btn-block">
                 Send Magic Link Instead
             </a>
-            <a href="/auth/login" class="auth-link">
+            <a href="<?= url('/auth/login') ?>" class="auth-link">
                 Use a different email
             </a>
         </div>
