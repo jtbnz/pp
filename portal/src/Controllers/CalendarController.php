@@ -32,7 +32,7 @@ class CalendarController
         $user = currentUser();
 
         if (!$user) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -146,7 +146,7 @@ class CalendarController
                 jsonResponse(['error' => 'Unauthorized'], 401);
                 return;
             }
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -279,7 +279,7 @@ class CalendarController
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Event created successfully'];
 
         // Redirect to event detail
-        header('Location: /calendar/events/' . $eventId);
+        header('Location: ' . url('/calendar/' . $eventId));
         exit;
     }
 
@@ -374,7 +374,7 @@ class CalendarController
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Event updated successfully'];
 
         // Redirect to event detail
-        header('Location: /calendar/events/' . $eventId);
+        header('Location: ' . url('/calendar/' . $eventId));
         exit;
     }
 
@@ -433,7 +433,7 @@ class CalendarController
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Event deleted successfully'];
 
         // Redirect to calendar
-        header('Location: /calendar');
+        header('Location: ' . url('/calendar'));
         exit;
     }
 
@@ -446,7 +446,7 @@ class CalendarController
         $user = currentUser();
 
         if (!$user) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -492,7 +492,7 @@ class CalendarController
                 jsonResponse(['error' => 'Unauthorized'], 401);
                 return;
             }
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -612,7 +612,7 @@ class CalendarController
             'message' => "Generated {$count} training night events",
         ];
 
-        header('Location: /calendar/trainings');
+        header('Location: ' . url('/calendar/trainings'));
         exit;
     }
 

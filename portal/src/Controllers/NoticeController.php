@@ -27,7 +27,7 @@ class NoticeController
         $user = currentUser();
 
         if (!$user) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -62,7 +62,7 @@ class NoticeController
         $user = currentUser();
 
         if (!$user) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -175,7 +175,7 @@ class NoticeController
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Notice created successfully'];
 
         // Redirect to notice detail
-        header('Location: /notices/' . $noticeId);
+        header('Location: ' . url('/notices/' . $noticeId));
         exit;
     }
 
@@ -273,7 +273,7 @@ class NoticeController
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Notice updated successfully'];
 
         // Redirect to notice detail
-        header('Location: /notices/' . $noticeId);
+        header('Location: ' . url('/notices/' . $noticeId));
         exit;
     }
 
@@ -333,7 +333,7 @@ class NoticeController
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Notice deleted successfully'];
 
         // Redirect to notices list
-        header('Location: /notices');
+        header('Location: ' . url('/notices'));
         exit;
     }
 

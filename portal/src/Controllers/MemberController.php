@@ -29,7 +29,7 @@ class MemberController
     {
         $user = currentUser();
         if (!$user) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -79,7 +79,7 @@ class MemberController
     {
         $user = currentUser();
         if (!$user) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -223,7 +223,7 @@ class MemberController
         if (!empty($errors)) {
             $_SESSION['form_errors'] = $errors;
             $_SESSION['form_old'] = $_POST;
-            header('Location: /admin/members/invite');
+            header('Location: ' . url('/admin/members/invite'));
             exit;
         }
 
@@ -295,7 +295,7 @@ class MemberController
         } catch (Exception $e) {
             $_SESSION['form_errors'] = ['general' => 'Failed to create member: ' . $e->getMessage()];
             $_SESSION['form_old'] = $_POST;
-            header('Location: /admin/members/invite');
+            header('Location: ' . url('/admin/members/invite'));
             exit;
         }
     }
@@ -356,7 +356,7 @@ class MemberController
         if (!empty($errors)) {
             $_SESSION['form_errors'] = $errors;
             $_SESSION['form_old'] = $_POST;
-            header('Location: /members/' . $memberId . '/edit');
+            header('Location: ' . url('/members/' . $memberId . '/edit'));
             exit;
         }
 
@@ -392,13 +392,13 @@ class MemberController
             $_SESSION['flash_message'] = 'Member updated successfully';
             $_SESSION['flash_type'] = 'success';
 
-            header('Location: /members/' . $memberId);
+            header('Location: ' . url('/members/' . $memberId));
             exit;
 
         } catch (Exception $e) {
             $_SESSION['form_errors'] = ['general' => 'Failed to update member: ' . $e->getMessage()];
             $_SESSION['form_old'] = $_POST;
-            header('Location: /members/' . $memberId . '/edit');
+            header('Location: ' . url('/members/' . $memberId . '/edit'));
             exit;
         }
     }
@@ -453,7 +453,7 @@ class MemberController
             if ($this->isApiRequest()) {
                 jsonResponse(['success' => true, 'message' => 'Member deactivated']);
             } else {
-                header('Location: /members');
+                header('Location: ' . url('/members'));
                 exit;
             }
 
@@ -463,7 +463,7 @@ class MemberController
             } else {
                 $_SESSION['flash_message'] = 'Failed to deactivate member';
                 $_SESSION['flash_type'] = 'error';
-                header('Location: /members/' . $memberId);
+                header('Location: ' . url('/members/' . $memberId));
                 exit;
             }
         }
@@ -476,7 +476,7 @@ class MemberController
     {
         $user = currentUser();
         if (!$user) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -553,13 +553,13 @@ class MemberController
             $_SESSION['flash_message'] = 'Service period added successfully';
             $_SESSION['flash_type'] = 'success';
 
-            header('Location: /members/' . $memberId);
+            header('Location: ' . url('/members/' . $memberId));
             exit;
 
         } catch (InvalidArgumentException $e) {
             $_SESSION['flash_message'] = $e->getMessage();
             $_SESSION['flash_type'] = 'error';
-            header('Location: /members/' . $memberId);
+            header('Location: ' . url('/members/' . $memberId));
             exit;
         }
     }
@@ -623,13 +623,13 @@ class MemberController
             $_SESSION['flash_message'] = 'Service period updated successfully';
             $_SESSION['flash_type'] = 'success';
 
-            header('Location: /members/' . $memberId);
+            header('Location: ' . url('/members/' . $memberId));
             exit;
 
         } catch (InvalidArgumentException $e) {
             $_SESSION['flash_message'] = $e->getMessage();
             $_SESSION['flash_type'] = 'error';
-            header('Location: /members/' . $memberId);
+            header('Location: ' . url('/members/' . $memberId));
             exit;
         }
     }
@@ -681,7 +681,7 @@ class MemberController
             if ($this->isApiRequest()) {
                 jsonResponse(['success' => true]);
             } else {
-                header('Location: /members/' . $memberId);
+                header('Location: ' . url('/members/' . $memberId));
                 exit;
             }
 
@@ -691,7 +691,7 @@ class MemberController
             } else {
                 $_SESSION['flash_message'] = 'Failed to delete service period';
                 $_SESSION['flash_type'] = 'error';
-                header('Location: /members/' . $memberId);
+                header('Location: ' . url('/members/' . $memberId));
                 exit;
             }
         }

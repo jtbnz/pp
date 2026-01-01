@@ -109,7 +109,7 @@ class AdminController
 
         // Validate CSRF
         if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
-            $this->redirectWithError('/admin/members/invite', 'Invalid request. Please try again.');
+            $this->redirectWithError(url('/admin/members/invite'), 'Invalid request. Please try again.');
             return;
         }
 
@@ -149,7 +149,7 @@ class AdminController
         if (!empty($errors)) {
             $_SESSION['form_errors'] = $errors;
             $_SESSION['form_data'] = $_POST;
-            header('Location: /admin/members/invite');
+            header('Location: ' . url('/admin/members/invite'));
             exit;
         }
 
@@ -219,7 +219,7 @@ class AdminController
         } catch (Exception $e) {
             $_SESSION['flash_message'] = 'Failed to invite member. Please try again.';
             $_SESSION['flash_type'] = 'error';
-            header('Location: /admin/members/invite');
+            header('Location: ' . url('/admin/members/invite'));
             exit;
         }
     }
@@ -266,7 +266,7 @@ class AdminController
 
         // Validate CSRF
         if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
-            $this->redirectWithError("/admin/members/{$id}", 'Invalid request. Please try again.');
+            $this->redirectWithError(url("/admin/members/{$id}"), 'Invalid request. Please try again.');
             return;
         }
 
@@ -315,7 +315,7 @@ class AdminController
         if (!empty($errors)) {
             $_SESSION['form_errors'] = $errors;
             $_SESSION['form_data'] = $_POST;
-            header("Location: /admin/members/{$id}");
+            header('Location: ' . url("/admin/members/{$id}"));
             exit;
         }
 
@@ -347,13 +347,13 @@ class AdminController
 
             $_SESSION['flash_message'] = 'Member updated successfully.';
             $_SESSION['flash_type'] = 'success';
-            header('Location: /admin/members');
+            header('Location: ' . url('/admin/members'));
             exit;
 
         } catch (Exception $e) {
             $_SESSION['flash_message'] = 'Failed to update member. Please try again.';
             $_SESSION['flash_type'] = 'error';
-            header("Location: /admin/members/{$id}");
+            header('Location: ' . url("/admin/members/{$id}"));
             exit;
         }
     }
@@ -400,7 +400,7 @@ class AdminController
 
         // Validate CSRF
         if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
-            $this->redirectWithError('/admin/events/create', 'Invalid request. Please try again.');
+            $this->redirectWithError(url('/admin/events/create'), 'Invalid request. Please try again.');
             return;
         }
 
@@ -428,7 +428,7 @@ class AdminController
         if (!empty($errors)) {
             $_SESSION['form_errors'] = $errors;
             $_SESSION['form_data'] = $_POST;
-            header('Location: /admin/events/create');
+            header('Location: ' . url('/admin/events/create'));
             exit;
         }
 
@@ -461,13 +461,13 @@ class AdminController
 
             $_SESSION['flash_message'] = 'Event created successfully.';
             $_SESSION['flash_type'] = 'success';
-            header('Location: /admin/events');
+            header('Location: ' . url('/admin/events'));
             exit;
 
         } catch (Exception $e) {
             $_SESSION['flash_message'] = 'Failed to create event. Please try again.';
             $_SESSION['flash_type'] = 'error';
-            header('Location: /admin/events/create');
+            header('Location: ' . url('/admin/events/create'));
             exit;
         }
     }
@@ -520,7 +520,7 @@ class AdminController
 
         // Validate CSRF
         if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
-            $this->redirectWithError('/admin/notices/create', 'Invalid request. Please try again.');
+            $this->redirectWithError(url('/admin/notices/create'), 'Invalid request. Please try again.');
             return;
         }
 
@@ -540,7 +540,7 @@ class AdminController
         if (!empty($errors)) {
             $_SESSION['form_errors'] = $errors;
             $_SESSION['form_data'] = $_POST;
-            header('Location: /admin/notices/create');
+            header('Location: ' . url('/admin/notices/create'));
             exit;
         }
 
@@ -556,13 +556,13 @@ class AdminController
 
             $_SESSION['flash_message'] = 'Notice created successfully.';
             $_SESSION['flash_type'] = 'success';
-            header('Location: /admin/notices');
+            header('Location: ' . url('/admin/notices'));
             exit;
 
         } catch (Exception $e) {
             $_SESSION['flash_message'] = 'Failed to create notice. Please try again.';
             $_SESSION['flash_type'] = 'error';
-            header('Location: /admin/notices/create');
+            header('Location: ' . url('/admin/notices/create'));
             exit;
         }
     }
@@ -652,7 +652,7 @@ class AdminController
 
         // Validate CSRF
         if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
-            $this->redirectWithError('/admin/settings', 'Invalid request. Please try again.');
+            $this->redirectWithError(url('/admin/settings'), 'Invalid request. Please try again.');
             return;
         }
 
@@ -719,7 +719,7 @@ class AdminController
             $_SESSION['flash_type'] = 'error';
         }
 
-        header('Location: /admin/settings');
+        header('Location: ' . url('/admin/settings'));
         exit;
     }
 

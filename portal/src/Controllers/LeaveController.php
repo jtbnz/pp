@@ -26,7 +26,7 @@ class LeaveController
         $user = currentUser();
 
         if (!$user) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -65,7 +65,7 @@ class LeaveController
         $user = currentUser();
 
         if (!$user) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -107,7 +107,7 @@ class LeaveController
         $user = currentUser();
 
         if (!$user) {
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -152,7 +152,7 @@ class LeaveController
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Unauthorized'], 401);
             }
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -178,7 +178,7 @@ class LeaveController
             }
 
             $_SESSION['flash'] = ['type' => 'error', 'message' => reset($errors)];
-            header('Location: /leave');
+            header('Location: ' . url('/leave'));
             exit;
         }
 
@@ -205,7 +205,7 @@ class LeaveController
         }
 
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Leave request submitted successfully'];
-        header('Location: /leave');
+        header('Location: ' . url('/leave'));
         exit;
     }
 
@@ -221,7 +221,7 @@ class LeaveController
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Unauthorized'], 401);
             }
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -255,7 +255,7 @@ class LeaveController
                 jsonResponse(['error' => 'Leave request is not pending'], 400);
             }
             $_SESSION['flash'] = ['type' => 'error', 'message' => 'Leave request is not pending'];
-            header('Location: /leave/pending');
+            header('Location: ' . url('/leave/pending'));
             exit;
         }
 
@@ -285,7 +285,7 @@ class LeaveController
             'type' => $success ? 'success' : 'error',
             'message' => $success ? 'Leave request approved' : 'Failed to approve leave request',
         ];
-        header('Location: /leave/pending');
+        header('Location: ' . url('/leave/pending'));
         exit;
     }
 
@@ -301,7 +301,7 @@ class LeaveController
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Unauthorized'], 401);
             }
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -335,7 +335,7 @@ class LeaveController
                 jsonResponse(['error' => 'Leave request is not pending'], 400);
             }
             $_SESSION['flash'] = ['type' => 'error', 'message' => 'Leave request is not pending'];
-            header('Location: /leave/pending');
+            header('Location: ' . url('/leave/pending'));
             exit;
         }
 
@@ -365,7 +365,7 @@ class LeaveController
             'type' => $success ? 'success' : 'error',
             'message' => $success ? 'Leave request denied' : 'Failed to deny leave request',
         ];
-        header('Location: /leave/pending');
+        header('Location: ' . url('/leave/pending'));
         exit;
     }
 
@@ -381,7 +381,7 @@ class LeaveController
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Unauthorized'], 401);
             }
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -431,7 +431,7 @@ class LeaveController
                 jsonResponse(['error' => 'Only pending requests can be cancelled'], 400);
             }
             $_SESSION['flash'] = ['type' => 'error', 'message' => 'Only pending requests can be cancelled'];
-            header('Location: /leave');
+            header('Location: ' . url('/leave'));
             exit;
         }
 
@@ -459,7 +459,7 @@ class LeaveController
             'type' => $success ? 'success' : 'error',
             'message' => $success ? 'Leave request cancelled' : 'Failed to cancel leave request',
         ];
-        header('Location: /leave');
+        header('Location: ' . url('/leave'));
         exit;
     }
 
