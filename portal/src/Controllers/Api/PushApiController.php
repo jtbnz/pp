@@ -12,8 +12,12 @@ class PushApiController
     private array $config;
     private PushService $pushService;
 
-    public function __construct(PDO $db, array $config)
+    public function __construct()
     {
+        global $db, $config;
+
+        require_once __DIR__ . '/../../Services/PushService.php';
+
         $this->db = $db;
         $this->config = $config;
         $this->pushService = new PushService($config['push'] ?? [], $db);
