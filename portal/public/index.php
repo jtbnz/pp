@@ -74,7 +74,7 @@ $router->group('/calendar', function(Router $router) {
     $router->put('/{id}', 'CalendarController@update');          // Admin only
     $router->post('/{id}', 'CalendarController@update');         // For form submission
     $router->delete('/{id}', 'CalendarController@destroy');      // Admin only
-    $router->get('/{id}/ics', 'CalendarController@ics');         // ICS export
+    $router->get('/{id}/ics', 'CalendarController@downloadIcs');  // ICS export
 }, ['middleware' => ['auth', 'csrf']]);
 
 // Notice routes (Phase 5) - Web interface
