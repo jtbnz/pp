@@ -37,17 +37,17 @@ ob_start();
     <section class="quick-actions mb-4">
         <h2>Quick Actions</h2>
         <div class="action-buttons">
-            <a href="/admin/members/invite" class="btn btn-primary">
+            <a href="<?= url('/admin/members/invite') ?>" class="btn btn-primary">
                 <span class="btn-icon">&#43;</span> Invite Member
             </a>
-            <a href="/admin/events/create" class="btn btn-secondary">
+            <a href="<?= url('/admin/events/create') ?>" class="btn btn-secondary">
                 <span class="btn-icon">&#128197;</span> Create Event
             </a>
-            <a href="/admin/notices/create" class="btn btn-secondary">
+            <a href="<?= url('/admin/notices/create') ?>" class="btn btn-secondary">
                 <span class="btn-icon">&#128240;</span> Create Notice
             </a>
             <?php if ($pendingLeaveCount > 0): ?>
-            <a href="/admin/leave?status=pending" class="btn btn-warning">
+            <a href="<?= url('/admin/leave?status=pending') ?>" class="btn btn-warning">
                 <span class="btn-icon">&#9989;</span> Review Leave (<?= $pendingLeaveCount ?>)
             </a>
             <?php endif; ?>
@@ -77,29 +77,29 @@ ob_start();
     <section class="admin-nav mt-4">
         <h2>Management</h2>
         <div class="admin-nav-grid">
-            <a href="/admin/members" class="admin-nav-item">
+            <a href="<?= url('/admin/members') ?>" class="admin-nav-item">
                 <span class="nav-icon">&#128100;</span>
                 <span class="nav-label">Members</span>
                 <span class="nav-count"><?= $stats['active_members'] ?></span>
             </a>
-            <a href="/admin/events" class="admin-nav-item">
+            <a href="<?= url('/admin/events') ?>" class="admin-nav-item">
                 <span class="nav-icon">&#128197;</span>
                 <span class="nav-label">Events</span>
                 <span class="nav-count"><?= $stats['upcoming_events'] ?></span>
             </a>
-            <a href="/admin/notices" class="admin-nav-item">
+            <a href="<?= url('/admin/notices') ?>" class="admin-nav-item">
                 <span class="nav-icon">&#128240;</span>
                 <span class="nav-label">Notices</span>
                 <span class="nav-count"><?= $stats['active_notices'] ?></span>
             </a>
-            <a href="/admin/leave" class="admin-nav-item">
+            <a href="<?= url('/admin/leave') ?>" class="admin-nav-item">
                 <span class="nav-icon">&#128198;</span>
                 <span class="nav-label">Leave</span>
                 <?php if ($pendingLeaveCount > 0): ?>
                 <span class="nav-count badge-warning"><?= $pendingLeaveCount ?></span>
                 <?php endif; ?>
             </a>
-            <a href="/admin/settings" class="admin-nav-item">
+            <a href="<?= url('/admin/settings') ?>" class="admin-nav-item">
                 <span class="nav-icon">&#9881;</span>
                 <span class="nav-label">Settings</span>
             </a>
