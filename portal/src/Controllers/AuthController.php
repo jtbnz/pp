@@ -294,7 +294,8 @@ class AuthController
         $this->clearActivationSession();
 
         // Redirect to home with welcome message
-        $_SESSION['flash_message'] = "Welcome to {$_SESSION['activation_brigade_name'] ?? 'the portal'}, {$name}!";
+        $brigadeName = $_SESSION['activation_brigade_name'] ?? 'the portal';
+        $_SESSION['flash_message'] = "Welcome to {$brigadeName}, {$name}!";
         $_SESSION['flash_type'] = 'success';
 
         header('Location: /');

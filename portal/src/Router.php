@@ -69,6 +69,11 @@ class Router
     {
         $fullPath = $this->groupPrefix . $path;
 
+        // Normalize the path: remove trailing slash (except for root)
+        if ($fullPath !== '/' && str_ends_with($fullPath, '/')) {
+            $fullPath = rtrim($fullPath, '/');
+        }
+
         // Convert path parameters to regex
         // {id} becomes (?P<id>[^/]+)
         $pattern = preg_replace('/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/', '(?P<$1>[^/]+)', $fullPath);

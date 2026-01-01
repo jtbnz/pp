@@ -64,6 +64,19 @@ $router->group('/members', function(Router $router) {
     $router->delete('/{id}/service-periods/{pid}', 'MemberController@deleteServicePeriod'); // Admin only
 }, ['middleware' => ['auth', 'csrf']]);
 
+// Calendar routes (Phase 4) - Web interface
+$router->group('/calendar', function(Router $router) {
+    $router->get('/', 'CalendarController@index');
+    $router->get('/create', 'CalendarController@create');        // Admin only
+    $router->post('/', 'CalendarController@store');              // Admin only
+    $router->get('/{id}', 'CalendarController@show');
+    $router->get('/{id}/edit', 'CalendarController@edit');       // Admin only
+    $router->put('/{id}', 'CalendarController@update');          // Admin only
+    $router->post('/{id}', 'CalendarController@update');         // For form submission
+    $router->delete('/{id}', 'CalendarController@destroy');      // Admin only
+    $router->get('/{id}/ics', 'CalendarController@ics');         // ICS export
+}, ['middleware' => ['auth', 'csrf']]);
+
 // Notice routes (Phase 5) - Web interface
 $router->group('/notices', function(Router $router) {
     $router->get('/', 'NoticeController@index');
@@ -74,6 +87,19 @@ $router->group('/notices', function(Router $router) {
     $router->put('/{id}', 'NoticeController@update');          // Admin only
     $router->post('/{id}', 'NoticeController@update');         // For form submission with _method=PUT
     $router->delete('/{id}', 'NoticeController@destroy');      // Admin only
+}, ['middleware' => ['auth', 'csrf']]);
+
+// Leave routes (Phase 6) - Web interface
+$router->group('/leave', function(Router $router) {
+    $router->get('/', 'LeaveController@index');
+    $router->post('/', 'LeaveController@store');
+    $router->get('/pending', 'LeaveController@pending');         // Officers only
+    $router->get('/{id}', 'LeaveController@show');
+    $router->put('/{id}/approve', 'LeaveController@approve');    // Officers only
+    $router->post('/{id}/approve', 'LeaveController@approve');   // For form submission
+    $router->put('/{id}/deny', 'LeaveController@deny');          // Officers only
+    $router->post('/{id}/deny', 'LeaveController@deny');         // For form submission
+    $router->delete('/{id}', 'LeaveController@destroy');
 }, ['middleware' => ['auth', 'csrf']]);
 
 // API routes (Protected - Phase 2+)
@@ -89,17 +115,17 @@ $router->group('/api', function(Router $router) {
     $router->put('/members/{id}/service-periods/{pid}', 'Api/MemberApiController@updateServicePeriod');
     $router->delete('/members/{id}/service-periods/{pid}', 'Api/MemberApiController@deleteServicePeriod');
 
-    // Events/Calendar
-    $router->get('/events', 'EventController@index');
-    $router->post('/events', 'EventController@store');
-    $router->get('/events/{id}', 'EventController@show');
-    $router->put('/events/{id}', 'EventController@update');
-    $router->delete('/events/{id}', 'EventController@destroy');
-    $router->get('/events/{id}/ics', 'EventController@ics');
+    // Events/Calendar (API)
+    $router->get('/events', 'Api/CalendarApiController@index');
+    $router->post('/events', 'Api/CalendarApiController@store');
+    $router->get('/events/{id}', 'Api/CalendarApiController@show');
+    $router->put('/events/{id}', 'Api/CalendarApiController@update');
+    $router->delete('/events/{id}', 'Api/CalendarApiController@destroy');
+    $router->get('/events/{id}/ics', 'Api/CalendarApiController@ics');
 
-    // Training nights
-    $router->get('/trainings', 'TrainingController@index');
-    $router->post('/trainings/generate', 'TrainingController@generate');
+    // Training nights (API)
+    $router->get('/trainings', 'Api/CalendarApiController@trainings');
+    $router->post('/trainings/generate', 'Api/CalendarApiController@generateTrainings');
 
     // Notices (API)
     $router->get('/notices', 'Api/NoticeApiController@index');
@@ -108,17 +134,17 @@ $router->group('/api', function(Router $router) {
     $router->put('/notices/{id}', 'Api/NoticeApiController@update');
     $router->delete('/notices/{id}', 'Api/NoticeApiController@destroy');
 
-    // Leave requests
-    $router->get('/leave', 'LeaveController@index');
-    $router->post('/leave', 'LeaveController@store');
-    $router->get('/leave/{id}', 'LeaveController@show');
-    $router->put('/leave/{id}/approve', 'LeaveController@approve');
-    $router->put('/leave/{id}/deny', 'LeaveController@deny');
-    $router->delete('/leave/{id}', 'LeaveController@destroy');
+    // Leave requests (API)
+    $router->get('/leave', 'Api/LeaveApiController@index');
+    $router->post('/leave', 'Api/LeaveApiController@store');
+    $router->get('/leave/{id}', 'Api/LeaveApiController@show');
+    $router->put('/leave/{id}/approve', 'Api/LeaveApiController@approve');
+    $router->put('/leave/{id}/deny', 'Api/LeaveApiController@deny');
+    $router->delete('/leave/{id}', 'Api/LeaveApiController@destroy');
 
-    // Push notifications
-    $router->post('/push/subscribe', 'PushController@subscribe');
-    $router->delete('/push/unsubscribe', 'PushController@unsubscribe');
+    // Push notifications (API)
+    $router->post('/push/subscribe', 'Api/PushApiController@subscribe');
+    $router->delete('/push/unsubscribe', 'Api/PushApiController@unsubscribe');
 
     // Sync with DLB
     $router->get('/sync/status', 'SyncController@status');
