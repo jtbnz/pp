@@ -93,14 +93,11 @@ ob_start();
                         <td class="member-name">
                             <strong><?= e($leave['member_name']) ?></strong>
                         </td>
-                        <td class="event-date">
+                        <td class="training-date">
                             <?php
-                            $eventDate = new DateTime($leave['event_date']);
+                            $trainingDate = new DateTime($leave['training_date']);
                             ?>
-                            <span class="date"><?= $eventDate->format('D, j M Y') ?></span>
-                            <?php if ($leave['event_title']): ?>
-                            <span class="event-title text-secondary"><?= e($leave['event_title']) ?></span>
-                            <?php endif; ?>
+                            <span class="date"><?= $trainingDate->format('D, j M Y') ?></span>
                         </td>
                         <td class="reason">
                             <?= e($leave['reason'] ?? 'No reason provided') ?>
@@ -109,14 +106,14 @@ ob_start();
                             <span class="badge badge-<?= e($leave['status']) ?>">
                                 <?= ucfirst(e($leave['status'])) ?>
                             </span>
-                            <?php if ($leave['status'] !== 'pending' && $leave['approver_name']): ?>
+                            <?php if ($leave['status'] !== 'pending' && !empty($leave['decided_by_name'])): ?>
                             <span class="approver text-secondary">
-                                by <?= e($leave['approver_name']) ?>
+                                by <?= e($leave['decided_by_name']) ?>
                             </span>
                             <?php endif; ?>
                         </td>
                         <td class="requested-date">
-                            <?= (new DateTime($leave['created_at']))->format('j M Y') ?>
+                            <?= (new DateTime($leave['requested_at']))->format('j M Y') ?>
                         </td>
                         <td class="actions">
                             <?php if ($leave['status'] === 'pending'): ?>
@@ -151,8 +148,8 @@ ob_start();
                 <div class="leave-card-body">
                     <div class="leave-detail">
                         <span class="label">Training:</span>
-                        <?php $eventDate = new DateTime($leave['event_date']); ?>
-                        <span class="value"><?= $eventDate->format('D, j M Y') ?></span>
+                        <?php $trainingDateMobile = new DateTime($leave['training_date']); ?>
+                        <span class="value"><?= $trainingDateMobile->format('D, j M Y') ?></span>
                     </div>
                     <?php if ($leave['reason']): ?>
                     <div class="leave-detail">
@@ -162,12 +159,12 @@ ob_start();
                     <?php endif; ?>
                     <div class="leave-detail">
                         <span class="label">Requested:</span>
-                        <span class="value"><?= (new DateTime($leave['created_at']))->format('j M Y') ?></span>
+                        <span class="value"><?= (new DateTime($leave['requested_at']))->format('j M Y') ?></span>
                     </div>
-                    <?php if ($leave['status'] !== 'pending' && $leave['approver_name']): ?>
+                    <?php if ($leave['status'] !== 'pending' && !empty($leave['decided_by_name'])): ?>
                     <div class="leave-detail">
                         <span class="label"><?= ucfirst(e($leave['status'])) ?> by:</span>
-                        <span class="value"><?= e($leave['approver_name']) ?></span>
+                        <span class="value"><?= e($leave['decided_by_name']) ?></span>
                     </div>
                     <?php endif; ?>
                 </div>

@@ -158,7 +158,7 @@ class AdminController
         $accessExpires = date('Y-m-d H:i:s', strtotime('+5 years'));
 
         try {
-            // Create member
+            // Create member with pending status
             $memberId = $this->memberModel->create([
                 'brigade_id' => $brigadeId,
                 'email' => $email,
@@ -184,13 +184,14 @@ class AdminController
             $inviteExpires = date('Y-m-d H:i:s', strtotime('+7 days'));
 
             $stmtToken = $this->db->prepare("
-                INSERT INTO invite_tokens (brigade_id, member_id, token_hash, expires_at, created_by)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO invite_tokens (brigade_id, email, token_hash, role, expires_at, created_by)
+                VALUES (?, ?, ?, ?, ?, ?)
             ");
             $stmtToken->execute([
                 $brigadeId,
-                $memberId,
+                $email,
                 $tokenHash,
+                $role,
                 $inviteExpires,
                 $user['id']
             ]);
@@ -655,15 +656,14 @@ class AdminController
 
         // Query leave requests
         $sql = "
-            SELECT lr.*, m.name as member_name, e.title as event_title, e.start_time as event_date,
-                   am.name as approver_name
+            SELECT lr.*, m.name as member_name,
+                   d.name as decided_by_name
             FROM leave_requests lr
             JOIN members m ON lr.member_id = m.id
-            JOIN events e ON lr.event_id = e.id
-            LEFT JOIN members am ON lr.approved_by = am.id
+            LEFT JOIN members d ON lr.decided_by = d.id
             WHERE m.brigade_id = ?
-            AND DATE(e.start_time) >= ?
-            AND DATE(e.start_time) <= ?
+            AND lr.training_date >= ?
+            AND lr.training_date <= ?
         ";
 
         $params = [$brigadeId, $from, $to];
@@ -673,7 +673,7 @@ class AdminController
             $params[] = $status;
         }
 
-        $sql .= " ORDER BY e.start_time ASC, lr.created_at DESC";
+        $sql .= " ORDER BY lr.training_date ASC, lr.requested_at DESC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
