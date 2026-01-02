@@ -33,7 +33,7 @@
 
     /* Colors - Neutrals */
     --color-text: #212121;
-    --color-text-secondary: #757575;
+    --color-text-secondary: #616161; /* Improved from #757575 for WCAG AA contrast on light backgrounds */
     --color-text-disabled: #9E9E9E;
     --color-text-inverse: #FFFFFF;
     --color-background: #FAFAFA;

@@ -636,4 +636,53 @@ class AuthController
 
         return mail($to, $subject, $body, $headerString);
     }
+
+    /**
+     * Test login - Only works when APP_ENV=testing
+     * Allows automated tests to authenticate directly without going through magic links
+     * GET /auth/test-login?user_id=1
+     */
+    public function testLogin(): void
+    {
+        // Security: Only allow this in testing environment
+        if (getenv('APP_ENV') !== 'testing') {
+            http_response_code(404);
+            echo 'Not Found';
+            return;
+        }
+
+        $userId = (int)($_GET['user_id'] ?? 0);
+
+        if ($userId <= 0) {
+            http_response_code(400);
+            echo 'Bad Request: user_id required';
+            return;
+        }
+
+        // Get the user
+        $member = $this->memberModel->findById($userId);
+
+        if (!$member) {
+            http_response_code(404);
+            echo 'User not found';
+            return;
+        }
+
+        // Log them in directly
+        $this->loginMember($member);
+
+        // Log the test login
+        $this->authService->logAudit(
+            'member.test_login',
+            $member['brigade_id'],
+            $member['id'],
+            'member',
+            $member['id'],
+            ['method' => 'test_login']
+        );
+
+        // Redirect to home
+        header('Location: ' . url('/'));
+        exit;
+    }
 }

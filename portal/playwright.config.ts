@@ -37,8 +37,8 @@ export default defineConfig({
 
   // Shared settings for all projects
   use: {
-    // Base URL for tests
-    baseURL: 'http://localhost:8080',
+    // Base URL for tests - uses /pp subdirectory to match production deployment
+    baseURL: 'http://localhost:8080/pp',
 
     // Collect trace on failure
     trace: 'on-first-retry',
@@ -65,10 +65,11 @@ export default defineConfig({
     },
   ],
 
-  // Web server configuration - start PHP server before tests
+  // Web server configuration - start PHP server with testing config
+  // Uses router.php to simulate /pp subdirectory deployment
   webServer: {
-    command: 'cd /Users/jon/Documents/GitHub/pp/portal && php -S localhost:8080 -t public',
-    url: 'http://localhost:8080',
+    command: 'cd /Users/jon/Documents/GitHub/pp/portal && APP_ENV=testing php -S localhost:8080 tests/router.php',
+    url: 'http://localhost:8080/pp/health',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     stdout: 'pipe',

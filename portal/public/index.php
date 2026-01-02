@@ -134,6 +134,8 @@ $router->group('/auth', function(Router $router) {
     $router->post('/pin', 'AuthController@pinLogin');
     $router->get('/magic-link', 'AuthController@requestMagicLink');
     $router->post('/logout', 'AuthController@logout');
+    // Test-only route for automated testing (only works when APP_ENV=testing)
+    $router->get('/test-login', 'AuthController@testLogin');
 });
 
 // Member routes (Phase 3) - Web interface
