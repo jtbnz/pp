@@ -123,6 +123,13 @@ const App = {
      * Show update available notification
      */
     showUpdateNotification() {
+        // Don't show update notification if we already showed it this session
+        // or if we're in development mode with "Update on reload" enabled
+        if (sessionStorage.getItem('swUpdateShown')) {
+            this.log('Update notification already shown this session');
+            return;
+        }
+
         const toast = this.showToast(
             'A new version is available. Tap to update.',
             'info',
@@ -134,6 +141,8 @@ const App = {
             toast.addEventListener('click', () => {
                 this.applySwUpdate();
             });
+            // Mark that we've shown the notification this session
+            sessionStorage.setItem('swUpdateShown', 'true');
         }
     },
 
