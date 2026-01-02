@@ -94,13 +94,18 @@ spl_autoload_register(function (string $class): void {
     }
 });
 
-// Load configuration
-$configFile = __DIR__ . '/../config/config.php';
-if (!file_exists($configFile)) {
-    // Fall back to example config for initial setup
-    $configFile = __DIR__ . '/../config/config.example.php';
+// Load configuration based on APP_ENV environment variable
+$appEnv = getenv('APP_ENV') ?: 'production';
+if ($appEnv === 'testing' && file_exists(__DIR__ . '/../config/config.testing.php')) {
+    $configFile = __DIR__ . '/../config/config.testing.php';
+} else {
+    $configFile = __DIR__ . '/../config/config.php';
     if (!file_exists($configFile)) {
-        throw new RuntimeException('Configuration file not found. Copy config.example.php to config.php');
+        // Fall back to example config for initial setup
+        $configFile = __DIR__ . '/../config/config.example.php';
+        if (!file_exists($configFile)) {
+            throw new RuntimeException('Configuration file not found. Copy config.example.php to config.php');
+        }
     }
 }
 
