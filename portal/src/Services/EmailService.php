@@ -489,12 +489,13 @@ HTML;
         $fromName = $emailConfig['from_name'] ?? 'Puke Portal';
 
         // Build the protocol prefix
+        // For TLS (STARTTLS), connect without encryption first, then upgrade
+        // For SSL (implicit), connect with ssl:// prefix directly
         $protocol = '';
         if ($encryption === 'ssl') {
             $protocol = 'ssl://';
-        } elseif ($encryption === 'tls') {
-            $protocol = 'tls://';
         }
+        // For 'tls', we connect without encryption and use STARTTLS later
 
         // Connect to SMTP server
         $context = stream_context_create([
@@ -525,10 +526,12 @@ HTML;
             // EHLO
             $this->smtpCommand($socket, 'EHLO ' . gethostname());
 
-            // Start TLS if using tls encryption (and not already ssl)
-            if ($encryption === 'tls' && !str_starts_with($protocol, 'ssl')) {
+            // Start TLS if using tls encryption (STARTTLS)
+            if ($encryption === 'tls') {
                 $this->smtpCommand($socket, 'STARTTLS');
-                stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT)) {
+                    throw new \Exception('Failed to enable TLS encryption');
+                }
                 $this->smtpCommand($socket, 'EHLO ' . gethostname());
             }
 
