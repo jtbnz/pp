@@ -1,0 +1,17 @@
+{
+  "name": "puke-portal-tests",
+  "version": "1.0.0",
+  "description": "E2E tests for Puke Fire Portal",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "test:chrome": "playwright test --project=chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@axe-core/playwright": "^4.8.0"
+  }
+}

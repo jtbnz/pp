@@ -6,6 +6,7 @@
 
 # Local config (contains secrets)
 config/config.php
+config/config.testing.php
 
 # =============================================================================
 # Database
@@ -106,8 +107,14 @@ sess_*
 /coverage/
 .phpunit.cache/
 
+# Playwright
+tests/e2e-report/
+tests/e2e-artifacts/
+tests/e2e-results.json
+
 # Test databases
 tests/*.db
+data/test-*.db
 
 # =============================================================================
 # Build & Deploy
