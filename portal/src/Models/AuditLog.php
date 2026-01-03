@@ -32,9 +32,11 @@ class AuditLog
      */
     public function log(int $brigadeId, ?int $memberId, string $action, array $details): int
     {
+        $nowUtc = nowUtc();
+
         $sql = "
             INSERT INTO audit_log (brigade_id, member_id, action, details, created_at, ip_address, user_agent)
-            VALUES (?, ?, ?, ?, datetime('now', 'localtime'), ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ";
 
         $stmt = $this->db->prepare($sql);
@@ -43,6 +45,7 @@ class AuditLog
             $memberId,
             $action,
             json_encode($details),
+            $nowUtc,
             $_SERVER['REMOTE_ADDR'] ?? null,
             $_SERVER['HTTP_USER_AGENT'] ?? null
         ]);

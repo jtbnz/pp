@@ -47,6 +47,7 @@ class AuthService
     public function verifyToken(string $token): ?array
     {
         $tokenHash = $this->hashToken($token);
+        $nowUtc = nowUtc();
 
         $stmt = $this->db->prepare('
             SELECT it.*, b.name as brigade_name, b.slug as brigade_slug
@@ -54,9 +55,9 @@ class AuthService
             JOIN brigades b ON b.id = it.brigade_id
             WHERE it.token_hash = ?
               AND it.used_at IS NULL
-              AND it.expires_at > datetime("now")
+              AND it.expires_at > ?
         ');
-        $stmt->execute([$tokenHash]);
+        $stmt->execute([$tokenHash, $nowUtc]);
         $result = $stmt->fetch();
 
         return $result ?: null;
@@ -73,9 +74,9 @@ class AuthService
         // Generate secure session ID
         $sessionId = bin2hex(random_bytes(64));
 
-        // Session expires in 24 hours
+        // Session expires in 24 hours - store in UTC
         $sessionTimeout = $this->config['session']['timeout'] ?? 86400;
-        $expiresAt = date('Y-m-d H:i:s', time() + $sessionTimeout);
+        $expiresAt = gmdate('Y-m-d H:i:s', time() + $sessionTimeout);
 
         // Store session
         $stmt = $this->db->prepare('
@@ -90,9 +91,10 @@ class AuthService
             $expiresAt
         ]);
 
-        // Update member's last login
-        $stmt = $this->db->prepare('UPDATE members SET last_login_at = datetime("now") WHERE id = ?');
-        $stmt->execute([$memberId]);
+        // Update member's last login in UTC
+        $nowUtc = nowUtc();
+        $stmt = $this->db->prepare('UPDATE members SET last_login_at = ? WHERE id = ?');
+        $stmt->execute([$nowUtc, $memberId]);
 
         return $sessionId;
     }
@@ -105,15 +107,17 @@ class AuthService
      */
     public function verifySession(string $sessionId): ?array
     {
+        $nowUtc = nowUtc();
+
         $stmt = $this->db->prepare('
             SELECT s.*, m.id as member_id, m.email, m.name, m.role, m.status, m.brigade_id
             FROM sessions s
             JOIN members m ON m.id = s.member_id
             WHERE s.id = ?
-              AND s.expires_at > datetime("now")
+              AND s.expires_at > ?
               AND m.status = "active"
         ');
-        $stmt->execute([$sessionId]);
+        $stmt->execute([$sessionId, $nowUtc]);
         $result = $stmt->fetch();
 
         return $result ?: null;
@@ -128,7 +132,8 @@ class AuthService
     public function refreshSession(string $sessionId): bool
     {
         $sessionTimeout = $this->config['session']['timeout'] ?? 86400;
-        $expiresAt = date('Y-m-d H:i:s', time() + $sessionTimeout);
+        // Store in UTC
+        $expiresAt = gmdate('Y-m-d H:i:s', time() + $sessionTimeout);
 
         $stmt = $this->db->prepare('UPDATE sessions SET expires_at = ? WHERE id = ?');
         return $stmt->execute([$expiresAt, $sessionId]);
@@ -153,8 +158,9 @@ class AuthService
      */
     public function cleanupExpiredSessions(): int
     {
-        $stmt = $this->db->prepare('DELETE FROM sessions WHERE expires_at < datetime("now")');
-        $stmt->execute();
+        $nowUtc = nowUtc();
+        $stmt = $this->db->prepare('DELETE FROM sessions WHERE expires_at < ?');
+        $stmt->execute([$nowUtc]);
         return $stmt->rowCount();
     }
 
@@ -265,20 +271,21 @@ class AuthService
         $record = $stmt->fetch();
 
         if (!$record) {
-            // First attempt
+            // First attempt - store in UTC
+            $nowUtc = nowUtc();
             $stmt = $this->db->prepare('
                 INSERT INTO rate_limits (key, attempts, first_attempt_at)
-                VALUES (?, 1, datetime("now"))
+                VALUES (?, 1, ?)
             ');
-            $stmt->execute([$key]);
+            $stmt->execute([$key, $nowUtc]);
         } else {
             // Increment attempts
             $newAttempts = $record['attempts'] + 1;
             $lockedUntil = null;
 
-            // Lock if over limit
+            // Lock if over limit - store in UTC
             if ($newAttempts >= $maxAttempts) {
-                $lockedUntil = date('Y-m-d H:i:s', time() + ($lockoutMinutes * 60));
+                $lockedUntil = gmdate('Y-m-d H:i:s', time() + ($lockoutMinutes * 60));
             }
 
             $stmt = $this->db->prepare('
@@ -318,7 +325,8 @@ class AuthService
             return 0;
         }
 
-        $remaining = strtotime($record['locked_until']) - time();
+        // locked_until is stored in UTC, compare with current UTC time
+        $remaining = strtotime($record['locked_until'] . ' UTC') - time();
         return max(0, $remaining);
     }
 
@@ -337,7 +345,8 @@ class AuthService
         $tokenHash = $this->hashToken($token);
 
         $expiryDays = $this->config['auth']['invite_expiry_days'] ?? 7;
-        $expiresAt = date('Y-m-d H:i:s', time() + ($expiryDays * 86400));
+        // Store expiry in UTC
+        $expiresAt = gmdate('Y-m-d H:i:s', time() + ($expiryDays * 86400));
 
         $stmt = $this->db->prepare('
             INSERT INTO invite_tokens (brigade_id, email, token_hash, role, expires_at, created_by)
@@ -356,8 +365,9 @@ class AuthService
      */
     public function markTokenUsed(int $tokenId): bool
     {
-        $stmt = $this->db->prepare('UPDATE invite_tokens SET used_at = datetime("now") WHERE id = ?');
-        return $stmt->execute([$tokenId]);
+        $nowUtc = nowUtc();
+        $stmt = $this->db->prepare('UPDATE invite_tokens SET used_at = ? WHERE id = ?');
+        return $stmt->execute([$nowUtc, $tokenId]);
     }
 
     /**
