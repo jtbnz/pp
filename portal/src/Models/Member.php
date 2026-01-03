@@ -284,7 +284,7 @@ class Member
         $params = [];
 
         $allowedFields = [
-            'name', 'phone', 'role', 'rank', 'rank_date', 'status',
+            'name', 'email', 'phone', 'role', 'rank', 'rank_date', 'status',
             'access_token', 'access_expires', 'pin_hash', 'push_subscription',
             'last_login_at'
         ];

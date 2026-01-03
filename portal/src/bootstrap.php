@@ -314,5 +314,59 @@ function timeAgo(string $datetime): string
     }
 }
 
+/**
+ * Convert a local datetime string to UTC for database storage.
+ * Input is assumed to be in Pacific/Auckland timezone.
+ *
+ * @param string|null $localDatetime Local datetime string (Y-m-d H:i:s or similar)
+ * @return string|null UTC datetime string (Y-m-d H:i:s)
+ */
+function toUtc(?string $localDatetime): ?string
+{
+    if (empty($localDatetime)) {
+        return null;
+    }
+
+    $tz = new DateTimeZone('Pacific/Auckland');
+    $utcTz = new DateTimeZone('UTC');
+
+    $dt = new DateTime($localDatetime, $tz);
+    $dt->setTimezone($utcTz);
+
+    return $dt->format('Y-m-d H:i:s');
+}
+
+/**
+ * Convert a UTC datetime string from database to local time for display.
+ *
+ * @param string|null $utcDatetime UTC datetime string
+ * @param string $format Output format (default: Y-m-d H:i:s)
+ * @return string|null Local datetime string
+ */
+function fromUtc(?string $utcDatetime, string $format = 'Y-m-d H:i:s'): ?string
+{
+    if (empty($utcDatetime)) {
+        return null;
+    }
+
+    $utcTz = new DateTimeZone('UTC');
+    $localTz = new DateTimeZone('Pacific/Auckland');
+
+    $dt = new DateTime($utcDatetime, $utcTz);
+    $dt->setTimezone($localTz);
+
+    return $dt->format($format);
+}
+
+/**
+ * Get current UTC datetime for database storage.
+ *
+ * @return string UTC datetime string (Y-m-d H:i:s)
+ */
+function nowUtc(): string
+{
+    return gmdate('Y-m-d H:i:s');
+}
+
 // Include the Router class
 require_once __DIR__ . '/Router.php';

@@ -354,6 +354,7 @@ class AdminController
 
         // Validate input
         $name = trim($_POST['name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '') ?: null;
         $role = $_POST['role'] ?? $member['role'];
         $rank = $_POST['rank'] ?? null;
@@ -363,6 +364,18 @@ class AdminController
 
         if (empty($name)) {
             $errors['name'] = 'Name is required';
+        }
+
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Valid email address is required';
+        }
+
+        // Check if email already exists for another member in the brigade
+        if (empty($errors['email']) && strtolower($email) !== strtolower($member['email'])) {
+            $existing = $this->memberModel->findByEmail($email, $brigadeId);
+            if ($existing && $existing['id'] !== $memberId) {
+                $errors['email'] = 'A member with this email already exists';
+            }
         }
 
         if (!in_array($role, Member::getValidRoles(), true)) {
@@ -397,6 +410,7 @@ class AdminController
             // Track changes for audit log
             $changes = [];
             if ($name !== $member['name']) $changes['name'] = ['from' => $member['name'], 'to' => $name];
+            if (strtolower($email) !== strtolower($member['email'])) $changes['email'] = ['from' => $member['email'], 'to' => $email];
             if ($role !== $member['role']) $changes['role'] = ['from' => $member['role'], 'to' => $role];
             if ($rank !== $member['rank']) $changes['rank'] = ['from' => $member['rank'], 'to' => $rank];
             if ($status !== $member['status']) $changes['status'] = ['from' => $member['status'], 'to' => $status];
@@ -404,6 +418,7 @@ class AdminController
             // Update member
             $this->memberModel->update($memberId, [
                 'name' => $name,
+                'email' => $email,
                 'phone' => $phone,
                 'role' => $role,
                 'rank' => $rank !== '' ? $rank : null,

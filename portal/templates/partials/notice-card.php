@@ -18,20 +18,22 @@ $showActions = $showActions ?? false;
 $linkToDetail = $linkToDetail ?? true;
 
 // Calculate remaining time for timed notices
+// Dates in DB are stored in UTC, so compare against UTC time
 $remainingSeconds = null;
 if ($notice['type'] === 'timed' && !empty($notice['display_to'])) {
-    $expiresAt = strtotime($notice['display_to']);
-    $remaining = $expiresAt - time();
+    $expiresAtUtc = strtotime($notice['display_to']);
+    $nowUtc = strtotime(nowUtc());
+    $remaining = $expiresAtUtc - $nowUtc;
     $remainingSeconds = $remaining > 0 ? $remaining : null;
 }
 
-// Check if notice is currently active
+// Check if notice is currently active (dates are stored in UTC)
 $isActive = true;
-$now = time();
-if (!empty($notice['display_from']) && strtotime($notice['display_from']) > $now) {
+$nowUtc = strtotime(nowUtc());
+if (!empty($notice['display_from']) && strtotime($notice['display_from']) > $nowUtc) {
     $isActive = false;
 }
-if (!empty($notice['display_to']) && strtotime($notice['display_to']) < $now) {
+if (!empty($notice['display_to']) && strtotime($notice['display_to']) < $nowUtc) {
     $isActive = false;
 }
 

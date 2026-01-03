@@ -84,13 +84,14 @@ ob_start();
                     <div class="notice-badges">
                         <span class="badge badge-<?= e($notice['type']) ?>"><?= ucfirst(e($notice['type'])) ?></span>
                         <?php
-                        $now = new DateTime();
-                        $displayFrom = $notice['display_from'] ? new DateTime($notice['display_from']) : null;
-                        $displayTo = $notice['display_to'] ? new DateTime($notice['display_to']) : null;
+                        // Compare against UTC since dates are stored in UTC
+                        $nowUtc = new DateTime(nowUtc(), new DateTimeZone('UTC'));
+                        $displayFromUtc = $notice['display_from'] ? new DateTime($notice['display_from'], new DateTimeZone('UTC')) : null;
+                        $displayToUtc = $notice['display_to'] ? new DateTime($notice['display_to'], new DateTimeZone('UTC')) : null;
 
-                        if ($displayFrom && $displayFrom > $now): ?>
+                        if ($displayFromUtc && $displayFromUtc > $nowUtc): ?>
                             <span class="badge badge-scheduled">Scheduled</span>
-                        <?php elseif ($displayTo && $displayTo < $now): ?>
+                        <?php elseif ($displayToUtc && $displayToUtc < $nowUtc): ?>
                             <span class="badge badge-expired">Expired</span>
                         <?php else: ?>
                             <span class="badge badge-active">Active</span>
@@ -111,14 +112,14 @@ ob_start();
                 <p class="notice-excerpt"><?= e(substr(strip_tags($notice['content']), 0, 150)) ?><?= strlen($notice['content']) > 150 ? '...' : '' ?></p>
                 <?php endif; ?>
                 <div class="notice-meta">
-                    <span class="notice-date">Created <?= (new DateTime($notice['created_at']))->format('j M Y') ?></span>
+                    <span class="notice-date">Created <?= fromUtc($notice['created_at'], 'j M Y') ?></span>
                     <?php if ($notice['display_from'] || $notice['display_to']): ?>
                     <span class="notice-schedule">
                         <?php if ($notice['display_from']): ?>
-                            From <?= (new DateTime($notice['display_from']))->format('j M') ?>
+                            From <?= fromUtc($notice['display_from'], 'j M') ?>
                         <?php endif; ?>
                         <?php if ($notice['display_to']): ?>
-                            until <?= (new DateTime($notice['display_to']))->format('j M') ?>
+                            until <?= fromUtc($notice['display_to'], 'j M') ?>
                         <?php endif; ?>
                     </span>
                     <?php endif; ?>

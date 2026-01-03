@@ -29,13 +29,13 @@ if (isset($_SESSION['flash'])) {
     unset($_SESSION['flash']);
 }
 
-// Check if notice is currently active
+// Check if notice is currently active (dates are stored in UTC)
 $isActive = true;
-$now = time();
-if (!empty($notice['display_from']) && strtotime($notice['display_from']) > $now) {
+$nowUtc = strtotime(nowUtc());
+if (!empty($notice['display_from']) && strtotime($notice['display_from']) > $nowUtc) {
     $isActive = false;
 }
-if (!empty($notice['display_to']) && strtotime($notice['display_to']) < $now) {
+if (!empty($notice['display_to']) && strtotime($notice['display_to']) < $nowUtc) {
     $isActive = false;
 }
 

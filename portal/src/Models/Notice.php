@@ -31,13 +31,16 @@ class Notice
      */
     public function findActive(int $brigadeId): array
     {
+        // Use current UTC time for comparison since dates are stored in UTC
+        $nowUtc = nowUtc();
+
         $sql = "
             SELECT n.*, m.name as author_name
             FROM notices n
             LEFT JOIN members m ON n.author_id = m.id
             WHERE n.brigade_id = ?
-                AND (n.display_from IS NULL OR n.display_from <= datetime('now', 'localtime'))
-                AND (n.display_to IS NULL OR n.display_to >= datetime('now', 'localtime'))
+                AND (n.display_from IS NULL OR n.display_from <= ?)
+                AND (n.display_to IS NULL OR n.display_to >= ?)
             ORDER BY
                 CASE WHEN n.type = 'sticky' THEN 0 ELSE 1 END,
                 CASE WHEN n.type = 'urgent' THEN 0 ELSE 1 END,
@@ -45,7 +48,7 @@ class Notice
         ";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([$brigadeId]);
+        $stmt->execute([$brigadeId, $nowUtc, $nowUtc]);
 
         return $stmt->fetchAll();
     }
@@ -104,10 +107,11 @@ class Notice
             $params[] = $searchTerm;
         }
 
-        // Filter active only
+        // Filter active only - use UTC for comparison
         if (!empty($filters['active_only'])) {
-            $sql .= " AND (n.display_from IS NULL OR n.display_from <= datetime('now', 'localtime'))";
-            $sql .= " AND (n.display_to IS NULL OR n.display_to >= datetime('now', 'localtime'))";
+            $nowUtc = nowUtc();
+            $sql .= " AND (n.display_from IS NULL OR n.display_from <= '{$nowUtc}')";
+            $sql .= " AND (n.display_to IS NULL OR n.display_to >= '{$nowUtc}')";
         }
 
         // Order by: sticky first, then urgent, then by created_at desc
@@ -159,8 +163,9 @@ class Notice
         }
 
         if (!empty($filters['active_only'])) {
-            $sql .= " AND (display_from IS NULL OR display_from <= datetime('now', 'localtime'))";
-            $sql .= " AND (display_to IS NULL OR display_to >= datetime('now', 'localtime'))";
+            $nowUtc = nowUtc();
+            $sql .= " AND (display_from IS NULL OR display_from <= '{$nowUtc}')";
+            $sql .= " AND (display_to IS NULL OR display_to >= '{$nowUtc}')";
         }
 
         $stmt = $this->db->prepare($sql);
@@ -177,9 +182,15 @@ class Notice
      */
     public function create(array $data): int
     {
+        $nowUtc = nowUtc();
+
+        // Convert display dates from local time to UTC for storage
+        $displayFrom = isset($data['display_from']) ? toUtc($data['display_from']) : null;
+        $displayTo = isset($data['display_to']) ? toUtc($data['display_to']) : null;
+
         $sql = "
             INSERT INTO notices (brigade_id, title, content, type, display_from, display_to, author_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ";
 
         $stmt = $this->db->prepare($sql);
@@ -188,9 +199,11 @@ class Notice
             $data['title'],
             $data['content'] ?? null,
             $data['type'] ?? 'standard',
-            $data['display_from'] ?? null,
-            $data['display_to'] ?? null,
+            $displayFrom,
+            $displayTo,
             $data['author_id'] ?? null,
+            $nowUtc,
+            $nowUtc,
         ]);
 
         return (int)$this->db->lastInsertId();
@@ -213,7 +226,12 @@ class Notice
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "{$field} = ?";
-                $params[] = $data[$field];
+                // Convert display dates from local time to UTC for storage
+                if (($field === 'display_from' || $field === 'display_to') && $data[$field] !== null) {
+                    $params[] = toUtc($data[$field]);
+                } else {
+                    $params[] = $data[$field];
+                }
             }
         }
 
@@ -258,23 +276,27 @@ class Notice
 
     /**
      * Check if a notice is currently active (visible)
+     * Dates stored in DB are UTC, so we compare against current UTC time.
      *
      * @param array $notice
      * @return bool
      */
     public function isActive(array $notice): bool
     {
-        $now = time();
+        // Current UTC timestamp
+        $nowUtc = strtotime(nowUtc());
 
-        $fromOk = empty($notice['display_from']) || strtotime($notice['display_from']) <= $now;
-        $toOk = empty($notice['display_to']) || strtotime($notice['display_to']) >= $now;
+        // Stored dates are in UTC
+        $fromOk = empty($notice['display_from']) || strtotime($notice['display_from']) <= $nowUtc;
+        $toOk = empty($notice['display_to']) || strtotime($notice['display_to']) >= $nowUtc;
 
         return $fromOk && $toOk;
     }
 
     /**
      * Get the remaining time for a timed notice in seconds
-     * Returns null if no expiry or already expired
+     * Returns null if no expiry or already expired.
+     * Dates stored in DB are UTC.
      *
      * @param array $notice
      * @return int|null Seconds remaining, or null
@@ -285,8 +307,10 @@ class Notice
             return null;
         }
 
-        $expiresAt = strtotime($notice['display_to']);
-        $remaining = $expiresAt - time();
+        // Stored date is UTC, compare with current UTC time
+        $expiresAtUtc = strtotime($notice['display_to']);
+        $nowUtc = strtotime(nowUtc());
+        $remaining = $expiresAtUtc - $nowUtc;
 
         return $remaining > 0 ? $remaining : null;
     }

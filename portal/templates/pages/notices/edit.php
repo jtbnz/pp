@@ -17,14 +17,14 @@ $pageTitle = $pageTitle ?? 'Edit Notice';
 $appName = $config['app_name'] ?? 'Puke Portal';
 $appUrl = $config['app_url'] ?? '';
 
-// Format datetime values for input
+// Format datetime values for input (convert from UTC stored in DB to local time)
 $displayFrom = '';
 if (!empty($notice['display_from'])) {
-    $displayFrom = date('Y-m-d\TH:i', strtotime($notice['display_from']));
+    $displayFrom = fromUtc($notice['display_from'], 'Y-m-d\TH:i');
 }
 $displayTo = '';
 if (!empty($notice['display_to'])) {
-    $displayTo = date('Y-m-d\TH:i', strtotime($notice['display_to']));
+    $displayTo = fromUtc($notice['display_to'], 'Y-m-d\TH:i');
 }
 
 // Start output buffering for content

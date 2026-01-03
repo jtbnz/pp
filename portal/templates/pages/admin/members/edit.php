@@ -77,10 +77,13 @@ ob_start();
                 <?php endif; ?>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Email Address</label>
-                <input type="email" class="form-input" value="<?= e($member['email']) ?>" disabled>
-                <span class="form-hint">Email cannot be changed</span>
+            <div class="form-group <?= isset($formErrors['email']) ? 'has-error' : '' ?>">
+                <label for="email" class="form-label">Email Address *</label>
+                <input type="email" id="email" name="email" class="form-input"
+                       value="<?= e($memberData['email'] ?? '') ?>" required>
+                <?php if (isset($formErrors['email'])): ?>
+                <span class="form-error"><?= e($formErrors['email']) ?></span>
+                <?php endif; ?>
             </div>
 
             <div class="form-group">
