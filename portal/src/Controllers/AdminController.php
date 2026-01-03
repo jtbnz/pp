@@ -178,10 +178,10 @@ class AdminController
                 'role' => $role
             ]);
 
-            // Create invite token
+            // Create invite token - store expiry in UTC
             $inviteToken = bin2hex(random_bytes(32));
             $tokenHash = hash('sha256', $inviteToken);
-            $inviteExpires = date('Y-m-d H:i:s', strtotime('+7 days'));
+            $inviteExpires = gmdate('Y-m-d H:i:s', time() + (7 * 86400));
 
             $stmtToken = $this->db->prepare("
                 INSERT INTO invite_tokens (brigade_id, email, token_hash, role, expires_at, created_by)

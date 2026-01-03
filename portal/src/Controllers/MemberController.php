@@ -245,10 +245,10 @@ class MemberController
                 'access_expires' => $accessExpires
             ]);
 
-            // Create invite token for magic link
+            // Create invite token for magic link - store expiry in UTC
             $inviteToken = bin2hex(random_bytes(32));
             $tokenHash = hash('sha256', $inviteToken);
-            $inviteExpires = (new DateTimeImmutable('+7 days'))->format('Y-m-d H:i:s');
+            $inviteExpires = gmdate('Y-m-d H:i:s', time() + (7 * 86400));
 
             $stmt = $this->db->prepare('
                 INSERT INTO invite_tokens (brigade_id, email, token_hash, role, expires_at, created_by)

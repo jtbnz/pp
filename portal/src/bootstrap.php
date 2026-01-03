@@ -296,9 +296,13 @@ function asset(string $path): string
 // Assumes input datetime is stored in UTC
 function timeAgo(string $datetime): string
 {
-    // Parse the stored UTC time and get current UTC time for comparison
-    $timeUtc = strtotime($datetime . ' UTC');
-    $nowUtc = time(); // time() returns UTC timestamp
+    // Parse the stored UTC time explicitly
+    $utcTz = new DateTimeZone('UTC');
+    $dt = new DateTime($datetime, $utcTz);
+    $timeUtc = $dt->getTimestamp();
+
+    // Get current UTC timestamp
+    $nowUtc = time();
 
     $diff = $nowUtc - $timeUtc;
 
