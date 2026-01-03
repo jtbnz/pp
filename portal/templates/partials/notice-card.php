@@ -121,25 +121,27 @@ if (!$isActive) {
 /**
  * Format countdown time
  */
-function formatCountdown(int $seconds): string
-{
-    if ($seconds < 60) {
-        return $seconds . 's';
-    }
+if (!function_exists('formatCountdown')) {
+    function formatCountdown(int $seconds): string
+    {
+        if ($seconds < 60) {
+            return $seconds . 's';
+        }
 
-    if ($seconds < 3600) {
-        $minutes = (int)floor($seconds / 60);
-        return $minutes . 'm';
-    }
+        if ($seconds < 3600) {
+            $minutes = (int)floor($seconds / 60);
+            return $minutes . 'm';
+        }
 
-    if ($seconds < 86400) {
-        $hours = (int)floor($seconds / 3600);
-        $minutes = (int)floor(($seconds % 3600) / 60);
-        return $hours . 'h ' . $minutes . 'm';
-    }
+        if ($seconds < 86400) {
+            $hours = (int)floor($seconds / 3600);
+            $minutes = (int)floor(($seconds % 3600) / 60);
+            return $hours . 'h ' . $minutes . 'm';
+        }
 
-    $days = (int)floor($seconds / 86400);
-    $hours = (int)floor(($seconds % 86400) / 3600);
-    return $days . 'd ' . $hours . 'h';
+        $days = (int)floor($seconds / 86400);
+        $hours = (int)floor(($seconds % 86400) / 3600);
+        return $days . 'd ' . $hours . 'h';
+    }
 }
 ?>
