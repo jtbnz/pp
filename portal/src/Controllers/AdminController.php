@@ -311,6 +311,10 @@ class AdminController
                 'sent_by' => $user['id']
             ]);
 
+            // Store the magic link for display on the admin page (for testing)
+            $_SESSION['last_magic_link'] = $magicLinkUrl;
+            $_SESSION['last_magic_link_member_id'] = $memberId;
+
             if ($emailSent) {
                 $_SESSION['flash_message'] = "Login link sent to {$member['email']}.";
                 $_SESSION['flash_type'] = 'success';

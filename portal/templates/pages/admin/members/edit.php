@@ -24,6 +24,14 @@ $flashMessage = $_SESSION['flash_message'] ?? null;
 $flashType = $_SESSION['flash_type'] ?? 'info';
 unset($_SESSION['flash_message'], $_SESSION['flash_type']);
 
+// Get last magic link if it was for this member
+$lastMagicLink = null;
+if (isset($_SESSION['last_magic_link'], $_SESSION['last_magic_link_member_id'])) {
+    if ($_SESSION['last_magic_link_member_id'] == $member['id']) {
+        $lastMagicLink = $_SESSION['last_magic_link'];
+    }
+}
+
 // Use form data if available, otherwise use member data
 $memberData = !empty($formData) ? array_merge($member, $formData) : $member;
 
@@ -222,6 +230,29 @@ ob_start();
                 </form>
             </div>
         </div>
+
+        <?php if ($lastMagicLink): ?>
+        <!-- Last Generated Magic Link (for testing) -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h3 class="card-title">Last Generated Magic Link</h3>
+                <p class="text-secondary mb-2">This link was just generated. Use it for testing (valid for 7 days):</p>
+                <div class="magic-link-display">
+                    <input type="text" class="form-input" value="<?= e($lastMagicLink) ?>" readonly id="magic-link-input">
+                    <button type="button" class="btn btn-secondary" onclick="copyMagicLink()">Copy</button>
+                </div>
+                <p class="text-secondary small mt-2">Note: This link is only shown once after generation.</p>
+            </div>
+        </div>
+        <script>
+        function copyMagicLink() {
+            const input = document.getElementById('magic-link-input');
+            input.select();
+            document.execCommand('copy');
+            alert('Magic link copied to clipboard!');
+        }
+        </script>
+        <?php endif; ?>
     </section>
 
     <div class="admin-nav-back mt-4">
@@ -364,6 +395,18 @@ ob_start();
     border-radius: 4px;
     font-size: 0.75rem;
     margin-left: 0.5rem;
+}
+
+.magic-link-display {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.magic-link-display .form-input {
+    flex: 1;
+    font-family: monospace;
+    font-size: 0.875rem;
 }
 </style>
 

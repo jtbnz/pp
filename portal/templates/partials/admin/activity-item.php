@@ -36,13 +36,19 @@ function renderActivityItem(array $activity): string
 
 /**
  * Format a timestamp as relative time
+ * Assumes datetime is stored in UTC
  *
- * @param string $datetime DateTime string
+ * @param string $datetime DateTime string (stored in UTC)
  * @return string Relative time string
  */
 function formatRelativeTime(string $datetime): string
 {
-    $timestamp = strtotime($datetime);
+    // Parse as UTC since that's how it's stored
+    $utcTz = new DateTimeZone('UTC');
+    $dt = new DateTime($datetime, $utcTz);
+    $timestamp = $dt->getTimestamp();
+
+    // time() returns UTC timestamp
     $diff = time() - $timestamp;
 
     if ($diff < 60) {
@@ -57,7 +63,8 @@ function formatRelativeTime(string $datetime): string
         $days = floor($diff / 86400);
         return $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
     } else {
-        return date('M j, Y', $timestamp);
+        // Convert to local time for display
+        return fromUtc($datetime, 'M j, Y');
     }
 }
 ?>
