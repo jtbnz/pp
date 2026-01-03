@@ -432,3 +432,22 @@ AFTER UPDATE ON polls
 BEGIN
     UPDATE polls SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
+
+-- ============================================================================
+-- REMEMBER TOKENS (for persistent "remember me" authentication)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS remember_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    member_id INTEGER NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    device_name VARCHAR(100),
+    user_agent TEXT,
+    last_used_at DATETIME,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_remember_tokens_member ON remember_tokens(member_id);
+CREATE INDEX IF NOT EXISTS idx_remember_tokens_expires ON remember_tokens(expires_at);

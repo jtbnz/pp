@@ -429,6 +429,8 @@ class AuthController
      */
     public function logout(): void
     {
+        global $db;
+
         // Log the logout if user was authenticated
         if (isset($_SESSION['member_id'])) {
             $this->authService->logAudit(
@@ -438,6 +440,16 @@ class AuthController
                 'member',
                 $_SESSION['member_id']
             );
+        }
+
+        // Clear remember token if present
+        if (isset($_COOKIE['puke_remember'])) {
+            $tokenHash = hash('sha256', $_COOKIE['puke_remember']);
+            $stmt = $db->prepare('DELETE FROM remember_tokens WHERE token_hash = ?');
+            $stmt->execute([$tokenHash]);
+
+            // Clear the cookie
+            setcookie('puke_remember', '', time() - 3600, '/', '', true, true);
         }
 
         // Clear session
@@ -505,8 +517,15 @@ class AuthController
      */
     private function loginMember(array $member): void
     {
+        global $db;
+
+        $debugEnabled = $this->config['auth']['debug'] ?? false;
+        $oldSessionId = session_id();
+
         // Regenerate session ID for security
         session_regenerate_id(true);
+
+        $newSessionId = session_id();
 
         $_SESSION['member_id'] = $member['id'];
         $_SESSION['brigade_id'] = $member['brigade_id'];
@@ -515,9 +534,141 @@ class AuthController
         $_SESSION['member_email'] = $member['email'];
         $_SESSION['last_activity'] = time();
         $_SESSION['last_regeneration'] = time();
+        $_SESSION['created'] = time();
+
+        // Create a "remember me" token for persistent login across Safari/PWA boundary
+        // This solves iOS cookie jar isolation issue
+        $this->createRememberToken($member['id']);
+
+        // Log login for debugging
+        if ($debugEnabled) {
+            $this->logAuthDebug('login_success', [
+                'member_id' => $member['id'],
+                'member_email' => $member['email'],
+                'old_session_id' => substr($oldSessionId, 0, 16) . '...',
+                'new_session_id' => substr($newSessionId, 0, 16) . '...',
+                'session_keys_after_login' => array_keys($_SESSION),
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                'cookie_params' => session_get_cookie_params(),
+                'remember_token_set' => isset($_COOKIE['puke_remember']) || headers_sent() === false,
+            ]);
+        }
 
         // Update last login
         $this->memberModel->updateLastLogin($member['id']);
+    }
+
+    /**
+     * Create a remember token for persistent login
+     * This allows users to stay logged in across Safari/PWA cookie jar isolation
+     */
+    private function createRememberToken(int $memberId): void
+    {
+        global $db;
+
+        // Generate secure random token
+        $token = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $token);
+
+        // Token expires in 2 years (same as session timeout)
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+2 years'));
+
+        // Detect device name from user agent
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        $deviceName = $this->getDeviceName($userAgent);
+
+        // Ensure remember_tokens table exists (for existing installations)
+        $db->exec('
+            CREATE TABLE IF NOT EXISTS remember_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                member_id INTEGER NOT NULL,
+                token_hash VARCHAR(255) NOT NULL UNIQUE,
+                device_name VARCHAR(100),
+                user_agent TEXT,
+                last_used_at DATETIME,
+                expires_at DATETIME NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+            )
+        ');
+
+        // Insert the token
+        $stmt = $db->prepare('
+            INSERT INTO remember_tokens (member_id, token_hash, device_name, user_agent, expires_at)
+            VALUES (?, ?, ?, ?, ?)
+        ');
+        $stmt->execute([$memberId, $tokenHash, $deviceName, $userAgent, $expiresAt]);
+
+        // Set the cookie - 2 year expiry, secure, httponly
+        $cookieExpiry = time() + (2 * 365 * 24 * 60 * 60); // 2 years
+        setcookie(
+            'puke_remember',
+            $token,
+            [
+                'expires' => $cookieExpiry,
+                'path' => '/',
+                'domain' => '',
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]
+        );
+
+        // Clean up old tokens for this member (keep last 5 devices)
+        $stmt = $db->prepare('
+            DELETE FROM remember_tokens
+            WHERE member_id = ?
+              AND id NOT IN (
+                  SELECT id FROM remember_tokens
+                  WHERE member_id = ?
+                  ORDER BY created_at DESC
+                  LIMIT 5
+              )
+        ');
+        $stmt->execute([$memberId, $memberId]);
+    }
+
+    /**
+     * Get a friendly device name from user agent
+     */
+    private function getDeviceName(string $userAgent): string
+    {
+        if (stripos($userAgent, 'iPhone') !== false) {
+            return 'iPhone';
+        } elseif (stripos($userAgent, 'iPad') !== false) {
+            return 'iPad';
+        } elseif (stripos($userAgent, 'Android') !== false) {
+            if (stripos($userAgent, 'Mobile') !== false) {
+                return 'Android Phone';
+            }
+            return 'Android Tablet';
+        } elseif (stripos($userAgent, 'Mac') !== false) {
+            return 'Mac';
+        } elseif (stripos($userAgent, 'Windows') !== false) {
+            return 'Windows PC';
+        } elseif (stripos($userAgent, 'Linux') !== false) {
+            return 'Linux';
+        }
+        return 'Unknown Device';
+    }
+
+    /**
+     * Log authentication debug information
+     */
+    private function logAuthDebug(string $event, array $data): void
+    {
+        $logFile = __DIR__ . '/../../data/logs/auth-debug.log';
+        $logDir = dirname($logFile);
+
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        $dataJson = json_encode($data, JSON_UNESCAPED_SLASHES);
+        $logEntry = "[{$timestamp}] {$event}: {$dataJson}\n";
+
+        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
     }
 
     /**

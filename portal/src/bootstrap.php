@@ -194,6 +194,77 @@ if (PHP_SAPI !== 'cli') {
         $_SESSION['created'] = time();
     }
 
+    // Auto-login from remember token if session has no member_id
+    // This handles the Safari → PWA cookie jar isolation issue on iOS
+    if (!isset($_SESSION['member_id']) && isset($_COOKIE['puke_remember'])) {
+        $rememberToken = $_COOKIE['puke_remember'];
+        $tokenHash = hash('sha256', $rememberToken);
+
+        // Ensure remember_tokens table exists (for existing installations)
+        $db->exec('
+            CREATE TABLE IF NOT EXISTS remember_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                member_id INTEGER NOT NULL,
+                token_hash VARCHAR(255) NOT NULL UNIQUE,
+                device_name VARCHAR(100),
+                user_agent TEXT,
+                last_used_at DATETIME,
+                expires_at DATETIME NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+            )
+        ');
+
+        $stmt = $db->prepare('
+            SELECT rt.*, m.status as member_status
+            FROM remember_tokens rt
+            JOIN members m ON m.id = rt.member_id
+            WHERE rt.token_hash = ?
+              AND rt.expires_at > datetime("now")
+              AND m.status = "active"
+        ');
+        $stmt->execute([$tokenHash]);
+        $tokenRecord = $stmt->fetch();
+
+        if ($tokenRecord) {
+            // Valid remember token - restore session
+            $_SESSION['member_id'] = $tokenRecord['member_id'];
+            $_SESSION['last_activity'] = time();
+            $_SESSION['created'] = time();
+            $_SESSION['restored_from_remember_token'] = true;
+
+            // Update last used
+            $stmt = $db->prepare('UPDATE remember_tokens SET last_used_at = datetime("now") WHERE id = ?');
+            $stmt->execute([$tokenRecord['id']]);
+
+            // Load additional member info
+            $stmt = $db->prepare('SELECT brigade_id, name, role, email FROM members WHERE id = ?');
+            $stmt->execute([$tokenRecord['member_id']]);
+            $member = $stmt->fetch();
+            if ($member) {
+                $_SESSION['brigade_id'] = $member['brigade_id'];
+                $_SESSION['member_name'] = $member['name'];
+                $_SESSION['member_role'] = $member['role'];
+                $_SESSION['member_email'] = $member['email'];
+            }
+
+            // Log the auto-login
+            if ($config['auth']['debug'] ?? false) {
+                $debugFile = __DIR__ . '/../data/logs/auth-debug.log';
+                $logEntry = "[" . date('Y-m-d H:i:s') . "] remember_token_login: " . json_encode([
+                    'member_id' => $tokenRecord['member_id'],
+                    'token_id' => $tokenRecord['id'],
+                    'device_name' => $tokenRecord['device_name'],
+                    'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                ], JSON_UNESCAPED_SLASHES) . "\n";
+                file_put_contents($debugFile, $logEntry, FILE_APPEND | LOCK_EX);
+            }
+        } else {
+            // Invalid/expired remember token - clear it
+            setcookie('puke_remember', '', time() - 3600, '/', '', true, true);
+        }
+    }
+
     // Log session debug info if auth debug is enabled
     if ($config['auth']['debug'] ?? false) {
         $debugFile = __DIR__ . '/../data/logs/auth-debug.log';
@@ -201,8 +272,10 @@ if (PHP_SAPI !== 'cli') {
             $sessionDebug = [
                 'session_id_prefix' => substr(session_id(), 0, 16) . '...',
                 'member_id' => $_SESSION['member_id'] ?? null,
+                'restored_from_token' => $_SESSION['restored_from_remember_token'] ?? false,
                 'session_created' => isset($_SESSION['created']) ? date('Y-m-d H:i:s', $_SESSION['created']) : null,
                 'last_activity' => isset($_SESSION['last_activity']) ? date('Y-m-d H:i:s', $_SESSION['last_activity']) : null,
+                'has_remember_cookie' => isset($_COOKIE['puke_remember']),
                 'cookie_params' => session_get_cookie_params(),
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
                 'is_pwa' => isset($_SERVER['HTTP_X_REQUESTED_WITH']) ||
