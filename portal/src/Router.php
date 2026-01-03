@@ -212,9 +212,30 @@ class Router
      */
     private function authMiddleware(): bool
     {
+        global $config;
+
+        $debugEnabled = $config['auth']['debug'] ?? false;
         $user = currentUser();
 
         if ($user === null) {
+            // Log auth failure for debugging
+            if ($debugEnabled) {
+                $this->logAuthDebug('auth_middleware_failed', [
+                    'reason' => 'no_user_returned',
+                    'session_id' => session_id() ? substr(session_id(), 0, 16) . '...' : 'none',
+                    'session_status' => session_status(),
+                    'session_member_id' => $_SESSION['member_id'] ?? 'not_set',
+                    'session_keys' => array_keys($_SESSION ?? []),
+                    'has_session_cookie' => isset($_COOKIE['puke_portal_session']),
+                    'cookie_value_prefix' => isset($_COOKIE['puke_portal_session']) ? substr($_COOKIE['puke_portal_session'], 0, 16) . '...' : 'none',
+                    'all_cookies' => array_keys($_COOKIE ?? []),
+                    'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                    'request_uri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
+                    'sec_fetch_mode' => $_SERVER['HTTP_SEC_FETCH_MODE'] ?? 'not_set',
+                    'sec_fetch_dest' => $_SERVER['HTTP_SEC_FETCH_DEST'] ?? 'not_set',
+                ]);
+            }
+
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Unauthorized'], 401);
             } else {
@@ -226,6 +247,14 @@ class Router
 
         // Check if access has expired
         if (isset($user['access_expires']) && strtotime($user['access_expires']) < time()) {
+            if ($debugEnabled) {
+                $this->logAuthDebug('auth_middleware_failed', [
+                    'reason' => 'access_expired',
+                    'member_id' => $user['id'] ?? 'unknown',
+                    'access_expires' => $user['access_expires'],
+                ]);
+            }
+
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Access expired'], 401);
             } else {
@@ -236,6 +265,25 @@ class Router
         }
 
         return true;
+    }
+
+    /**
+     * Log authentication debug information
+     */
+    private function logAuthDebug(string $event, array $data): void
+    {
+        $logFile = __DIR__ . '/../data/logs/auth-debug.log';
+        $logDir = dirname($logFile);
+
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        $dataJson = json_encode($data, JSON_UNESCAPED_SLASHES);
+        $logEntry = "[{$timestamp}] {$event}: {$dataJson}\n";
+
+        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
     }
 
     /**

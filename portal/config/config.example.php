@@ -35,7 +35,7 @@ return [
     // =========================================================================
 
     'session' => [
-        'timeout' => 604800,          // 7 days in seconds (increased for PWA persistence)
+        'timeout' => 63072000,         // 2 years in seconds (for PWA persistence)
         'cookie_secure' => true,       // Set to false for local dev without HTTPS
         'cookie_httponly' => true,
         'cookie_samesite' => 'Lax',    // Lax recommended for PWA compatibility (Strict can break PWA sessions)

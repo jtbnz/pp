@@ -32,9 +32,16 @@ class Auth
             if ($debugEnabled) {
                 $this->logAuthDebug('auth_check_failed', [
                     'reason' => 'no_member_id_in_session',
+                    'session_id' => session_id() ? substr(session_id(), 0, 16) . '...' : 'none',
+                    'session_status' => session_status(),
+                    'session_keys' => array_keys($_SESSION ?? []),
                     'session_created' => $_SESSION['created'] ?? null,
                     'has_session_cookie' => isset($_COOKIE['puke_portal_session']),
+                    'cookie_value_prefix' => isset($_COOKIE['puke_portal_session']) ? substr($_COOKIE['puke_portal_session'], 0, 16) . '...' : 'none',
+                    'all_cookies' => array_keys($_COOKIE ?? []),
                     'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                    'request_uri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
+                    'is_pwa' => isset($_SERVER['HTTP_SEC_FETCH_MODE']) ? $_SERVER['HTTP_SEC_FETCH_MODE'] : 'not_set',
                 ]);
             }
             return $this->handleUnauthenticated();
