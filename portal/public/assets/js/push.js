@@ -16,6 +16,8 @@ class PushManager {
         this.swRegistration = null;
         this.isSubscribed = false;
         this.publicKey = null;
+        this.isInitialized = false;
+        this.initError = null;
     }
 
     /**
@@ -33,16 +35,19 @@ class PushManager {
         // Check for required browser features
         if (!('serviceWorker' in navigator)) {
             console.log('[Push] Service workers are not supported');
+            this.initError = 'not_supported';
             return false;
         }
 
         if (!('PushManager' in window)) {
             console.log('[Push] Push notifications are not supported');
+            this.initError = 'not_supported';
             return false;
         }
 
         if (!('Notification' in window)) {
             console.log('[Push] Notifications are not supported');
+            this.initError = 'not_supported';
             return false;
         }
 
@@ -55,18 +60,26 @@ class PushManager {
             const response = await fetch(this.basePath + '/api/push/key');
             if (!response.ok) {
                 console.log('[Push] Push notifications not enabled on server');
+                this.initError = 'not_enabled';
                 return false;
             }
 
             const data = await response.json();
+            if (!data.publicKey) {
+                console.log('[Push] No public key returned from server');
+                this.initError = 'not_configured';
+                return false;
+            }
             this.publicKey = data.publicKey;
 
             // Check current subscription status
             await this.updateSubscriptionStatus();
 
+            this.isInitialized = true;
             return true;
         } catch (error) {
             console.error('[Push] Initialization error:', error);
+            this.initError = 'init_failed';
             return false;
         }
     }
@@ -302,11 +315,40 @@ function initPushUI() {
 
     // Update UI based on current state
     const updateUI = () => {
+        // Check if browser supports push notifications
         if (!window.pushManager.isSupported()) {
             toggleButton.disabled = true;
             toggleButton.textContent = 'Not Supported';
             if (statusText) {
                 statusText.textContent = 'Push notifications are not supported in this browser';
+            }
+            return;
+        }
+
+        // Check if push manager was initialized successfully
+        if (!window.pushManager.isInitialized) {
+            toggleButton.disabled = true;
+
+            // Show appropriate message based on error type
+            switch (window.pushManager.initError) {
+                case 'not_enabled':
+                case 'not_configured':
+                    toggleButton.textContent = 'Not Available';
+                    if (statusText) {
+                        statusText.textContent = 'Push notifications are not configured on this server';
+                    }
+                    break;
+                case 'init_failed':
+                    toggleButton.textContent = 'Unavailable';
+                    if (statusText) {
+                        statusText.textContent = 'Failed to initialize push notifications. Try refreshing the page.';
+                    }
+                    break;
+                default:
+                    toggleButton.textContent = 'Not Available';
+                    if (statusText) {
+                        statusText.textContent = 'Push notifications are not available';
+                    }
             }
             return;
         }
@@ -335,6 +377,12 @@ function initPushUI() {
 
     // Handle toggle button click
     toggleButton.addEventListener('click', async () => {
+        // Safety check - don't try to subscribe if not initialized
+        if (!window.pushManager.isInitialized) {
+            console.error('[Push] Cannot toggle - push manager not initialized');
+            return;
+        }
+
         toggleButton.disabled = true;
         toggleButton.textContent = 'Please wait...';
 
