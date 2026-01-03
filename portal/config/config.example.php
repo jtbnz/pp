@@ -35,10 +35,10 @@ return [
     // =========================================================================
 
     'session' => [
-        'timeout' => 86400,           // 24 hours in seconds
+        'timeout' => 604800,          // 7 days in seconds (increased for PWA persistence)
         'cookie_secure' => true,       // Set to false for local dev without HTTPS
         'cookie_httponly' => true,
-        'cookie_samesite' => 'Strict', // Strict, Lax, or None
+        'cookie_samesite' => 'Lax',    // Lax recommended for PWA compatibility (Strict can break PWA sessions)
     ],
 
     // =========================================================================
@@ -48,9 +48,11 @@ return [
     'auth' => [
         'access_duration_years' => 5,     // How long member access lasts
         'invite_expiry_days' => 7,        // Magic link expiry
+        'token_reuse_period_seconds' => 300, // Allow magic link reuse within 5 mins (handles email filter prefetching)
         'pin_length' => 6,                // Length of optional PIN
         'pin_attempts' => 5,              // Max failed PIN attempts before lockout
         'lockout_minutes' => 15,          // Lockout duration after failed attempts
+        'debug' => false,                 // Enable auth debug logging (logs to data/logs/auth-debug.log)
     ],
 
     // =========================================================================

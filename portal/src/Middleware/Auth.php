@@ -25,20 +25,43 @@ class Auth
      */
     public function handle(): bool
     {
+        $debugEnabled = $this->config['auth']['debug'] ?? false;
+
         // Check if session has member_id
         if (!isset($_SESSION['member_id'])) {
+            if ($debugEnabled) {
+                $this->logAuthDebug('auth_check_failed', [
+                    'reason' => 'no_member_id_in_session',
+                    'session_created' => $_SESSION['created'] ?? null,
+                    'has_session_cookie' => isset($_COOKIE['puke_portal_session']),
+                    'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                ]);
+            }
             return $this->handleUnauthenticated();
         }
 
         // Verify member still exists and is active
         $member = $this->getMember($_SESSION['member_id']);
         if (!$member) {
+            if ($debugEnabled) {
+                $this->logAuthDebug('auth_check_failed', [
+                    'reason' => 'member_not_found_or_inactive',
+                    'member_id' => $_SESSION['member_id'],
+                ]);
+            }
             $this->clearSession();
             return $this->handleUnauthenticated();
         }
 
         // Check if member's access has expired
         if ($member['access_expires'] && strtotime($member['access_expires']) < time()) {
+            if ($debugEnabled) {
+                $this->logAuthDebug('auth_check_failed', [
+                    'reason' => 'member_access_expired',
+                    'member_id' => $member['id'],
+                    'access_expires' => $member['access_expires'],
+                ]);
+            }
             $this->clearSession();
             return $this->handleExpiredAccess();
         }
@@ -47,6 +70,25 @@ class Auth
         $this->refreshSession();
 
         return true;
+    }
+
+    /**
+     * Log authentication debug information
+     */
+    private function logAuthDebug(string $event, array $data): void
+    {
+        $logFile = __DIR__ . '/../../data/logs/auth-debug.log';
+        $logDir = dirname($logFile);
+
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        $dataJson = json_encode($data, JSON_UNESCAPED_SLASHES);
+        $logEntry = "[{$timestamp}] {$event}: {$dataJson}\n";
+
+        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
     }
 
     /**

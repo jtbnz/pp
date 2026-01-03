@@ -156,27 +156,62 @@ if (!$tablesExist) {
 // Session configuration (only for web requests, not CLI)
 if (PHP_SAPI !== 'cli') {
     $sessionConfig = $config['session'] ?? [];
+    $sessionTimeout = $sessionConfig['timeout'] ?? 86400;
 
     ini_set('session.cookie_httponly', '1');
     ini_set('session.cookie_secure', $sessionConfig['cookie_secure'] ?? '1');
-    ini_set('session.cookie_samesite', $sessionConfig['cookie_samesite'] ?? 'Strict');
-    ini_set('session.gc_maxlifetime', (string)($sessionConfig['timeout'] ?? 86400));
+    ini_set('session.cookie_samesite', $sessionConfig['cookie_samesite'] ?? 'Lax'); // Changed from Strict to Lax for PWA compatibility
+    ini_set('session.gc_maxlifetime', (string)$sessionTimeout);
+
+    // Set cookie lifetime to match session timeout (important for PWA persistence)
+    ini_set('session.cookie_lifetime', (string)$sessionTimeout);
 
     // Use custom session name
     session_name('puke_portal_session');
+
+    // Set session cookie params explicitly for better PWA support
+    session_set_cookie_params([
+        'lifetime' => $sessionTimeout,
+        'path' => '/',
+        'domain' => '',
+        'secure' => (bool)($sessionConfig['cookie_secure'] ?? true),
+        'httponly' => true,
+        'samesite' => $sessionConfig['cookie_samesite'] ?? 'Lax',
+    ]);
 
     // Start session only if not already started
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
-    // Regenerate session ID periodically for security
+    // Regenerate session ID periodically for security (but less aggressively)
+    // On PWAs, too-frequent regeneration can cause issues
     if (!isset($_SESSION['created'])) {
         $_SESSION['created'] = time();
-    } elseif (time() - $_SESSION['created'] > 1800) {
-        // Regenerate session ID every 30 minutes
+    } elseif (time() - $_SESSION['created'] > 3600) {
+        // Regenerate session ID every 60 minutes (was 30 - more lenient for PWA)
         session_regenerate_id(true);
         $_SESSION['created'] = time();
+    }
+
+    // Log session debug info if auth debug is enabled
+    if ($config['auth']['debug'] ?? false) {
+        $debugFile = __DIR__ . '/../data/logs/auth-debug.log';
+        if (!isset($_SESSION['session_debug_logged']) || (time() - ($_SESSION['session_debug_logged'] ?? 0)) > 300) {
+            $sessionDebug = [
+                'session_id_prefix' => substr(session_id(), 0, 16) . '...',
+                'member_id' => $_SESSION['member_id'] ?? null,
+                'session_created' => isset($_SESSION['created']) ? date('Y-m-d H:i:s', $_SESSION['created']) : null,
+                'last_activity' => isset($_SESSION['last_activity']) ? date('Y-m-d H:i:s', $_SESSION['last_activity']) : null,
+                'cookie_params' => session_get_cookie_params(),
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                'is_pwa' => isset($_SERVER['HTTP_X_REQUESTED_WITH']) ||
+                           (isset($_SERVER['HTTP_SEC_FETCH_MODE']) && $_SERVER['HTTP_SEC_FETCH_MODE'] === 'navigate'),
+            ];
+            $logEntry = "[" . date('Y-m-d H:i:s') . "] session_check: " . json_encode($sessionDebug, JSON_UNESCAPED_SLASHES) . "\n";
+            file_put_contents($debugFile, $logEntry, FILE_APPEND | LOCK_EX);
+            $_SESSION['session_debug_logged'] = time();
+        }
     }
 }
 

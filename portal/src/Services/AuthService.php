@@ -48,19 +48,127 @@ class AuthService
     {
         $tokenHash = $this->hashToken($token);
         $nowUtc = nowUtc();
+        $debugEnabled = $this->config['auth']['debug'] ?? false;
 
+        // First, try to find the token regardless of status for debug logging
         $stmt = $this->db->prepare('
             SELECT it.*, b.name as brigade_name, b.slug as brigade_slug
             FROM invite_tokens it
             JOIN brigades b ON b.id = it.brigade_id
             WHERE it.token_hash = ?
-              AND it.used_at IS NULL
-              AND it.expires_at > ?
         ');
-        $stmt->execute([$tokenHash, $nowUtc]);
-        $result = $stmt->fetch();
+        $stmt->execute([$tokenHash]);
+        $tokenRecord = $stmt->fetch();
 
-        return $result ?: null;
+        // Log debug info if enabled
+        if ($debugEnabled) {
+            $this->logAuthDebug('token_verify_attempt', [
+                'token_found' => $tokenRecord ? true : false,
+                'current_time_utc' => $nowUtc,
+                'token_hash_prefix' => substr($tokenHash, 0, 16) . '...',
+            ]);
+
+            if ($tokenRecord) {
+                $this->logAuthDebug('token_details', [
+                    'token_id' => $tokenRecord['id'],
+                    'email' => $tokenRecord['email'],
+                    'expires_at' => $tokenRecord['expires_at'],
+                    'used_at' => $tokenRecord['used_at'],
+                    'created_at' => $tokenRecord['created_at'],
+                    'is_expired' => $tokenRecord['expires_at'] <= $nowUtc,
+                    'is_used' => $tokenRecord['used_at'] !== null,
+                ]);
+            }
+        }
+
+        // Check if token exists
+        if (!$tokenRecord) {
+            if ($debugEnabled) {
+                $this->logAuthDebug('token_verify_failed', [
+                    'reason' => 'token_not_found',
+                    'message' => 'No token found with this hash',
+                ]);
+            }
+            return null;
+        }
+
+        // Check if already used - but allow reuse within grace period for email filter prefetching
+        // Corporate email filters (Microsoft Defender, Proofpoint, etc.) often pre-click links
+        // to scan them, which would mark the token as used before the real user clicks
+        $reusePeriodSeconds = $this->config['auth']['token_reuse_period_seconds'] ?? 300; // 5 minutes default
+        if ($tokenRecord['used_at'] !== null) {
+            $usedAtTimestamp = strtotime($tokenRecord['used_at']);
+            $nowTimestamp = strtotime($nowUtc);
+            $secondsSinceUsed = $nowTimestamp - $usedAtTimestamp;
+
+            if ($secondsSinceUsed > $reusePeriodSeconds) {
+                if ($debugEnabled) {
+                    $this->logAuthDebug('token_verify_failed', [
+                        'reason' => 'token_already_used',
+                        'token_id' => $tokenRecord['id'],
+                        'used_at' => $tokenRecord['used_at'],
+                        'seconds_since_used' => $secondsSinceUsed,
+                        'reuse_period_seconds' => $reusePeriodSeconds,
+                        'message' => 'Token was already used and reuse period has expired',
+                    ]);
+                }
+                return null;
+            }
+
+            // Token was used recently - allow reuse (likely email filter prefetch)
+            if ($debugEnabled) {
+                $this->logAuthDebug('token_reuse_allowed', [
+                    'token_id' => $tokenRecord['id'],
+                    'used_at' => $tokenRecord['used_at'],
+                    'seconds_since_used' => $secondsSinceUsed,
+                    'reuse_period_seconds' => $reusePeriodSeconds,
+                    'message' => 'Token reuse allowed within grace period (possible email filter prefetch)',
+                ]);
+            }
+        }
+
+        // Check if expired
+        if ($tokenRecord['expires_at'] <= $nowUtc) {
+            if ($debugEnabled) {
+                $this->logAuthDebug('token_verify_failed', [
+                    'reason' => 'token_expired',
+                    'token_id' => $tokenRecord['id'],
+                    'expires_at' => $tokenRecord['expires_at'],
+                    'current_time' => $nowUtc,
+                    'expired_seconds_ago' => strtotime($nowUtc) - strtotime($tokenRecord['expires_at']),
+                    'message' => 'Token has expired',
+                ]);
+            }
+            return null;
+        }
+
+        if ($debugEnabled) {
+            $this->logAuthDebug('token_verify_success', [
+                'token_id' => $tokenRecord['id'],
+                'email' => $tokenRecord['email'],
+            ]);
+        }
+
+        return $tokenRecord;
+    }
+
+    /**
+     * Log authentication debug information
+     */
+    private function logAuthDebug(string $event, array $data): void
+    {
+        $logFile = __DIR__ . '/../../data/logs/auth-debug.log';
+        $logDir = dirname($logFile);
+
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        $dataJson = json_encode($data, JSON_UNESCAPED_SLASHES);
+        $logEntry = "[{$timestamp}] {$event}: {$dataJson}\n";
+
+        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
     }
 
     /**
