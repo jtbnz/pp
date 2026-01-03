@@ -46,6 +46,9 @@ ob_start();
             <a href="<?= url('/admin/notices/create') ?>" class="btn btn-secondary">
                 <span class="btn-icon">&#128240;</span> Create Notice
             </a>
+            <a href="<?= url('/admin/polls/create') ?>" class="btn btn-secondary">
+                <span class="btn-icon">&#128202;</span> Create Poll
+            </a>
             <?php if ($pendingLeaveCount > 0): ?>
             <a href="<?= url('/admin/leave?status=pending') ?>" class="btn btn-warning">
                 <span class="btn-icon">&#9989;</span> Review Leave (<?= $pendingLeaveCount ?>)
@@ -97,6 +100,13 @@ ob_start();
                 <span class="nav-label">Leave</span>
                 <?php if ($pendingLeaveCount > 0): ?>
                 <span class="nav-count badge-warning"><?= $pendingLeaveCount ?></span>
+                <?php endif; ?>
+            </a>
+            <a href="<?= url('/admin/polls') ?>" class="admin-nav-item">
+                <span class="nav-icon">&#128202;</span>
+                <span class="nav-label">Polls</span>
+                <?php if (isset($stats['active_polls']) && $stats['active_polls'] > 0): ?>
+                <span class="nav-count"><?= $stats['active_polls'] ?></span>
                 <?php endif; ?>
             </a>
             <a href="<?= url('/admin/settings') ?>" class="admin-nav-item">

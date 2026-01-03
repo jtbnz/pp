@@ -133,6 +133,10 @@ $user = currentUser();
                 <span class="nav-icon">&#128198;</span>
                 <span class="nav-text">Leave</span>
             </a>
+            <a href="<?= url('/polls') ?>" class="nav-item <?= str_starts_with($currentPath, '/polls') ? 'active' : '' ?>">
+                <span class="nav-icon">&#128202;</span>
+                <span class="nav-text">Polls</span>
+            </a>
             <?php if (hasRole('officer')): ?>
                 <a href="<?= url('/leave/pending') ?>" class="nav-item <?= str_starts_with($currentPath, '/leave/pending') ? 'active' : '' ?>">
                     <span class="nav-icon">&#9989;</span>
@@ -185,6 +189,10 @@ $user = currentUser();
         <a href="<?= url('/leave') ?>" class="bottom-nav-item <?= str_starts_with($currentPath, '/leave') ? 'active' : '' ?>">
             <span class="nav-icon">&#128198;</span>
             <span class="nav-label">Leave</span>
+        </a>
+        <a href="<?= url('/polls') ?>" class="bottom-nav-item <?= str_starts_with($currentPath, '/polls') ? 'active' : '' ?>">
+            <span class="nav-icon">&#128202;</span>
+            <span class="nav-label">Polls</span>
         </a>
     </nav>
     <?php endif; ?>

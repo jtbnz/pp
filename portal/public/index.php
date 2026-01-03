@@ -63,6 +63,12 @@ $router->get('/', function() {
         require_once __DIR__ . '/../src/Models/LeaveRequest.php';
         $leaveModel = new LeaveRequest();
         $pendingLeave = $leaveModel->findByMember((int)$user['id'], 'pending');
+
+        // Get active polls and unvoted count
+        require_once __DIR__ . '/../src/Models/Poll.php';
+        $pollModel = new Poll();
+        $activePolls = $pollModel->findActive($brigadeId);
+        $unvotedPollCount = $pollModel->getUnvotedCount($brigadeId, (int)$user['id']);
     }
 
     // Pass data to template
@@ -71,6 +77,8 @@ $router->get('/', function() {
         'upcomingEvents' => $upcomingEvents,
         'recentNotices' => $recentNotices,
         'pendingLeave' => $pendingLeave,
+        'activePolls' => $activePolls ?? [],
+        'unvotedPollCount' => $unvotedPollCount ?? 0,
     ];
 
     extract($homeData);
@@ -192,6 +200,20 @@ $router->group('/leave', function(Router $router) {
     $router->post('/{id}/cancel', 'LeaveController@destroy');    // For form submission (cancel)
 }, ['middleware' => ['auth', 'csrf']]);
 
+// Polls routes - Web interface (any authenticated user can create)
+$router->group('/polls', function(Router $router) {
+    $router->get('/', 'PollController@index');
+    $router->get('/create', 'PollController@create');
+    $router->post('/', 'PollController@store');
+    $router->get('/{id}', 'PollController@show');
+    $router->get('/{id}/edit', 'PollController@edit');
+    $router->put('/{id}', 'PollController@update');
+    $router->post('/{id}', 'PollController@update');  // For form submission with _method=PUT
+    $router->delete('/{id}', 'PollController@destroy');
+    $router->post('/{id}/close', 'PollController@close');
+    $router->post('/{id}/vote', 'PollController@vote');
+}, ['middleware' => ['auth', 'csrf']]);
+
 // API routes (Protected - Phase 2+)
 $router->group('/api', function(Router $router) {
     // Members (Phase 3)
@@ -264,6 +286,14 @@ $router->group('/admin', function(Router $router) {
     $router->get('/notices/create', 'AdminController@createNoticeForm');
     $router->post('/notices', 'AdminController@createNotice');
     $router->get('/leave', 'AdminController@leaveRequests');
+    $router->get('/polls', 'AdminController@polls');
+    $router->get('/polls/create', 'AdminController@createPollForm');
+    $router->post('/polls', 'AdminController@createPoll');
+    $router->get('/polls/{id}', 'AdminController@editPoll');
+    $router->put('/polls/{id}', 'AdminController@updatePoll');
+    $router->post('/polls/{id}', 'AdminController@updatePoll');  // For form submission with _method=PUT
+    $router->post('/polls/{id}/close', 'AdminController@closePoll');
+    $router->delete('/polls/{id}', 'AdminController@deletePoll');
     $router->get('/settings', 'AdminController@settings');
     $router->put('/settings', 'AdminController@updateSettings');
 }, ['middleware' => ['auth', 'admin']]);

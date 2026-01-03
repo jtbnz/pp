@@ -376,3 +376,59 @@ CREATE TABLE IF NOT EXISTS magic_links (
 
 CREATE INDEX IF NOT EXISTS idx_magic_links_member ON magic_links(member_id);
 CREATE INDEX IF NOT EXISTS idx_magic_links_expires ON magic_links(expires_at);
+
+-- ============================================================================
+-- POLLS
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS polls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    brigade_id INTEGER NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    type VARCHAR(20) NOT NULL DEFAULT 'single',   -- 'single' or 'multi'
+    status VARCHAR(20) NOT NULL DEFAULT 'active', -- 'active', 'closed'
+    closes_at DATETIME,                            -- UTC datetime, null = no expiry
+    created_by INTEGER NOT NULL,
+    created_at DATETIME NOT NULL,                  -- UTC
+    updated_at DATETIME,                           -- UTC
+    FOREIGN KEY (brigade_id) REFERENCES brigades(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES members(id) ON DELETE SET NULL,
+    CHECK (type IN ('single', 'multi')),
+    CHECK (status IN ('active', 'closed'))
+);
+
+CREATE TABLE IF NOT EXISTS poll_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    poll_id INTEGER NOT NULL,
+    text VARCHAR(200) NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS poll_votes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    poll_id INTEGER NOT NULL,
+    option_id INTEGER NOT NULL,
+    member_id INTEGER NOT NULL,
+    voted_at DATETIME NOT NULL,                    -- UTC
+    FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE,
+    FOREIGN KEY (option_id) REFERENCES poll_options(id) ON DELETE CASCADE,
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+    UNIQUE(poll_id, option_id, member_id)          -- One vote per option per member
+);
+
+-- Polls indexes
+CREATE INDEX IF NOT EXISTS idx_polls_brigade ON polls(brigade_id);
+CREATE INDEX IF NOT EXISTS idx_polls_status ON polls(status);
+CREATE INDEX IF NOT EXISTS idx_polls_closes ON polls(closes_at);
+CREATE INDEX IF NOT EXISTS idx_poll_options_poll ON poll_options(poll_id);
+CREATE INDEX IF NOT EXISTS idx_poll_votes_poll ON poll_votes(poll_id);
+CREATE INDEX IF NOT EXISTS idx_poll_votes_member ON poll_votes(member_id);
+
+-- Update updated_at timestamp on polls
+CREATE TRIGGER IF NOT EXISTS update_polls_timestamp
+AFTER UPDATE ON polls
+BEGIN
+    UPDATE polls SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;

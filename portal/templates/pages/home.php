@@ -25,6 +25,8 @@ $nextTraining = $nextTraining ?? null;
 $upcomingEvents = $upcomingEvents ?? [];
 $recentNotices = $recentNotices ?? [];
 $pendingLeave = $pendingLeave ?? [];
+$activePolls = $activePolls ?? [];
+$unvotedPollCount = $unvotedPollCount ?? 0;
 
 // Start output buffering for content
 ob_start();
@@ -136,6 +138,43 @@ ob_start();
                 </div>
             <?php endif; ?>
         </section>
+
+        <!-- Active Polls -->
+        <?php if (!empty($activePolls)): ?>
+        <section class="polls-section mb-4">
+            <div class="section-header">
+                <h2>Active Polls</h2>
+                <?php if ($unvotedPollCount > 0): ?>
+                    <span class="poll-badge-count"><?= $unvotedPollCount ?> to vote</span>
+                <?php endif; ?>
+                <a href="<?= url('/polls') ?>" class="section-link">View all</a>
+            </div>
+            <div class="polls-list">
+                <?php foreach (array_slice($activePolls, 0, 3) as $poll): ?>
+                    <?php
+                    $pollModel = new Poll();
+                    $hasVoted = $pollModel->hasVoted((int)$poll['id'], (int)$user['id']);
+                    ?>
+                    <a href="<?= url('/polls/' . (int)$poll['id']) ?>" class="poll-item card <?= $hasVoted ? 'voted' : 'not-voted' ?>">
+                        <div class="poll-content">
+                            <span class="poll-title"><?= e($poll['title']) ?></span>
+                            <div class="poll-meta">
+                                <span><?= $poll['total_votes'] ?> vote<?= $poll['total_votes'] !== 1 ? 's' : '' ?></span>
+                                <?php if ($poll['closes_at']): ?>
+                                    <span class="poll-expires">Closes <?= fromUtc($poll['closes_at'], 'j M') ?></span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php if ($hasVoted): ?>
+                            <span class="poll-status voted-badge">Voted</span>
+                        <?php else: ?>
+                            <span class="poll-status vote-btn">Vote</span>
+                        <?php endif; ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </section>
+        <?php endif; ?>
 
         <!-- Leave Status -->
         <section class="leave-section">
@@ -416,6 +455,79 @@ ob_start();
 .status-approved {
     background: #e8f5e9;
     color: #2e7d32;
+}
+
+/* Polls list */
+.polls-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.poll-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.poll-item:hover {
+    background: var(--color-background-hover, #f5f5f5);
+}
+
+.poll-item.not-voted {
+    border-left: 3px solid var(--color-primary, #D32F2F);
+}
+
+.poll-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.poll-title {
+    font-weight: 500;
+}
+
+.poll-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary, #666);
+}
+
+.poll-expires {
+    color: var(--color-warning, #ef6c00);
+}
+
+.poll-status {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-weight: 500;
+}
+
+.voted-badge {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.vote-btn {
+    background: var(--color-primary, #D32F2F);
+    color: white;
+}
+
+.poll-badge-count {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    background: var(--color-primary, #D32F2F);
+    color: white;
+    font-weight: 500;
 }
 </style>
 

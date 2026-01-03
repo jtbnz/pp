@@ -98,15 +98,15 @@ class NoticeController
     /**
      * Display create notice form
      * GET /notices/create
+     * Available to all authenticated users
      */
     public function create(): void
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
-            http_response_code(403);
-            render('pages/errors/403');
-            return;
+        if (!$user) {
+            header('Location: ' . url('/auth/login'));
+            exit;
         }
 
         render('pages/notices/create', [
@@ -125,15 +125,15 @@ class NoticeController
     /**
      * Store a new notice
      * POST /notices
+     * Available to all authenticated users
      */
     public function store(): void
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
-            http_response_code(403);
-            render('pages/errors/403');
-            return;
+        if (!$user) {
+            header('Location: ' . url('/auth/login'));
+            exit;
         }
 
         // Verify CSRF token
@@ -182,15 +182,15 @@ class NoticeController
     /**
      * Display edit notice form
      * GET /notices/{id}/edit
+     * User can edit if they created it or are an admin
      */
     public function edit(string $id): void
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
-            http_response_code(403);
-            render('pages/errors/403');
-            return;
+        if (!$user) {
+            header('Location: ' . url('/auth/login'));
+            exit;
         }
 
         $noticeId = (int)$id;
@@ -204,6 +204,14 @@ class NoticeController
             return;
         }
 
+        // Check if user can edit (creator or admin)
+        $canEdit = hasRole('admin') || (int)$notice['author_id'] === (int)$user['id'];
+        if (!$canEdit) {
+            http_response_code(403);
+            render('pages/errors/403');
+            return;
+        }
+
         render('pages/notices/edit', [
             'pageTitle' => 'Edit Notice',
             'notice' => $notice,
@@ -214,15 +222,15 @@ class NoticeController
     /**
      * Update a notice
      * PUT /notices/{id}
+     * User can update if they created it or are an admin
      */
     public function update(string $id): void
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
-            http_response_code(403);
-            render('pages/errors/403');
-            return;
+        if (!$user) {
+            header('Location: ' . url('/auth/login'));
+            exit;
         }
 
         // Verify CSRF token
@@ -240,6 +248,14 @@ class NoticeController
         if (!$notice || $notice['brigade_id'] !== $brigadeId) {
             http_response_code(404);
             render('pages/errors/404', ['message' => 'Notice not found']);
+            return;
+        }
+
+        // Check if user can update (creator or admin)
+        $canEdit = hasRole('admin') || (int)$notice['author_id'] === (int)$user['id'];
+        if (!$canEdit) {
+            http_response_code(403);
+            render('pages/errors/403');
             return;
         }
 
@@ -280,18 +296,18 @@ class NoticeController
     /**
      * Delete a notice
      * DELETE /notices/{id}
+     * User can delete if they created it or are an admin
      */
     public function destroy(string $id): void
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
+        if (!$user) {
             if ($this->isApiRequest()) {
-                jsonResponse(['error' => 'Forbidden'], 403);
+                jsonResponse(['error' => 'Unauthorized'], 401);
             }
-            http_response_code(403);
-            render('pages/errors/403');
-            return;
+            header('Location: ' . url('/auth/login'));
+            exit;
         }
 
         // Verify CSRF token
@@ -315,6 +331,17 @@ class NoticeController
             }
             http_response_code(404);
             render('pages/errors/404', ['message' => 'Notice not found']);
+            return;
+        }
+
+        // Check if user can delete (creator or admin)
+        $canDelete = hasRole('admin') || (int)$notice['author_id'] === (int)$user['id'];
+        if (!$canDelete) {
+            if ($this->isApiRequest()) {
+                jsonResponse(['error' => 'Forbidden'], 403);
+            }
+            http_response_code(403);
+            render('pages/errors/403');
             return;
         }
 

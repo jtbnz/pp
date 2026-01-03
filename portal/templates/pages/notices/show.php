@@ -123,7 +123,12 @@ ob_start();
             </div>
         <?php endif; ?>
 
-        <?php if ($isAdmin): ?>
+        <?php
+        // User can edit/delete if they created it or are an admin
+        $user = currentUser();
+        $canEditDelete = $isAdmin || ((int)($notice['author_id'] ?? 0) === (int)$user['id']);
+        ?>
+        <?php if ($canEditDelete): ?>
             <footer class="notice-detail-actions">
                 <a href="<?= url('/notices/' . (int)$notice['id'] . '/edit') ?>" class="btn btn-primary">
                     Edit Notice

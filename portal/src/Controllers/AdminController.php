@@ -815,6 +815,306 @@ class AdminController
         exit;
     }
 
+    // =========================================================================
+    // POLLS MANAGEMENT
+    // =========================================================================
+
+    /**
+     * List all polls
+     * GET /admin/polls
+     */
+    public function polls(): void
+    {
+        $user = currentUser();
+        $brigadeId = $user['brigade_id'];
+
+        // Get filter
+        $status = $_GET['status'] ?? null;
+        $filters = $status ? ['status' => $status] : [];
+
+        require_once __DIR__ . '/../Models/Poll.php';
+        $pollModel = new Poll($this->db);
+
+        $polls = $pollModel->findAll($brigadeId, $filters);
+        $totalCount = $pollModel->count($brigadeId, $filters);
+
+        render('pages/admin/polls/index', [
+            'pageTitle' => 'Manage Polls',
+            'polls' => $polls,
+            'totalCount' => $totalCount,
+            'status' => $status
+        ]);
+    }
+
+    /**
+     * Show create poll form
+     * GET /admin/polls/create
+     */
+    public function createPollForm(): void
+    {
+        render('pages/admin/polls/create', [
+            'pageTitle' => 'Create Poll'
+        ]);
+    }
+
+    /**
+     * Create a new poll
+     * POST /admin/polls
+     */
+    public function createPoll(): void
+    {
+        $user = currentUser();
+        $brigadeId = $user['brigade_id'];
+
+        // Validate CSRF
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
+            $this->redirectWithError(url('/admin/polls/create'), 'Invalid request. Please try again.');
+            return;
+        }
+
+        require_once __DIR__ . '/../Models/Poll.php';
+        $pollModel = new Poll($this->db);
+
+        // Build data
+        $data = [
+            'brigade_id' => $brigadeId,
+            'title' => trim($_POST['title'] ?? ''),
+            'description' => trim($_POST['description'] ?? '') ?: null,
+            'type' => $_POST['type'] ?? 'single',
+            'closes_at' => !empty($_POST['closes_at']) ? $_POST['closes_at'] : null,
+            'created_by' => $user['id'],
+            'options' => $_POST['options'] ?? []
+        ];
+
+        // Validate
+        $errors = $pollModel->validate($data);
+
+        if (!empty($errors)) {
+            $_SESSION['form_errors'] = $errors;
+            $_SESSION['form_data'] = $_POST;
+            header('Location: ' . url('/admin/polls/create'));
+            exit;
+        }
+
+        try {
+            $pollId = $pollModel->create($data);
+
+            // Log the action
+            $this->auditLog->log($brigadeId, $user['id'], 'poll.create', [
+                'poll_id' => $pollId,
+                'title' => $data['title'],
+                'type' => $data['type']
+            ]);
+
+            $_SESSION['flash_message'] = 'Poll created successfully.';
+            $_SESSION['flash_type'] = 'success';
+            header('Location: ' . url('/admin/polls'));
+            exit;
+
+        } catch (Exception $e) {
+            $_SESSION['flash_message'] = 'Failed to create poll. Please try again.';
+            $_SESSION['flash_type'] = 'error';
+            header('Location: ' . url('/admin/polls/create'));
+            exit;
+        }
+    }
+
+    /**
+     * Show edit poll form
+     * GET /admin/polls/{id}
+     */
+    public function editPoll(string $id): void
+    {
+        $user = currentUser();
+        $brigadeId = $user['brigade_id'];
+        $pollId = (int)$id;
+
+        require_once __DIR__ . '/../Models/Poll.php';
+        $pollModel = new Poll($this->db);
+
+        $poll = $pollModel->findById($pollId);
+
+        if (!$poll || !$pollModel->belongsToBrigade($pollId, $brigadeId)) {
+            http_response_code(404);
+            render('pages/errors/404', ['message' => 'Poll not found']);
+            return;
+        }
+
+        render('pages/admin/polls/edit', [
+            'pageTitle' => 'Edit Poll',
+            'poll' => $poll
+        ]);
+    }
+
+    /**
+     * Update a poll
+     * PUT /admin/polls/{id}
+     */
+    public function updatePoll(string $id): void
+    {
+        $user = currentUser();
+        $brigadeId = $user['brigade_id'];
+        $pollId = (int)$id;
+
+        // Validate CSRF
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
+            $this->redirectWithError(url("/admin/polls/{$id}"), 'Invalid request. Please try again.');
+            return;
+        }
+
+        require_once __DIR__ . '/../Models/Poll.php';
+        $pollModel = new Poll($this->db);
+
+        $poll = $pollModel->findById($pollId);
+
+        if (!$poll || !$pollModel->belongsToBrigade($pollId, $brigadeId)) {
+            http_response_code(404);
+            render('pages/errors/404', ['message' => 'Poll not found']);
+            return;
+        }
+
+        // Build data
+        $data = [
+            'title' => trim($_POST['title'] ?? ''),
+            'description' => trim($_POST['description'] ?? '') ?: null,
+            'type' => $_POST['type'] ?? 'single',
+            'closes_at' => !empty($_POST['closes_at']) ? $_POST['closes_at'] : null,
+            'options' => $_POST['options'] ?? []
+        ];
+
+        // Validate
+        $errors = $pollModel->validate($data);
+
+        if (!empty($errors)) {
+            $_SESSION['form_errors'] = $errors;
+            $_SESSION['form_data'] = $_POST;
+            header('Location: ' . url("/admin/polls/{$id}"));
+            exit;
+        }
+
+        try {
+            $pollModel->update($pollId, $data);
+
+            // Update options if poll hasn't received votes
+            if ($poll['total_votes'] === 0) {
+                $pollModel->updateOptions($pollId, $data['options']);
+            }
+
+            // Log the action
+            $this->auditLog->log($brigadeId, $user['id'], 'poll.update', [
+                'poll_id' => $pollId,
+                'title' => $data['title']
+            ]);
+
+            $_SESSION['flash_message'] = 'Poll updated successfully.';
+            $_SESSION['flash_type'] = 'success';
+            header('Location: ' . url('/admin/polls'));
+            exit;
+
+        } catch (Exception $e) {
+            $_SESSION['flash_message'] = 'Failed to update poll. Please try again.';
+            $_SESSION['flash_type'] = 'error';
+            header('Location: ' . url("/admin/polls/{$id}"));
+            exit;
+        }
+    }
+
+    /**
+     * Close a poll
+     * POST /admin/polls/{id}/close
+     */
+    public function closePoll(string $id): void
+    {
+        $user = currentUser();
+        $brigadeId = $user['brigade_id'];
+        $pollId = (int)$id;
+
+        // Validate CSRF
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
+            $this->redirectWithError(url('/admin/polls'), 'Invalid request. Please try again.');
+            return;
+        }
+
+        require_once __DIR__ . '/../Models/Poll.php';
+        $pollModel = new Poll($this->db);
+
+        $poll = $pollModel->findById($pollId);
+
+        if (!$poll || !$pollModel->belongsToBrigade($pollId, $brigadeId)) {
+            http_response_code(404);
+            render('pages/errors/404', ['message' => 'Poll not found']);
+            return;
+        }
+
+        try {
+            $pollModel->close($pollId);
+
+            // Log the action
+            $this->auditLog->log($brigadeId, $user['id'], 'poll.close', [
+                'poll_id' => $pollId,
+                'title' => $poll['title']
+            ]);
+
+            $_SESSION['flash_message'] = 'Poll closed successfully.';
+            $_SESSION['flash_type'] = 'success';
+
+        } catch (Exception $e) {
+            $_SESSION['flash_message'] = 'Failed to close poll. Please try again.';
+            $_SESSION['flash_type'] = 'error';
+        }
+
+        header('Location: ' . url('/admin/polls'));
+        exit;
+    }
+
+    /**
+     * Delete a poll
+     * DELETE /admin/polls/{id}
+     */
+    public function deletePoll(string $id): void
+    {
+        $user = currentUser();
+        $brigadeId = $user['brigade_id'];
+        $pollId = (int)$id;
+
+        // Validate CSRF
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
+            $this->redirectWithError(url('/admin/polls'), 'Invalid request. Please try again.');
+            return;
+        }
+
+        require_once __DIR__ . '/../Models/Poll.php';
+        $pollModel = new Poll($this->db);
+
+        $poll = $pollModel->findById($pollId);
+
+        if (!$poll || !$pollModel->belongsToBrigade($pollId, $brigadeId)) {
+            http_response_code(404);
+            render('pages/errors/404', ['message' => 'Poll not found']);
+            return;
+        }
+
+        try {
+            $pollModel->delete($pollId);
+
+            // Log the action
+            $this->auditLog->log($brigadeId, $user['id'], 'poll.delete', [
+                'poll_id' => $pollId,
+                'title' => $poll['title']
+            ]);
+
+            $_SESSION['flash_message'] = 'Poll deleted successfully.';
+            $_SESSION['flash_type'] = 'success';
+
+        } catch (Exception $e) {
+            $_SESSION['flash_message'] = 'Failed to delete poll. Please try again.';
+            $_SESSION['flash_type'] = 'error';
+        }
+
+        header('Location: ' . url('/admin/polls'));
+        exit;
+    }
+
     /**
      * Get dashboard statistics
      */
@@ -832,11 +1132,16 @@ class AdminController
         // Active notices
         $activeNotices = $this->noticeModel->count($brigadeId, ['active_only' => true]);
 
+        // Active polls
+        $pollModel = new Poll($this->db);
+        $activePolls = $pollModel->count($brigadeId, ['status' => 'active']);
+
         return [
             'active_members' => $activeMembers,
             'pending_leave' => $pendingLeave,
             'upcoming_events' => $upcomingEvents,
-            'active_notices' => $activeNotices
+            'active_notices' => $activeNotices,
+            'active_polls' => $activePolls
         ];
     }
 

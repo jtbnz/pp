@@ -35,11 +35,9 @@ ob_start();
     <header class="page-header">
         <div class="page-header-content">
             <h1><?= e($pageTitle) ?></h1>
-            <?php if ($isAdmin): ?>
-                <a href="<?= url('/notices/create') ?>" class="btn btn-primary">
-                    + New Notice
-                </a>
-            <?php endif; ?>
+            <a href="<?= url('/notices/create') ?>" class="btn btn-primary">
+                + New Notice
+            </a>
         </div>
     </header>
 
