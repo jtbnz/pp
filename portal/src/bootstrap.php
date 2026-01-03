@@ -293,10 +293,14 @@ function asset(string $path): string
 }
 
 // Helper function for relative time formatting
+// Assumes input datetime is stored in UTC
 function timeAgo(string $datetime): string
 {
-    $time = strtotime($datetime);
-    $diff = time() - $time;
+    // Parse the stored UTC time and get current UTC time for comparison
+    $timeUtc = strtotime($datetime . ' UTC');
+    $nowUtc = time(); // time() returns UTC timestamp
+
+    $diff = $nowUtc - $timeUtc;
 
     if ($diff < 60) {
         return 'just now';
@@ -310,7 +314,8 @@ function timeAgo(string $datetime): string
         $days = (int)floor($diff / 86400);
         return $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
     } else {
-        return date('j M Y', $time);
+        // Convert to local time for display
+        return fromUtc($datetime, 'j M Y');
     }
 }
 
