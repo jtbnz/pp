@@ -82,7 +82,7 @@ class Auth
         } else {
             // Store intended destination for redirect after login
             $this->storeIntendedUrl();
-            header('Location: /auth/login');
+            header('Location: ' . url('/auth/login'));
             exit;
         }
 
@@ -99,7 +99,7 @@ class Auth
         if ($this->isApiRequest()) {
             $this->jsonResponse(['error' => 'Access expired. Please contact your administrator.'], 401);
         } else {
-            header('Location: /auth/login?expired=1');
+            header('Location: ' . url('/auth/login?expired=1'));
             exit;
         }
 
@@ -168,8 +168,14 @@ class Auth
      */
     public static function getIntendedUrl(): string
     {
-        $url = $_SESSION['intended_url'] ?? '/';
+        $url = $_SESSION['intended_url'] ?? null;
         unset($_SESSION['intended_url']);
+
+        // If no intended URL, redirect to home with base path
+        if ($url === null) {
+            return url('/');
+        }
+
         return $url;
     }
 
