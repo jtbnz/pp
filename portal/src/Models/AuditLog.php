@@ -78,7 +78,7 @@ class AuditLog
 
         // Parse JSON details
         foreach ($results as &$row) {
-            $row['details'] = json_decode($row['details'], true) ?? [];
+            $row['details'] = $row['details'] !== null ? (json_decode($row['details'], true) ?? []) : [];
         }
 
         return $results;
@@ -157,7 +157,7 @@ class AuditLog
 
         // Parse JSON details
         foreach ($results as &$row) {
-            $row['details'] = json_decode($row['details'], true) ?? [];
+            $row['details'] = $row['details'] !== null ? (json_decode($row['details'], true) ?? []) : [];
         }
 
         return $results;
@@ -227,7 +227,7 @@ class AuditLog
         $result = $stmt->fetch();
 
         if ($result) {
-            $result['details'] = json_decode($result['details'], true) ?? [];
+            $result['details'] = $result['details'] !== null ? (json_decode($result['details'], true) ?? []) : [];
         }
 
         return $result ?: null;
