@@ -306,6 +306,10 @@ $router->group('/admin', function(Router $router) {
     $router->delete('/polls/{id}', 'AdminController@deletePoll');
     $router->get('/settings', 'AdminController@settings');
     $router->put('/settings', 'AdminController@updateSettings');
+    // Calendar import
+    $router->get('/events/import', 'AdminController@importEventsForm');
+    $router->post('/events/import', 'AdminController@importEvents');
+    $router->post('/events/import/preview', 'AdminController@previewImportEvents');
 }, ['middleware' => ['auth', 'admin']]);
 
 // Dispatch the request

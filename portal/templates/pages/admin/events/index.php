@@ -30,9 +30,14 @@ ob_start();
                 <h1>Events</h1>
                 <p class="text-secondary"><?= count($events) ?> event<?= count($events) !== 1 ? 's' : '' ?></p>
             </div>
-            <a href="<?= url('/admin/events/create') ?>" class="btn btn-primary">
-                <span class="btn-icon">&#43;</span> Create
-            </a>
+            <div class="header-actions">
+                <a href="<?= url('/admin/events/import') ?>" class="btn btn-secondary">
+                    <span class="btn-icon">&#8593;</span> Import CSV
+                </a>
+                <a href="<?= url('/admin/events/create') ?>" class="btn btn-primary">
+                    <span class="btn-icon">&#43;</span> Create
+                </a>
+            </div>
         </div>
     </header>
 
@@ -136,6 +141,12 @@ ob_start();
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .filters-form {

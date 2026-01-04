@@ -1194,4 +1194,422 @@ class AdminController
         header("Location: {$url}");
         exit;
     }
+
+    // =========================================================================
+    // CALENDAR IMPORT
+    // =========================================================================
+
+    /**
+     * Show calendar import form
+     * GET /admin/events/import
+     */
+    public function importEventsForm(): void
+    {
+        render('pages/admin/events/import', [
+            'pageTitle' => 'Import Calendar Events'
+        ]);
+    }
+
+    /**
+     * Preview CSV import
+     * POST /admin/events/import/preview
+     */
+    public function previewImportEvents(): void
+    {
+        // Validate CSRF
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
+            $this->redirectWithError(url('/admin/events/import'), 'Invalid request. Please try again.');
+            return;
+        }
+
+        // Check file upload
+        if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'File is too large (exceeds server limit)',
+                UPLOAD_ERR_FORM_SIZE => 'File is too large',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Server configuration error',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file',
+                UPLOAD_ERR_EXTENSION => 'File upload blocked by extension',
+            ];
+            $errorCode = $_FILES['csv_file']['error'] ?? UPLOAD_ERR_NO_FILE;
+            $_SESSION['form_errors'] = ['file' => $errorMessages[$errorCode] ?? 'Upload failed'];
+            header('Location: ' . url('/admin/events/import'));
+            exit;
+        }
+
+        // Check file size (max 1MB)
+        if ($_FILES['csv_file']['size'] > 1024 * 1024) {
+            $_SESSION['form_errors'] = ['file' => 'File is too large (max 1MB)'];
+            header('Location: ' . url('/admin/events/import'));
+            exit;
+        }
+
+        // Parse CSV
+        $skipDuplicates = isset($_POST['skip_duplicates']);
+        $defaultTraining = isset($_POST['default_training']);
+        $result = $this->parseCsvFile($_FILES['csv_file']['tmp_name'], $defaultTraining);
+
+        if ($result === false) {
+            $_SESSION['form_errors'] = ['file' => 'Failed to parse CSV file. Please check the format.'];
+            header('Location: ' . url('/admin/events/import'));
+            exit;
+        }
+
+        // Check for duplicates if requested
+        if ($skipDuplicates && !empty($result['valid'])) {
+            $user = currentUser();
+            $brigadeId = $user['brigade_id'];
+            $result['valid'] = $this->filterDuplicateEvents($brigadeId, $result['valid']);
+        }
+
+        // Store preview data in session
+        $_SESSION['import_preview'] = $result;
+        $_SESSION['form_data'] = $_POST;
+
+        header('Location: ' . url('/admin/events/import'));
+        exit;
+    }
+
+    /**
+     * Execute the import
+     * POST /admin/events/import
+     */
+    public function importEvents(): void
+    {
+        $user = currentUser();
+        $brigadeId = $user['brigade_id'];
+
+        // Validate CSRF
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
+            $this->redirectWithError(url('/admin/events/import'), 'Invalid request. Please try again.');
+            return;
+        }
+
+        // Check if confirmed
+        if (!isset($_POST['confirmed']) || $_POST['confirmed'] !== '1') {
+            $this->redirectWithError(url('/admin/events/import'), 'Import not confirmed.');
+            return;
+        }
+
+        // Get import data
+        $importData = json_decode($_POST['import_data'] ?? '[]', true);
+        if (empty($importData)) {
+            $this->redirectWithError(url('/admin/events/import'), 'No events to import.');
+            return;
+        }
+
+        // Import events
+        $created = 0;
+        $skipped = [];
+
+        foreach ($importData as $eventData) {
+            try {
+                // Build datetime
+                $startDateTime = $eventData['date'];
+                if (!empty($eventData['start_time'])) {
+                    $startDateTime .= ' ' . $eventData['start_time'] . ':00';
+                } else {
+                    $startDateTime .= ' 00:00:00';
+                }
+
+                $endDateTime = null;
+                if (!empty($eventData['end_time'])) {
+                    $endDateTime = $eventData['date'] . ' ' . $eventData['end_time'] . ':00';
+                }
+
+                $this->eventModel->create([
+                    'brigade_id' => $brigadeId,
+                    'title' => $eventData['title'],
+                    'description' => $eventData['description'] ?? null,
+                    'location' => $eventData['location'] ?? null,
+                    'start_time' => $startDateTime,
+                    'end_time' => $endDateTime,
+                    'all_day' => $eventData['all_day'] ?? 0,
+                    'is_training' => $eventData['is_training'] ?? 0,
+                    'is_visible' => 1,
+                    'created_by' => $user['id']
+                ]);
+
+                $created++;
+            } catch (Exception $e) {
+                $skipped[] = $eventData['title'] . ' (' . $eventData['date'] . ')';
+            }
+        }
+
+        // Log the action
+        $this->auditLog->log($brigadeId, $user['id'], 'events.import', [
+            'created' => $created,
+            'skipped' => count($skipped)
+        ]);
+
+        // Store result
+        $_SESSION['import_result'] = [
+            'success' => $created > 0,
+            'created' => $created,
+            'skipped' => $skipped
+        ];
+
+        header('Location: ' . url('/admin/events/import'));
+        exit;
+    }
+
+    /**
+     * Parse a CSV file into event data
+     *
+     * @param string $filePath Path to CSV file
+     * @param bool $defaultTraining Whether to mark events as training by default
+     * @return array|false Array with 'valid' and 'errors' keys, or false on failure
+     */
+    private function parseCsvFile(string $filePath, bool $defaultTraining = false): array|false
+    {
+        $handle = fopen($filePath, 'r');
+        if ($handle === false) {
+            return false;
+        }
+
+        $valid = [];
+        $errors = [];
+        $headers = null;
+        $rowNum = 0;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $rowNum++;
+
+            // Skip empty rows
+            if (count($row) === 1 && empty($row[0])) {
+                continue;
+            }
+
+            // First row is headers
+            if ($headers === null) {
+                $headers = array_map(function($h) {
+                    return strtolower(trim(str_replace([' ', '-'], '_', $h)));
+                }, $row);
+
+                // Validate required headers
+                if (!in_array('title', $headers) || !in_array('date', $headers)) {
+                    fclose($handle);
+                    return false;
+                }
+                continue;
+            }
+
+            // Map row to associative array
+            $data = [];
+            foreach ($headers as $i => $header) {
+                $data[$header] = $row[$i] ?? '';
+            }
+
+            // Validate and normalize row
+            $result = $this->validateEventRow($data, $rowNum, $defaultTraining);
+
+            if ($result['valid']) {
+                $valid[] = $result['data'];
+            } else {
+                $errors[] = ['row' => $rowNum, 'message' => $result['error']];
+            }
+        }
+
+        fclose($handle);
+
+        return ['valid' => $valid, 'errors' => $errors];
+    }
+
+    /**
+     * Validate and normalize a single event row
+     *
+     * @param array $data Row data
+     * @param int $rowNum Row number for error reporting
+     * @param bool $defaultTraining Default training flag
+     * @return array ['valid' => bool, 'data' => array|null, 'error' => string|null]
+     */
+    private function validateEventRow(array $data, int $rowNum, bool $defaultTraining): array
+    {
+        // Required: title
+        $title = trim($data['title'] ?? '');
+        if (empty($title)) {
+            return ['valid' => false, 'data' => null, 'error' => 'Title is required'];
+        }
+
+        // Required: date
+        $dateStr = trim($data['date'] ?? '');
+        if (empty($dateStr)) {
+            return ['valid' => false, 'data' => null, 'error' => 'Date is required'];
+        }
+
+        // Parse date (supports YYYY-MM-DD or DD/MM/YYYY)
+        $date = $this->parseDate($dateStr);
+        if ($date === null) {
+            return ['valid' => false, 'data' => null, 'error' => "Invalid date format: {$dateStr}"];
+        }
+
+        // Optional: start_time
+        $startTime = null;
+        if (!empty($data['start_time'])) {
+            $startTime = $this->parseTime($data['start_time']);
+            if ($startTime === null) {
+                return ['valid' => false, 'data' => null, 'error' => "Invalid start time: {$data['start_time']}"];
+            }
+        }
+
+        // Optional: end_time
+        $endTime = null;
+        if (!empty($data['end_time'])) {
+            $endTime = $this->parseTime($data['end_time']);
+            if ($endTime === null) {
+                return ['valid' => false, 'data' => null, 'error' => "Invalid end time: {$data['end_time']}"];
+            }
+        }
+
+        // Optional: is_training
+        $isTraining = $defaultTraining;
+        if (isset($data['is_training']) && $data['is_training'] !== '') {
+            $isTraining = $this->parseBoolean($data['is_training']);
+        }
+
+        // Optional: all_day
+        $allDay = empty($startTime);
+        if (isset($data['all_day']) && $data['all_day'] !== '') {
+            $allDay = $this->parseBoolean($data['all_day']);
+        }
+
+        return [
+            'valid' => true,
+            'data' => [
+                'title' => $title,
+                'date' => $date,
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'description' => trim($data['description'] ?? '') ?: null,
+                'location' => trim($data['location'] ?? '') ?: null,
+                'is_training' => $isTraining ? 1 : 0,
+                'all_day' => $allDay ? 1 : 0,
+            ],
+            'error' => null
+        ];
+    }
+
+    /**
+     * Parse a date string into YYYY-MM-DD format
+     *
+     * @param string $dateStr Date string
+     * @return string|null Normalized date or null on failure
+     */
+    private function parseDate(string $dateStr): ?string
+    {
+        // Try YYYY-MM-DD
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
+            $dt = DateTime::createFromFormat('Y-m-d', $dateStr);
+            if ($dt && $dt->format('Y-m-d') === $dateStr) {
+                return $dateStr;
+            }
+        }
+
+        // Try DD/MM/YYYY
+        if (preg_match('#^\d{1,2}/\d{1,2}/\d{4}$#', $dateStr)) {
+            $dt = DateTime::createFromFormat('d/m/Y', $dateStr);
+            if ($dt) {
+                return $dt->format('Y-m-d');
+            }
+        }
+
+        // Try natural language parsing
+        $timestamp = strtotime($dateStr);
+        if ($timestamp !== false && $timestamp > 0) {
+            return date('Y-m-d', $timestamp);
+        }
+
+        return null;
+    }
+
+    /**
+     * Parse a time string into HH:MM format
+     *
+     * @param string $timeStr Time string
+     * @return string|null Normalized time or null on failure
+     */
+    private function parseTime(string $timeStr): ?string
+    {
+        $timeStr = trim($timeStr);
+
+        // Try HH:MM (24hr)
+        if (preg_match('/^(\d{1,2}):(\d{2})$/', $timeStr, $m)) {
+            $hour = (int)$m[1];
+            $min = (int)$m[2];
+            if ($hour >= 0 && $hour <= 23 && $min >= 0 && $min <= 59) {
+                return sprintf('%02d:%02d', $hour, $min);
+            }
+        }
+
+        // Try HH:MM AM/PM
+        if (preg_match('/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i', $timeStr, $m)) {
+            $hour = (int)$m[1];
+            $min = (int)$m[2];
+            $ampm = strtoupper($m[3]);
+
+            if ($hour >= 1 && $hour <= 12 && $min >= 0 && $min <= 59) {
+                if ($ampm === 'PM' && $hour < 12) {
+                    $hour += 12;
+                } elseif ($ampm === 'AM' && $hour === 12) {
+                    $hour = 0;
+                }
+                return sprintf('%02d:%02d', $hour, $min);
+            }
+        }
+
+        // Try natural parsing
+        $timestamp = strtotime($timeStr);
+        if ($timestamp !== false) {
+            return date('H:i', $timestamp);
+        }
+
+        return null;
+    }
+
+    /**
+     * Parse a boolean value from string
+     *
+     * @param mixed $value Value to parse
+     * @return bool
+     */
+    private function parseBoolean($value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        $str = strtolower(trim((string)$value));
+        return in_array($str, ['1', 'true', 'yes', 'y', 'on'], true);
+    }
+
+    /**
+     * Filter out events that already exist in the database
+     *
+     * @param int $brigadeId Brigade ID
+     * @param array $events Events to check
+     * @return array Filtered events
+     */
+    private function filterDuplicateEvents(int $brigadeId, array $events): array
+    {
+        $filtered = [];
+
+        foreach ($events as $event) {
+            // Check if event with same title and date already exists
+            $stmt = $this->db->prepare('
+                SELECT id FROM events
+                WHERE brigade_id = ?
+                  AND title = ?
+                  AND DATE(start_time) = ?
+            ');
+            $stmt->execute([$brigadeId, $event['title'], $event['date']]);
+
+            if (!$stmt->fetch()) {
+                $filtered[] = $event;
+            }
+        }
+
+        return $filtered;
+    }
 }
