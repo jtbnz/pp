@@ -26,9 +26,9 @@ const PRECACHE_ASSETS = [
     BASE_PATH + '/assets/js/offline-storage.js',
     BASE_PATH + '/assets/js/push.js',
     BASE_PATH + '/manifest.json',
-    BASE_PATH + '/assets/icons/icon-192.png',
-    BASE_PATH + '/assets/icons/icon-512.png',
-    BASE_PATH + '/assets/icons/badge-72.png'
+    BASE_PATH + '/assets/icons/icon-192.svg',
+    BASE_PATH + '/assets/icons/icon-512.svg',
+    BASE_PATH + '/assets/icons/badge-72.svg'
 ];
 
 // API routes that should be network-only
