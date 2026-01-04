@@ -202,6 +202,24 @@ $user = currentUser();
 
     <!-- Scripts -->
     <script>window.BASE_PATH = '<?= e($config['base_path'] ?? '') ?>';</script>
+    <?php
+    // Handle pending remember token from login - store in localStorage for PWA
+    if (isset($_SESSION['pending_remember_token'])): ?>
+    <script>
+    (function() {
+        try {
+            localStorage.setItem('puke_remember_token', '<?= e($_SESSION['pending_remember_token']) ?>');
+            console.log('[Auth] Remember token stored in localStorage for PWA');
+        } catch (e) {
+            console.error('[Auth] Failed to store remember token:', e);
+        }
+    })();
+    </script>
+    <?php
+        // Clear the token from session after outputting it
+        unset($_SESSION['pending_remember_token']);
+    endif;
+    ?>
     <script src="<?= url('/assets/js/offline-storage.js') ?>"></script>
     <script src="<?= url('/assets/js/app.js') ?>"></script>
 

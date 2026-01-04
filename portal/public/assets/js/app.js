@@ -30,12 +30,15 @@ const App = {
     /**
      * Initialize the application
      */
-    init() {
+    async init() {
         // Cache DOM elements
         this.cacheElements();
 
         // Set up event listeners
         this.bindEvents();
+
+        // Check for session restoration from localStorage (iOS PWA fix)
+        await this.checkSessionRestore();
 
         // Initialize components
         this.initServiceWorker();
@@ -46,6 +49,57 @@ const App = {
 
         // Log initialization
         this.log('App initialized');
+    },
+
+    /**
+     * Check if we need to restore session from localStorage token
+     * This handles iOS Safari -> PWA cookie jar isolation
+     */
+    async checkSessionRestore() {
+        // Only run this check if we're not authenticated
+        // Check for body class to avoid unnecessary API calls
+        if (document.body.classList.contains('authenticated')) {
+            this.log('Already authenticated, skipping session restore');
+            return;
+        }
+
+        const token = localStorage.getItem('puke_remember_token');
+        if (!token) {
+            this.log('No remember token in localStorage');
+            return;
+        }
+
+        this.log('Found remember token, attempting session restore...');
+
+        try {
+            const basePath = window.BASE_PATH || '';
+            const response = await fetch(basePath + '/api/session/restore', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ token: token })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                this.log('Session restored successfully, reloading...');
+                // Reload the page to get the authenticated content
+                window.location.reload();
+            } else {
+                // Token is invalid or expired
+                if (data.should_clear) {
+                    localStorage.removeItem('puke_remember_token');
+                    this.log('Removed invalid remember token');
+                }
+            }
+        } catch (error) {
+            this.log('Session restore failed:', error);
+            // Don't remove token on network error - might work later
+        }
     },
 
     // ========================================================================

@@ -214,6 +214,12 @@ $router->group('/polls', function(Router $router) {
     $router->post('/{id}/vote', 'PollController@vote');
 }, ['middleware' => ['auth', 'csrf']]);
 
+// Session API routes (NO auth middleware - used to restore sessions from localStorage)
+$router->group('/api/session', function(Router $router) {
+    $router->post('/restore', 'Api/SessionApiController@restore');
+    $router->get('/status', 'Api/SessionApiController@status');
+});
+
 // API routes (Protected - Phase 2+)
 $router->group('/api', function(Router $router) {
     // Members (Phase 3)

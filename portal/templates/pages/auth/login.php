@@ -283,6 +283,23 @@ ob_start();
 </style>
 
 <?php
+// Clear localStorage remember token on logout
+if (!empty($_SESSION['clear_remember_token'])):
+    unset($_SESSION['clear_remember_token']);
+?>
+<script>
+(function() {
+    try {
+        localStorage.removeItem('puke_remember_token');
+        console.log('[Auth] Remember token cleared from localStorage');
+    } catch (e) {
+        console.error('[Auth] Failed to clear remember token:', e);
+    }
+})();
+</script>
+<?php endif; ?>
+
+<?php
 $content = ob_get_clean();
 
 // Include main layout

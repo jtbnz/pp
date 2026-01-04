@@ -476,6 +476,7 @@ class AuthController
         session_start();
         $_SESSION['flash_message'] = 'You have been logged out.';
         $_SESSION['flash_type'] = 'info';
+        $_SESSION['clear_remember_token'] = true; // Signal to clear localStorage
 
         header('Location: ' . url('/auth/login'));
         exit;
@@ -537,8 +538,12 @@ class AuthController
         $_SESSION['created'] = time();
 
         // Create a "remember me" token for persistent login across Safari/PWA boundary
-        // This solves iOS cookie jar isolation issue
-        $this->createRememberToken($member['id']);
+        // This solves iOS cookie jar isolation issue by also storing in localStorage
+        $rememberToken = $this->createRememberToken($member['id']);
+
+        // Store token in session temporarily so we can output it to localStorage
+        // This will be cleared after the redirect page processes it
+        $_SESSION['pending_remember_token'] = $rememberToken;
 
         // Log login for debugging
         if ($debugEnabled) {
@@ -561,8 +566,10 @@ class AuthController
     /**
      * Create a remember token for persistent login
      * This allows users to stay logged in across Safari/PWA cookie jar isolation
+     *
+     * @return string The raw token (for localStorage storage)
      */
-    private function createRememberToken(int $memberId): void
+    private function createRememberToken(int $memberId): string
     {
         global $db;
 
@@ -626,6 +633,8 @@ class AuthController
               )
         ');
         $stmt->execute([$memberId, $memberId]);
+
+        return $token;
     }
 
     /**
