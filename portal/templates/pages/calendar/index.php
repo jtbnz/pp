@@ -392,6 +392,8 @@ ob_start();
     position: relative;
     cursor: pointer;
     transition: background var(--transition-fast);
+    overflow: hidden;
+    min-width: 0;
 }
 
 .calendar-day:last-child {
@@ -437,6 +439,8 @@ ob_start();
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .day-event {
@@ -450,6 +454,8 @@ ob_start();
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .day-event.training {
@@ -459,6 +465,12 @@ ob_start();
 .day-event .event-time {
     font-weight: var(--font-weight-medium);
     margin-right: 4px;
+    flex-shrink: 0;
+}
+
+.day-event .event-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .day-more {
