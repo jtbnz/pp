@@ -142,6 +142,13 @@ $user = currentUser();
                     <span class="nav-icon">&#9989;</span>
                     <span class="nav-text">Approvals</span>
                 </a>
+                <?php if (!empty($config['dlb']['enabled']) && !empty($config['dlb']['base_url'])): ?>
+                <a href="<?= e($config['dlb']['base_url']) ?>" class="nav-item" target="_blank" rel="noopener">
+                    <span class="nav-icon">&#128203;</span>
+                    <span class="nav-text">Attendance</span>
+                    <span class="nav-external">&#8599;</span>
+                </a>
+                <?php endif; ?>
             <?php endif; ?>
             <?php if (hasRole('admin')): ?>
                 <hr class="nav-divider">

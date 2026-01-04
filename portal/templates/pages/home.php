@@ -176,6 +176,23 @@ ob_start();
         </section>
         <?php endif; ?>
 
+        <!-- DLB Attendance Link (Officers only) -->
+        <?php if (hasRole('officer') && !empty($config['dlb']['enabled']) && !empty($config['dlb']['base_url'])): ?>
+        <section class="dlb-section mb-4">
+            <div class="section-header">
+                <h2>Attendance System</h2>
+            </div>
+            <a href="<?= e($config['dlb']['base_url']) ?>" class="dlb-link-card card" target="_blank" rel="noopener">
+                <div class="dlb-icon">&#128203;</div>
+                <div class="dlb-info">
+                    <span class="dlb-title">DLB Attendance</span>
+                    <span class="dlb-desc">View and manage call/muster attendance</span>
+                </div>
+                <span class="dlb-external">&#8599;</span>
+            </a>
+        </section>
+        <?php endif; ?>
+
         <!-- Leave Status -->
         <section class="leave-section">
             <div class="section-header">
@@ -528,6 +545,48 @@ ob_start();
     background: var(--color-primary, #D32F2F);
     color: white;
     font-weight: 500;
+}
+
+/* DLB Attendance Link */
+.dlb-link-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    text-decoration: none;
+    color: inherit;
+    border-left: 3px solid var(--color-accent, #1976D2);
+}
+
+.dlb-link-card:hover {
+    background: var(--color-background-hover, #f5f5f5);
+}
+
+.dlb-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.dlb-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.dlb-title {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.dlb-desc {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary, #666);
+}
+
+.dlb-external {
+    font-size: 1.25rem;
+    color: var(--color-text-secondary, #666);
 }
 </style>
 

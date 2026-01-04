@@ -538,6 +538,13 @@ button {
     border-top: 1px solid var(--color-divider);
 }
 
+.nav-external {
+    margin-left: auto;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    opacity: 0.6;
+}
+
 /* Desktop sidebar always visible */
 @media (min-width: 768px) {
     .menu-toggle {
