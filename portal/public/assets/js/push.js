@@ -8,10 +8,10 @@
 'use strict';
 
 // ============================================================================
-// Push Manager Class
+// Push Notification Handler Class
 // ============================================================================
 
-class PushManager {
+class PushNotificationHandler {
     constructor() {
         this.swRegistration = null;
         this.isSubscribed = false;
@@ -28,7 +28,7 @@ class PushManager {
     }
 
     /**
-     * Initialize the push manager
+     * Initialize the push handler
      * @returns {Promise<boolean>} True if push is supported and ready
      */
     async init() {
@@ -376,7 +376,7 @@ function initPushUI() {
     // Update UI based on current state
     const updateUI = () => {
         // Check if browser supports push notifications
-        if (!window.pushManager.isSupported()) {
+        if (!window.pukePush.isSupported()) {
             toggleButton.disabled = true;
             toggleButton.textContent = 'Not Supported';
             if (statusText) {
@@ -385,12 +385,12 @@ function initPushUI() {
             return;
         }
 
-        // Check if push manager was initialized successfully
-        if (!window.pushManager.isInitialized) {
+        // Check if push handler was initialized successfully
+        if (!window.pukePush.isInitialized) {
             toggleButton.disabled = true;
 
             // Show appropriate message based on error type
-            switch (window.pushManager.initError) {
+            switch (window.pukePush.initError) {
                 case 'not_enabled':
                 case 'not_configured':
                     toggleButton.textContent = 'Not Available';
@@ -413,7 +413,7 @@ function initPushUI() {
             return;
         }
 
-        const permission = window.pushManager.getPermissionStatus();
+        const permission = window.pukePush.getPermissionStatus();
         if (permission === 'denied') {
             toggleButton.disabled = true;
             toggleButton.textContent = 'Blocked';
@@ -423,7 +423,7 @@ function initPushUI() {
             return;
         }
 
-        const isSubscribed = window.pushManager.getSubscriptionStatus();
+        const isSubscribed = window.pukePush.getSubscriptionStatus();
         toggleButton.disabled = false;
         toggleButton.textContent = isSubscribed ? 'Disable Notifications' : 'Enable Notifications';
         toggleButton.classList.toggle('subscribed', isSubscribed);
@@ -438,8 +438,8 @@ function initPushUI() {
     // Handle toggle button click
     toggleButton.addEventListener('click', async () => {
         // Safety check - don't try to subscribe if not initialized
-        if (!window.pushManager.isInitialized) {
-            console.error('[Push] Cannot toggle - push manager not initialized');
+        if (!window.pukePush.isInitialized) {
+            console.error('[Push] Cannot toggle - push handler not initialized');
             return;
         }
 
@@ -447,7 +447,7 @@ function initPushUI() {
         toggleButton.textContent = 'Please wait...';
 
         try {
-            await window.pushManager.toggle();
+            await window.pukePush.toggle();
         } catch (error) {
             console.error('[Push] Toggle error:', error);
             if (window.App) {
@@ -466,17 +466,17 @@ function initPushUI() {
 // Initialize on DOM Ready
 // ============================================================================
 
-// Create global instance
-window.pushManager = new PushManager();
+// Create global instance with a unique name that won't conflict with browser APIs
+window.pukePush = new PushNotificationHandler();
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', async () => {
-        await window.pushManager.init();
+        await window.pukePush.init();
         initPushUI();
     });
 } else {
-    window.pushManager.init().then(() => {
+    window.pukePush.init().then(() => {
         initPushUI();
     });
 }
