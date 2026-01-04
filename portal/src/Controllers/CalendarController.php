@@ -75,7 +75,7 @@ class CalendarController
             'events' => $events,
             'upcomingTrainings' => array_slice($upcomingTrainings, 0, 5),
             'isAdmin' => hasRole('admin'),
-            'extraScripts' => '<script src="/assets/js/calendar.js"></script>',
+            'extraScripts' => '<script src="' . url('/assets/js/calendar.js') . '"></script>',
         ]);
     }
 
