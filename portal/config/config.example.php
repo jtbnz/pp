@@ -92,6 +92,7 @@ return [
         'subject' => 'mailto:admin@kiaora.tech',
         'public_key' => '', // VAPID public key (Base64 URL-safe)
         'private_key' => '', // VAPID private key (keep secret!)
+        'debug' => false, // Enable push debug logging (logs to data/logs/push-debug.log)
     ],
 
     // =========================================================================

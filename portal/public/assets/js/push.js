@@ -32,6 +32,15 @@ class PushManager {
      * @returns {Promise<boolean>} True if push is supported and ready
      */
     async init() {
+        console.log('[Push] Starting initialization...');
+        console.log('[Push] Browser info:', {
+            userAgent: navigator.userAgent,
+            serviceWorker: 'serviceWorker' in navigator,
+            pushManager: 'PushManager' in window,
+            notification: 'Notification' in window,
+            notificationPermission: 'Notification' in window ? Notification.permission : 'N/A'
+        });
+
         // Check for required browser features
         if (!('serviceWorker' in navigator)) {
             console.log('[Push] Service workers are not supported');
@@ -53,32 +62,51 @@ class PushManager {
 
         try {
             // Get service worker registration
+            console.log('[Push] Waiting for service worker...');
             this.swRegistration = await navigator.serviceWorker.ready;
-            console.log('[Push] Service worker is ready');
+            console.log('[Push] Service worker is ready:', this.swRegistration.scope);
 
             // Fetch VAPID public key from server
-            const response = await fetch(this.basePath + '/api/push/key');
+            const keyUrl = this.basePath + '/api/push/key';
+            console.log('[Push] Fetching public key from:', keyUrl);
+            const response = await fetch(keyUrl);
+            console.log('[Push] Key response status:', response.status, response.statusText);
+
             if (!response.ok) {
-                console.log('[Push] Push notifications not enabled on server');
+                const errorText = await response.text();
+                console.log('[Push] Push key fetch failed:', response.status, errorText);
                 this.initError = 'not_enabled';
                 return false;
             }
 
             const data = await response.json();
+            console.log('[Push] Key response data:', {
+                hasPublicKey: !!data.publicKey,
+                publicKeyLength: data.publicKey ? data.publicKey.length : 0,
+                error: data.error || null
+            });
+
             if (!data.publicKey) {
                 console.log('[Push] No public key returned from server');
                 this.initError = 'not_configured';
                 return false;
             }
             this.publicKey = data.publicKey;
+            console.log('[Push] Public key received, length:', this.publicKey.length);
 
             // Check current subscription status
             await this.updateSubscriptionStatus();
 
             this.isInitialized = true;
+            console.log('[Push] Initialization complete - isInitialized:', this.isInitialized, 'isSubscribed:', this.isSubscribed);
             return true;
         } catch (error) {
             console.error('[Push] Initialization error:', error);
+            console.error('[Push] Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
             this.initError = 'init_failed';
             return false;
         }
@@ -103,9 +131,17 @@ class PushManager {
      * @returns {Promise<boolean>} True if subscription successful
      */
     async subscribe() {
+        console.log('[Push] Starting subscription process...');
+        console.log('[Push] Current permission:', Notification.permission);
+        console.log('[Push] Has public key:', !!this.publicKey);
+        console.log('[Push] Has SW registration:', !!this.swRegistration);
+
         try {
             // Request notification permission
+            console.log('[Push] Requesting notification permission...');
             const permission = await Notification.requestPermission();
+            console.log('[Push] Permission result:', permission);
+
             if (permission !== 'granted') {
                 console.log('[Push] Notification permission denied');
                 return false;
@@ -114,35 +150,59 @@ class PushManager {
             console.log('[Push] Notification permission granted');
 
             // Subscribe to push
+            console.log('[Push] Attempting to subscribe to push manager...');
+            console.log('[Push] Public key length:', this.publicKey ? this.publicKey.length : 0);
+
+            const applicationServerKey = this.urlBase64ToUint8Array(this.publicKey);
+            console.log('[Push] Application server key created, length:', applicationServerKey.length);
+
             const subscription = await this.swRegistration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: this.urlBase64ToUint8Array(this.publicKey)
+                applicationServerKey: applicationServerKey
             });
 
-            console.log('[Push] User is subscribed:', subscription);
+            console.log('[Push] User is subscribed');
+            console.log('[Push] Subscription endpoint:', subscription.endpoint);
+            console.log('[Push] Subscription JSON:', JSON.stringify(subscription.toJSON()));
 
             // Send subscription to server
-            const response = await fetch(this.basePath + '/api/push/subscribe', {
+            const subscribeUrl = this.basePath + '/api/push/subscribe';
+            const csrfToken = this.getCsrfToken();
+            console.log('[Push] Sending subscription to server:', subscribeUrl);
+            console.log('[Push] CSRF token present:', !!csrfToken);
+
+            const response = await fetch(subscribeUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-Token': this.getCsrfToken()
+                    'X-CSRF-Token': csrfToken
                 },
                 body: JSON.stringify({
                     subscription: subscription.toJSON()
                 })
             });
 
+            console.log('[Push] Server response status:', response.status, response.statusText);
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to save subscription');
+                const errorData = await response.json();
+                console.error('[Push] Server error response:', errorData);
+                throw new Error(errorData.error || 'Failed to save subscription');
             }
 
+            const successData = await response.json();
+            console.log('[Push] Server success response:', successData);
+
             this.isSubscribed = true;
-            console.log('[Push] Subscription saved to server');
+            console.log('[Push] Subscription saved to server successfully');
             return true;
         } catch (error) {
             console.error('[Push] Subscription error:', error);
+            console.error('[Push] Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
             return false;
         }
     }
