@@ -1,0 +1,3 @@
+- name: Generate plan with Claude Code
+  run: |
+    echo "Analyze this issue and create a plan: ${{ github.event.issue.title }}" any questions for the requestor ask in multichoice format with your preferred recommendation as the first option| claude --print
