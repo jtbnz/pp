@@ -14,6 +14,7 @@ class PushService
     private string $privateKey;
     private string $subject;
     private bool $enabled;
+    private bool $debugEnabled;
 
     public function __construct(array $pushConfig, PDO $db)
     {
@@ -22,6 +23,30 @@ class PushService
         $this->privateKey = $pushConfig['private_key'] ?? '';
         $this->subject = $pushConfig['subject'] ?? 'mailto:admin@example.com';
         $this->enabled = ($pushConfig['enabled'] ?? false) && !empty($this->publicKey) && !empty($this->privateKey);
+        $this->debugEnabled = $pushConfig['debug'] ?? false;
+    }
+
+    /**
+     * Log debug information
+     */
+    private function logDebug(string $event, array $data): void
+    {
+        if (!$this->debugEnabled) {
+            return;
+        }
+
+        $logFile = __DIR__ . '/../data/logs/push-debug.log';
+        $logDir = dirname($logFile);
+
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        $dataJson = json_encode($data, JSON_UNESCAPED_SLASHES);
+        $logEntry = "[{$timestamp}] PushService::{$event}: {$dataJson}\n";
+
+        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
     }
 
     /**
@@ -124,12 +149,25 @@ class PushService
      */
     public function send(int $memberId, string $title, string $body, array $data = []): bool
     {
+        $this->logDebug('send_called', [
+            'member_id' => $memberId,
+            'title' => $title,
+            'enabled' => $this->enabled,
+        ]);
+
         if (!$this->enabled) {
+            $this->logDebug('send_failed', ['reason' => 'push_not_enabled']);
             return false;
         }
 
         $subscriptions = $this->getSubscriptions($memberId);
+        $this->logDebug('send_subscriptions', [
+            'member_id' => $memberId,
+            'subscription_count' => count($subscriptions),
+        ]);
+
         if (empty($subscriptions)) {
+            $this->logDebug('send_failed', ['reason' => 'no_subscriptions', 'member_id' => $memberId]);
             return false;
         }
 
@@ -142,10 +180,21 @@ class PushService
 
         $success = false;
         foreach ($subscriptions as $subscription) {
-            if ($this->sendToSubscription($subscription, $payload)) {
+            $result = $this->sendToSubscription($subscription, $payload);
+            $this->logDebug('send_to_subscription', [
+                'member_id' => $memberId,
+                'endpoint_prefix' => substr($subscription['endpoint'] ?? '', 0, 50),
+                'success' => $result,
+            ]);
+            if ($result) {
                 $success = true;
             }
         }
+
+        $this->logDebug('send_complete', [
+            'member_id' => $memberId,
+            'success' => $success,
+        ]);
 
         return $success;
     }
