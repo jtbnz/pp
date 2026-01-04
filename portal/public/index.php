@@ -220,6 +220,9 @@ $router->group('/api/session', function(Router $router) {
     $router->get('/status', 'Api/SessionApiController@status');
 });
 
+// Push debug route (NO auth middleware - for debugging push issues)
+$router->get('/api/push/debug', 'Api/PushApiController@debug');
+
 // API routes (Protected - Phase 2+)
 $router->group('/api', function(Router $router) {
     // Members (Phase 3)
@@ -261,6 +264,7 @@ $router->group('/api', function(Router $router) {
     $router->delete('/leave/{id}', 'Api/LeaveApiController@destroy');
 
     // Push notifications (API)
+    $router->get('/push/debug', 'Api/PushApiController@debug');
     $router->get('/push/key', 'Api/PushApiController@key');
     $router->get('/push/status', 'Api/PushApiController@status');
     $router->post('/push/subscribe', 'Api/PushApiController@subscribe');

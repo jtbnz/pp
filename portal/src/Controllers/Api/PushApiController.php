@@ -219,6 +219,39 @@ class PushApiController
     }
 
     /**
+     * Debug endpoint to test if requests reach the server
+     * GET /api/push/debug
+     */
+    public function debug(): void
+    {
+        // Always log, regardless of debug setting
+        $logFile = __DIR__ . '/../../data/logs/push-debug.log';
+        $logDir = dirname($logFile);
+
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        $data = [
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+            'debug_enabled' => $this->debugEnabled,
+            'push_enabled' => $this->pushService->isEnabled(),
+            'has_public_key' => !empty($this->config['push']['public_key'] ?? ''),
+            'has_private_key' => !empty($this->config['push']['private_key'] ?? ''),
+        ];
+        $logEntry = "[{$timestamp}] DEBUG_ENDPOINT: " . json_encode($data, JSON_UNESCAPED_SLASHES) . "\n";
+        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+
+        jsonResponse([
+            'debug_enabled' => $this->debugEnabled,
+            'push_enabled' => $this->pushService->isEnabled(),
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+            'timestamp' => $timestamp,
+        ]);
+    }
+
+    /**
      * Get VAPID public key for client-side subscription
      * GET /api/push/key
      */
