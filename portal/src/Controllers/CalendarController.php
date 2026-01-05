@@ -11,16 +11,19 @@ class CalendarController
     private Event $eventModel;
     private HolidayService $holidayService;
     private IcsService $icsService;
+    private Settings $settings;
 
     public function __construct()
     {
         require_once __DIR__ . '/../Models/Event.php';
+        require_once __DIR__ . '/../Models/Settings.php';
         require_once __DIR__ . '/../Services/HolidayService.php';
         require_once __DIR__ . '/../Services/IcsService.php';
 
         $this->eventModel = new Event();
         $this->holidayService = new HolidayService();
         $this->icsService = new IcsService();
+        $this->settings = new Settings();
     }
 
     /**
@@ -67,12 +70,25 @@ class CalendarController
             date('Y-m-d', strtotime('+3 months'))
         );
 
+        // Get public holidays if enabled
+        $holidays = [];
+        $showHolidays = $this->settings->get($brigadeId, 'calendar.show_holidays', '1');
+        if ($showHolidays === '1' || $showHolidays === true) {
+            $holidayRegion = $this->settings->get($brigadeId, 'calendar.holiday_region', 'auckland');
+            $holidays = $this->holidayService->getHolidaysForDateRange(
+                $dateRange['from'],
+                $dateRange['to'],
+                $holidayRegion
+            );
+        }
+
         render('pages/calendar/index', [
             'pageTitle' => 'Calendar',
             'view' => $view,
             'currentDate' => $date,
             'dateRange' => $dateRange,
             'events' => $events,
+            'holidays' => $holidays,
             'upcomingTrainings' => array_slice($upcomingTrainings, 0, 5),
             'isAdmin' => hasRole('admin'),
             'extraScripts' => '<script src="' . url('/assets/js/calendar.js') . '"></script>',

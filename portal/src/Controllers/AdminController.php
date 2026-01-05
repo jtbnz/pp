@@ -791,6 +791,12 @@ class AdminController
                 $settingsToUpdate['display.calendar_start_day'] = (int)$_POST['calendar_start_day'];
             }
 
+            // Calendar settings
+            $settingsToUpdate['calendar.show_holidays'] = isset($_POST['calendar_show_holidays']) ? '1' : '0';
+            if (isset($_POST['calendar_holiday_region'])) {
+                $settingsToUpdate['calendar.holiday_region'] = $_POST['calendar_holiday_region'];
+            }
+
             // DLB Integration settings
             $settingsToUpdate['dlb.enabled'] = isset($_POST['dlb_enabled']);
             $settingsToUpdate['dlb.auto_sync'] = isset($_POST['dlb_auto_sync']);

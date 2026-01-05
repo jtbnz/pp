@@ -494,6 +494,123 @@ class HolidayService
     }
 
     /**
+     * Get holidays for a date range
+     *
+     * Returns holidays for all dates within the specified range,
+     * filtering by region (national + selected province).
+     *
+     * @param string $fromDate Start date (Y-m-d)
+     * @param string $toDate End date (Y-m-d)
+     * @param string $region Region to filter (default: 'auckland')
+     * @return array Holidays indexed by date
+     */
+    public function getHolidaysForDateRange(string $fromDate, string $toDate, string $region = 'auckland'): array
+    {
+        // Get all years in the range
+        $startYear = (int)date('Y', strtotime($fromDate));
+        $endYear = (int)date('Y', strtotime($toDate));
+
+        // Fetch holidays for all relevant years
+        $allHolidays = [];
+        for ($year = $startYear; $year <= $endYear; $year++) {
+            $yearHolidays = $this->fetchHolidays($year);
+            foreach ($yearHolidays as $holiday) {
+                // Include national holidays and holidays for the selected region
+                $holidayRegion = $holiday['region'] ?? 'national';
+                if ($holidayRegion === 'national' || $holidayRegion === $region) {
+                    $allHolidays[] = $holiday;
+                }
+            }
+        }
+
+        // Filter to date range and index by date
+        $holidaysByDate = [];
+        $from = strtotime($fromDate);
+        $to = strtotime($toDate);
+
+        foreach ($allHolidays as $holiday) {
+            $holidayTimestamp = strtotime($holiday['date']);
+            if ($holidayTimestamp >= $from && $holidayTimestamp <= $to) {
+                $holidaysByDate[$holiday['date']] = [
+                    'name' => $holiday['name'],
+                    'region' => $holiday['region'] ?? 'national',
+                ];
+            }
+        }
+
+        return $holidaysByDate;
+    }
+
+    /**
+     * Get list of supported NZ regions for holidays
+     *
+     * @return array Region codes and names
+     */
+    public static function getSupportedRegions(): array
+    {
+        return [
+            'auckland' => 'Auckland',
+            'wellington' => 'Wellington',
+            'canterbury' => 'Canterbury',
+            'otago' => 'Otago',
+            'southland' => 'Southland',
+            'taranaki' => 'Taranaki',
+            'hawkes-bay' => "Hawke's Bay",
+            'marlborough' => 'Marlborough',
+            'nelson' => 'Nelson',
+            'westland' => 'Westland',
+            'chatham-islands' => 'Chatham Islands',
+        ];
+    }
+
+    /**
+     * Calculate regional anniversary days for other provinces
+     *
+     * @param int $year Year
+     * @param string $region Region code
+     * @return array|null Holiday data or null
+     */
+    public function getRegionalAnniversary(int $year, string $region): ?array
+    {
+        // Regional anniversary days in NZ
+        $anniversaries = [
+            'wellington' => ['base_date' => '01-22', 'name' => 'Wellington Anniversary Day'],
+            'canterbury' => ['base_date' => '11-16', 'name' => 'Canterbury Anniversary Day'],
+            'otago' => ['base_date' => '03-23', 'name' => 'Otago Anniversary Day'],
+            'southland' => ['base_date' => '01-17', 'name' => 'Southland Anniversary Day'],
+            'taranaki' => ['base_date' => '03-31', 'name' => 'Taranaki Anniversary Day'],
+            'hawkes-bay' => ['base_date' => '11-01', 'name' => "Hawke's Bay Anniversary Day"],
+            'marlborough' => ['base_date' => '11-01', 'name' => 'Marlborough Anniversary Day'],
+            'nelson' => ['base_date' => '02-01', 'name' => 'Nelson Anniversary Day'],
+            'westland' => ['base_date' => '12-01', 'name' => 'Westland Anniversary Day'],
+            'chatham-islands' => ['base_date' => '11-30', 'name' => 'Chatham Islands Anniversary Day'],
+        ];
+
+        if (!isset($anniversaries[$region])) {
+            return null;
+        }
+
+        $anniversary = $anniversaries[$region];
+        $baseDate = new DateTime("{$year}-{$anniversary['base_date']}", new DateTimeZone('Pacific/Auckland'));
+
+        // Find closest Monday
+        $dayOfWeek = (int)$baseDate->format('N');
+        if ($dayOfWeek !== 1) {
+            if ($dayOfWeek <= 4) {
+                $baseDate->modify('previous Monday');
+            } else {
+                $baseDate->modify('next Monday');
+            }
+        }
+
+        return [
+            'date' => $baseDate->format('Y-m-d'),
+            'name' => $anniversary['name'],
+            'region' => $region,
+        ];
+    }
+
+    /**
      * Clear holiday cache for a year
      *
      * @param int $year Year to clear cache for

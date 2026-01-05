@@ -230,6 +230,40 @@ ob_start();
             </div>
         </section>
 
+        <!-- Calendar Settings -->
+        <section class="settings-section card mb-3">
+            <div class="card-header">
+                <h2 class="card-title">Calendar Settings</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-checkbox">
+                        <input type="checkbox" name="calendar_show_holidays" value="1"
+                               <?= ($settings['calendar.show_holidays'] ?? '1') === '1' ? 'checked' : '' ?>>
+                        <span class="checkbox-label">Show public holidays on calendar</span>
+                    </label>
+                    <span class="form-hint">Display NZ public holidays as small dots on calendar dates</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="calendar_holiday_region" class="form-label">Holiday Region</label>
+                    <select id="calendar_holiday_region" name="calendar_holiday_region" class="form-select" style="width: auto;">
+                        <?php
+                        require_once __DIR__ . '/../../../src/Services/HolidayService.php';
+                        $regions = HolidayService::getSupportedRegions();
+                        $selectedRegion = $settings['calendar.holiday_region'] ?? 'auckland';
+                        foreach ($regions as $code => $name):
+                        ?>
+                        <option value="<?= e($code) ?>" <?= $selectedRegion === $code ? 'selected' : '' ?>>
+                            <?= e($name) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span class="form-hint">Select your region for regional anniversary days</span>
+                </div>
+            </div>
+        </section>
+
         <!-- DLB Integration Settings -->
         <section class="settings-section card mb-3">
             <div class="card-header">

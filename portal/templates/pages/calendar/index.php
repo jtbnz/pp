@@ -20,6 +20,7 @@ $view = $view ?? 'month';
 $currentDate = $currentDate ?? date('Y-m-d');
 $dateRange = $dateRange ?? ['from' => date('Y-m-01'), 'to' => date('Y-m-t')];
 $events = $events ?? [];
+$holidays = $holidays ?? [];
 $upcomingTrainings = $upcomingTrainings ?? [];
 
 // Parse current date
@@ -55,6 +56,7 @@ if ($view === 'month') {
     while ($gridStart < $gridEnd) {
         $dateStr = $gridStart->format('Y-m-d');
         $dayEvents = $eventsByDate[$dateStr] ?? [];
+        $holiday = $holidays[$dateStr] ?? null;
 
         $weekDays[] = [
             'date' => $dateStr,
@@ -63,6 +65,7 @@ if ($view === 'month') {
             'isCurrentMonth' => $gridStart->format('m') === $currentMonthNum,
             'events' => $dayEvents,
             'dayOfWeek' => $gridStart->format('N'),
+            'holiday' => $holiday,
         ];
 
         if (count($weekDays) === 7) {
@@ -142,9 +145,14 @@ ob_start();
                     <?php foreach ($calendarDays as $week): ?>
                         <div class="calendar-week">
                             <?php foreach ($week as $day): ?>
-                                <div class="calendar-day <?= $day['isToday'] ? 'today' : '' ?> <?= !$day['isCurrentMonth'] ? 'other-month' : '' ?> <?= $day['dayOfWeek'] >= 6 ? 'weekend' : '' ?>"
+                                <div class="calendar-day <?= $day['isToday'] ? 'today' : '' ?> <?= !$day['isCurrentMonth'] ? 'other-month' : '' ?> <?= $day['dayOfWeek'] >= 6 ? 'weekend' : '' ?> <?= $day['holiday'] ? 'has-holiday' : '' ?>"
                                      data-date="<?= e($day['date']) ?>">
-                                    <span class="day-number"><?= e($day['day']) ?></span>
+                                    <div class="day-header">
+                                        <span class="day-number"><?= e($day['day']) ?></span>
+                                        <?php if ($day['holiday']): ?>
+                                            <span class="holiday-dot" title="<?= e($day['holiday']['name']) ?>"></span>
+                                        <?php endif; ?>
+                                    </div>
                                     <?php if (!empty($day['events'])): ?>
                                         <div class="day-events">
                                             <?php foreach (array_slice($day['events'], 0, 3) as $event): ?>
@@ -178,10 +186,16 @@ ob_start();
                     for ($i = 0; $i < 7; $i++):
                         $dayDate = $weekStart->format('Y-m-d');
                         $isToday = $dayDate === date('Y-m-d');
+                        $dayHoliday = $holidays[$dayDate] ?? null;
                     ?>
-                        <div class="week-day-header <?= $isToday ? 'today' : '' ?>">
+                        <div class="week-day-header <?= $isToday ? 'today' : '' ?> <?= $dayHoliday ? 'has-holiday' : '' ?>">
                             <span class="week-day-name"><?= $weekStart->format('D') ?></span>
-                            <span class="week-day-number"><?= $weekStart->format('j') ?></span>
+                            <div class="week-day-number-row">
+                                <span class="week-day-number"><?= $weekStart->format('j') ?></span>
+                                <?php if ($dayHoliday): ?>
+                                    <span class="holiday-dot" title="<?= e($dayHoliday['name']) ?>"></span>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     <?php
                         $weekStart->modify('+1 day');
@@ -229,7 +243,14 @@ ob_start();
 
         <?php else: ?>
             <!-- Day View -->
+            <?php $dayHoliday = $holidays[$currentDate] ?? null; ?>
             <div class="calendar-grid day-view" id="calendar-grid">
+                <?php if ($dayHoliday): ?>
+                    <div class="day-holiday-banner">
+                        <span class="holiday-dot"></span>
+                        <span class="holiday-name"><?= e($dayHoliday['name']) ?></span>
+                    </div>
+                <?php endif; ?>
                 <div class="day-events-list">
                     <?php if (empty($events)): ?>
                         <p class="no-events">No events scheduled for this day.</p>
@@ -412,11 +433,12 @@ ob_start();
     background: var(--color-primary);
     color: var(--color-text-inverse);
     border-radius: var(--radius-full);
-    width: 28px;
-    height: 28px;
-    display: flex;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    font-size: var(--font-size-xs);
 }
 
 .calendar-day.other-month {
@@ -428,11 +450,28 @@ ob_start();
     background: rgba(var(--color-primary-rgb), 0.02);
 }
 
+.day-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+}
+
 .day-number {
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     display: inline-block;
-    margin-bottom: var(--spacing-xs);
+}
+
+.holiday-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-warning, #FF9800);
+    display: inline-block;
+    cursor: help;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
 .day-events {
@@ -512,6 +551,13 @@ ob_start();
     color: var(--color-text-secondary);
 }
 
+.week-day-number-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
 .week-day-number {
     display: block;
     font-size: var(--font-size-xl);
@@ -574,6 +620,22 @@ ob_start();
 /* Day View */
 .day-view {
     padding: var(--spacing-md);
+}
+
+.day-holiday-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(255, 152, 0, 0.1);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.day-holiday-banner .holiday-name {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
 }
 
 .day-events-list {
