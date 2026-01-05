@@ -475,6 +475,16 @@ const App = {
                 this.toggleUserMenu();
             });
         }
+
+        // Blur external links after click to prevent focus highlighting
+        document.querySelectorAll('.nav-item[target="_blank"]').forEach((link) => {
+            link.addEventListener('click', (e) => {
+                // Allow the link to open, then blur it
+                setTimeout(() => {
+                    e.target.closest('.nav-item').blur();
+                }, 0);
+            });
+        });
     },
 
     toggleSidebar() {
