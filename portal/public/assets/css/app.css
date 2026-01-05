@@ -1762,3 +1762,251 @@ button {
         width: 100%;
     }
 }
+
+/* ============================================================================
+   Leave Requests
+   ============================================================================ */
+
+.page-leave .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.page-leave .header-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+/* Extended Leave Cards */
+.extended-leave-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.extended-leave-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.extended-leave-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.extended-leave-card .request-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.extended-leave-card .request-dates {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.extended-leave-card .date-range {
+    font-weight: var(--font-weight-semibold);
+}
+
+.extended-leave-card .trainings-count {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.extended-leave-card .request-status {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+}
+
+.extended-leave-card .request-status.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.extended-leave-card .request-status.status-approved {
+    background: #d4edda;
+    color: #155724;
+}
+
+.extended-leave-card .request-status.status-denied {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.extended-leave-card .request-reason-preview {
+    margin: 0 0 var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.extended-leave-card .request-footer {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.extended-leave-card.past {
+    opacity: 0.6;
+}
+
+/* Leave Pending Page - Extended Section */
+.extended-pending-section {
+    margin-top: var(--spacing-xl);
+}
+
+.extended-pending-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.extended-pending-section .section-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.extended-pending-section .cfo-badge {
+    font-size: var(--font-size-xs);
+    background: var(--color-primary);
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-weight: var(--font-weight-medium);
+}
+
+.extended-pending-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.extended-pending-card {
+    border-left: 4px solid var(--color-warning);
+}
+
+.extended-pending-card .request-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-md);
+}
+
+.extended-pending-card .member-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.extended-pending-card .member-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-base);
+}
+
+.extended-pending-card .member-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.extended-pending-card .member-name {
+    font-weight: var(--font-weight-semibold);
+}
+
+.extended-pending-card .member-rank {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.extended-pending-card .request-meta {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.extended-pending-card .request-dates-info {
+    background: var(--color-background);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.extended-pending-card .dates-row,
+.extended-pending-card .trainings-row {
+    display: flex;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+}
+
+.extended-pending-card .dates-row {
+    margin-bottom: 0.25rem;
+}
+
+.extended-pending-card .dates-label,
+.extended-pending-card .trainings-label {
+    color: var(--color-text-secondary);
+}
+
+.extended-pending-card .dates-value,
+.extended-pending-card .trainings-value {
+    font-weight: var(--font-weight-medium);
+}
+
+.extended-pending-card .request-reason {
+    margin-bottom: var(--spacing-md);
+}
+
+.extended-pending-card .reason-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.extended-pending-card .reason-text {
+    margin: 0.25rem 0 0;
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+}
+
+.extended-pending-card .request-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.extended-pending-card .inline-form {
+    display: inline;
+}
+
+.page-leave-pending .pending-badges {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.page-leave-pending .pending-badge.extended {
+    background: var(--color-warning-light);
+    color: #7c4700;
+}

@@ -28,12 +28,18 @@ ob_start();
         <!-- Page Header -->
         <header class="page-header">
             <h1>Leave Requests</h1>
-            <?php if ($isOfficer): ?>
-                <a href="<?= url('/leave/pending') ?>" class="btn btn-outline btn-sm">
-                    <span class="btn-icon">&#9989;</span>
-                    View Pending Approvals
+            <div class="header-actions">
+                <?php if ($isOfficer): ?>
+                    <a href="<?= url('/leave/pending') ?>" class="btn btn-outline btn-sm">
+                        <span class="btn-icon">&#9989;</span>
+                        Pending Approvals
+                    </a>
+                <?php endif; ?>
+                <a href="<?= url('/leave/extended') ?>" class="btn btn-outline btn-sm">
+                    <span class="btn-icon">&#128197;</span>
+                    Extended Leave
                 </a>
-            <?php endif; ?>
+            </div>
         </header>
 
         <!-- Leave Limit Info -->
@@ -132,6 +138,57 @@ ob_start();
                 </div>
             <?php endif; ?>
         </section>
+
+        <!-- Extended Leave Requests Section -->
+        <?php if (!empty($extendedLeaveRequests)): ?>
+        <section class="extended-leave-section mb-4">
+            <h2 class="section-title">Extended Leave Requests</h2>
+            <div class="extended-leave-list">
+                <?php foreach ($extendedLeaveRequests as $extRequest): ?>
+                    <?php
+                    $isPast = strtotime($extRequest['end_date']) < strtotime('today');
+                    $isPending = $extRequest['status'] === 'pending';
+                    $isApproved = $extRequest['status'] === 'approved';
+                    $isDenied = $extRequest['status'] === 'denied';
+                    ?>
+                    <a href="<?= url("/leave/extended/{$extRequest['id']}") ?>" class="extended-leave-card card <?= $extRequest['status'] ?> <?= $isPast ? 'past' : '' ?>">
+                        <div class="card-body">
+                            <div class="request-header">
+                                <div class="request-dates">
+                                    <span class="date-range">
+                                        <?= date('j M Y', strtotime($extRequest['start_date'])) ?>
+                                        &ndash;
+                                        <?= date('j M Y', strtotime($extRequest['end_date'])) ?>
+                                    </span>
+                                    <span class="trainings-count"><?= (int)$extRequest['trainings_affected'] ?> training(s)</span>
+                                </div>
+                                <div class="request-status status-<?= $extRequest['status'] ?>">
+                                    <?php if ($isPending): ?>
+                                        <span class="status-icon">&#8987;</span>
+                                        <span class="status-text">Pending CFO</span>
+                                    <?php elseif ($isApproved): ?>
+                                        <span class="status-icon">&#10003;</span>
+                                        <span class="status-text">Approved</span>
+                                    <?php elseif ($isDenied): ?>
+                                        <span class="status-icon">&#10007;</span>
+                                        <span class="status-text">Denied</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php if (!empty($extRequest['reason'])): ?>
+                                <p class="request-reason-preview"><?= e(substr($extRequest['reason'], 0, 100)) ?><?= strlen($extRequest['reason']) > 100 ? '...' : '' ?></p>
+                            <?php endif; ?>
+                            <div class="request-footer">
+                                <span class="request-meta">
+                                    Requested <?= timeAgo($extRequest['requested_at']) ?>
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </section>
+        <?php endif; ?>
     </div>
 </div>
 

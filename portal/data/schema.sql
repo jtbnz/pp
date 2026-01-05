@@ -149,6 +149,27 @@ CREATE TABLE IF NOT EXISTS leave_requests (
 );
 
 -- ============================================================================
+-- EXTENDED LEAVE REQUESTS (Long-term leave with date ranges)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS extended_leave_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    member_id INTEGER NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    reason TEXT,
+    trainings_affected INTEGER NOT NULL DEFAULT 0,  -- Number of trainings in range
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',  -- pending, approved, denied
+    requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    decided_by INTEGER,                              -- Must be CFO
+    decided_at DATETIME,
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+    FOREIGN KEY (decided_by) REFERENCES members(id) ON DELETE SET NULL,
+    CHECK (status IN ('pending', 'approved', 'denied')),
+    CHECK (end_date >= start_date)
+);
+
+-- ============================================================================
 -- AUDIT LOG
 -- ============================================================================
 
@@ -286,6 +307,11 @@ CREATE INDEX IF NOT EXISTS idx_leave_member ON leave_requests(member_id);
 CREATE INDEX IF NOT EXISTS idx_leave_date ON leave_requests(training_date);
 CREATE INDEX IF NOT EXISTS idx_leave_status ON leave_requests(status);
 CREATE INDEX IF NOT EXISTS idx_leave_synced ON leave_requests(synced_to_dlb);
+
+-- Extended leave indexes
+CREATE INDEX IF NOT EXISTS idx_extended_leave_member ON extended_leave_requests(member_id);
+CREATE INDEX IF NOT EXISTS idx_extended_leave_dates ON extended_leave_requests(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_extended_leave_status ON extended_leave_requests(status);
 
 -- Audit log
 CREATE INDEX IF NOT EXISTS idx_audit_brigade ON audit_log(brigade_id);

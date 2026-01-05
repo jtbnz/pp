@@ -191,6 +191,17 @@ $router->group('/leave', function(Router $router) {
     $router->get('/', 'LeaveController@index');
     $router->post('/', 'LeaveController@store');
     $router->get('/pending', 'LeaveController@pending');         // Officers only
+
+    // Extended leave routes (long-term leave with date ranges, requires CFO approval)
+    $router->get('/extended', 'LeaveController@extendedForm');
+    $router->post('/extended', 'LeaveController@storeExtended');
+    $router->get('/extended/calculate', 'LeaveController@calculateTrainings');  // AJAX
+    $router->get('/extended/{id}', 'LeaveController@showExtended');
+    $router->post('/extended/{id}/approve', 'LeaveController@approveExtended');  // CFO only
+    $router->post('/extended/{id}/deny', 'LeaveController@denyExtended');        // CFO only
+    $router->post('/extended/{id}/cancel', 'LeaveController@cancelExtended');
+
+    // Regular leave routes
     $router->get('/{id}', 'LeaveController@show');
     $router->put('/{id}/approve', 'LeaveController@approve');    // Officers only
     $router->post('/{id}/approve', 'LeaveController@approve');   // For form submission
