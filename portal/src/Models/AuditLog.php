@@ -277,6 +277,10 @@ class AuditLog
             'notice.create' => 'Created notice: ' . ($details['title'] ?? 'unknown'),
             'notice.update' => 'Updated notice: ' . ($details['title'] ?? 'unknown'),
             'notice.delete' => 'Deleted notice: ' . ($details['title'] ?? 'unknown'),
+            'poll.create' => 'Created poll: ' . ($details['title'] ?? 'unknown'),
+            'poll.update' => 'Updated poll: ' . ($details['title'] ?? 'unknown'),
+            'poll.close' => 'Closed poll: ' . ($details['title'] ?? 'unknown'),
+            'poll.delete' => 'Deleted poll: ' . ($details['title'] ?? 'unknown'),
             'settings.update' => 'Updated brigade settings',
             'training.generate' => 'Generated training nights',
             'sync.members' => 'Synced members with DLB',
@@ -303,6 +307,7 @@ class AuditLog
             'leave' => '&#128198;',     // Calendar
             'event' => '&#128197;',     // Calendar
             'notice' => '&#128240;',    // Newspaper
+            'poll' => '&#128202;',      // Bar chart
             'settings' => '&#9881;',    // Gear
             'training' => '&#127941;',  // Whistle
             'sync' => '&#128260;',      // Sync arrows

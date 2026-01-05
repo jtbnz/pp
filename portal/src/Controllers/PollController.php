@@ -173,9 +173,7 @@ class PollController
             $brigadeId,
             $memberId,
             'poll.create',
-            'poll',
-            $pollId,
-            ['title' => $data['title']]
+            ['poll_id' => $pollId, 'title' => $data['title']]
         );
 
         $_SESSION['flash_message'] = 'Poll created successfully.';
@@ -370,9 +368,7 @@ class PollController
             $brigadeId,
             $memberId,
             'poll.update',
-            'poll',
-            $pollId,
-            ['title' => $data['title']]
+            ['poll_id' => $pollId, 'title' => $data['title']]
         );
 
         $_SESSION['flash_message'] = 'Poll updated successfully.';
@@ -429,9 +425,7 @@ class PollController
             $brigadeId,
             $memberId,
             'poll.close',
-            'poll',
-            $pollId,
-            ['title' => $poll['title']]
+            ['poll_id' => $pollId, 'title' => $poll['title']]
         );
 
         $_SESSION['flash_message'] = 'Poll has been closed.';
@@ -488,9 +482,7 @@ class PollController
             $brigadeId,
             $memberId,
             'poll.delete',
-            'poll',
-            $pollId,
-            ['title' => $poll['title']]
+            ['poll_id' => $pollId, 'title' => $poll['title']]
         );
 
         $_SESSION['flash_message'] = 'Poll has been deleted.';
