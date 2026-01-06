@@ -477,3 +477,65 @@ CREATE TABLE IF NOT EXISTS remember_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_remember_tokens_member ON remember_tokens(member_id);
 CREATE INDEX IF NOT EXISTS idx_remember_tokens_expires ON remember_tokens(expires_at);
+
+-- ============================================================================
+-- ATTENDANCE TRACKING (cached from DLB for attendance stats)
+-- ============================================================================
+
+-- Cached attendance records from DLB
+CREATE TABLE IF NOT EXISTS attendance_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    member_id INTEGER NOT NULL,
+    dlb_muster_id INTEGER NOT NULL,
+    event_date DATE NOT NULL,
+    event_type VARCHAR(20) NOT NULL,             -- 'training', 'callout'
+    status CHAR(1) NOT NULL,                      -- I=In attendance, L=Leave, A=Absent
+    position VARCHAR(20),                         -- 'OIC', 'driver', 'crew'
+    truck VARCHAR(50),                            -- '551', '557', etc.
+    notes TEXT,
+    source VARCHAR(20) DEFAULT 'dlb',            -- 'dlb', 'manual'
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+    UNIQUE(member_id, dlb_muster_id)
+);
+
+-- Attendance sync metadata
+CREATE TABLE IF NOT EXISTS attendance_sync (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    brigade_id INTEGER NOT NULL,
+    last_sync_at DATETIME,
+    sync_from_date DATE,                          -- Earliest date synced
+    sync_to_date DATE,                            -- Latest date synced
+    status VARCHAR(20) DEFAULT 'pending',         -- 'pending', 'syncing', 'completed', 'failed'
+    error_message TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (brigade_id) REFERENCES brigades(id) ON DELETE CASCADE
+);
+
+-- Attendance records indexes
+CREATE INDEX IF NOT EXISTS idx_attendance_member ON attendance_records(member_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance_records(event_date);
+CREATE INDEX IF NOT EXISTS idx_attendance_type ON attendance_records(event_type);
+CREATE INDEX IF NOT EXISTS idx_attendance_status ON attendance_records(status);
+CREATE INDEX IF NOT EXISTS idx_attendance_position ON attendance_records(position);
+CREATE INDEX IF NOT EXISTS idx_attendance_member_date ON attendance_records(member_id, event_date);
+
+-- Attendance sync indexes
+CREATE INDEX IF NOT EXISTS idx_attendance_sync_brigade ON attendance_sync(brigade_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_sync_status ON attendance_sync(status);
+
+-- Update updated_at timestamp on attendance_records
+CREATE TRIGGER IF NOT EXISTS update_attendance_records_timestamp
+AFTER UPDATE ON attendance_records
+BEGIN
+    UPDATE attendance_records SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- Update updated_at timestamp on attendance_sync
+CREATE TRIGGER IF NOT EXISTS update_attendance_sync_timestamp
+AFTER UPDATE ON attendance_sync
+BEGIN
+    UPDATE attendance_sync SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;

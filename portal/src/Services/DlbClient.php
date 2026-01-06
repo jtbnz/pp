@@ -338,4 +338,101 @@ class DlbClient
     {
         return $this->baseUrl;
     }
+
+    /**
+     * Get attendance history for all musters in a date range
+     *
+     * Fetches all musters in the date range and their attendance records.
+     *
+     * @param string $from Start date (Y-m-d)
+     * @param string $to End date (Y-m-d)
+     * @return array Array of musters with attendance data
+     * @throws DlbApiException
+     */
+    public function getAttendanceHistory(string $from, string $to): array
+    {
+        // Get all submitted musters in the date range
+        $musters = $this->listMusters($from, $to, 'submitted');
+        $result = [];
+
+        foreach ($musters as $muster) {
+            $musterId = $muster['id'] ?? null;
+            if ($musterId === null) {
+                continue;
+            }
+
+            try {
+                $attendanceData = $this->getMusterAttendance($musterId);
+                $result[] = [
+                    'muster' => $muster,
+                    'attendance' => $attendanceData['attendance'] ?? [],
+                    'summary' => $attendanceData['summary'] ?? [],
+                ];
+            } catch (DlbApiException $e) {
+                // Skip musters we can't access
+                if (!$e->isNotFound()) {
+                    throw $e;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get attendance records for a specific member across all musters in a date range
+     *
+     * @param int $dlbMemberId Member ID in DLB
+     * @param string $from Start date (Y-m-d)
+     * @param string $to End date (Y-m-d)
+     * @return array Array of attendance records for the member
+     * @throws DlbApiException
+     */
+    public function getMemberAttendanceHistory(int $dlbMemberId, string $from, string $to): array
+    {
+        $history = $this->getAttendanceHistory($from, $to);
+        $memberRecords = [];
+
+        foreach ($history as $musterData) {
+            $muster = $musterData['muster'];
+            $attendance = $musterData['attendance'];
+
+            // Find this member's attendance record
+            foreach ($attendance as $record) {
+                if ((int)($record['member_id'] ?? 0) === $dlbMemberId) {
+                    $memberRecords[] = [
+                        'muster_id' => $muster['id'],
+                        'event_date' => $muster['call_date'] ?? null,
+                        'event_type' => $this->determineEventType($muster),
+                        'status' => $record['status'] ?? 'A',
+                        'position' => $record['position'] ?? null,
+                        'truck' => $record['truck'] ?? null,
+                        'notes' => $record['notes'] ?? null,
+                    ];
+                    break;
+                }
+            }
+        }
+
+        return $memberRecords;
+    }
+
+    /**
+     * Determine the event type from a muster record
+     *
+     * @param array $muster Muster data
+     * @return string 'training' or 'callout'
+     */
+    private function determineEventType(array $muster): string
+    {
+        $callType = strtolower($muster['call_type'] ?? '');
+        $icadNumber = strtolower($muster['icad_number'] ?? '');
+
+        // Training musters typically have 'training' call type or 'muster' in icad number
+        if (str_contains($callType, 'training') || str_contains($icadNumber, 'muster')) {
+            return 'training';
+        }
+
+        return 'callout';
+    }
 }

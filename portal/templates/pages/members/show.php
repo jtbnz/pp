@@ -123,6 +123,21 @@ ob_start();
         </div>
     </div>
 
+    <!-- Attendance Card -->
+    <div class="card attendance-card mb-4">
+        <div class="card-header">
+            <h3>Attendance</h3>
+        </div>
+        <div class="card-body">
+            <div class="attendance-container" data-member-id="<?= $member['id'] ?>">
+                <div class="attendance-loading">
+                    <div class="spinner"></div>
+                    <p>Loading attendance data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <?php if ($isOwnProfile): ?>
     <!-- Push Notifications Card -->
     <div class="card notifications-card mb-4">
@@ -605,9 +620,10 @@ function toggleAddPeriodForm() {
 <?php
 $content = ob_get_clean();
 
-// Include push.js for own profile
+// Include attendance.js always, plus push.js for own profile
+$extraScripts = '<script src="' . url('/assets/js/attendance.js') . '"></script>';
 if ($isOwnProfile) {
-    $extraScripts = '<script src="' . url('/assets/js/push.js') . '"></script>';
+    $extraScripts .= '<script src="' . url('/assets/js/push.js') . '"></script>';
 }
 
 // Include main layout

@@ -247,6 +247,11 @@ $router->group('/api', function(Router $router) {
     $router->put('/members/{id}/service-periods/{pid}', 'Api/MemberApiController@updateServicePeriod');
     $router->delete('/members/{id}/service-periods/{pid}', 'Api/MemberApiController@deleteServicePeriod');
 
+    // Member Attendance
+    $router->get('/members/{id}/attendance', 'Api/MemberApiController@attendance');
+    $router->get('/members/{id}/attendance/recent', 'Api/MemberApiController@attendanceRecent');
+    $router->post('/attendance/sync', 'Api/MemberApiController@syncAttendance');
+
     // Events/Calendar (API)
     $router->get('/events', 'Api/CalendarApiController@index');
     $router->post('/events', 'Api/CalendarApiController@store');

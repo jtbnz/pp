@@ -2010,3 +2010,294 @@ button {
     background: var(--color-warning-light);
     color: #7c4700;
 }
+
+/* ============================================================================
+   Attendance Gauges & Details
+   ============================================================================ */
+
+.attendance-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.attendance-card .card-header h3 {
+    margin: 0;
+    font-size: var(--font-size-lg);
+}
+
+.attendance-container {
+    min-height: 150px;
+}
+
+.attendance-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    color: var(--color-text-secondary);
+}
+
+.attendance-loading .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.attendance-error {
+    text-align: center;
+    padding: var(--spacing-lg);
+    color: var(--color-text-secondary);
+}
+
+.attendance-gauges {
+    display: flex;
+    justify-content: space-around;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md) 0;
+}
+
+.gauge-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-lg);
+    transition: background-color var(--transition-fast);
+}
+
+.gauge-wrapper:hover {
+    background-color: var(--color-background);
+}
+
+.attendance-gauge-svg {
+    width: 120px;
+    height: 85px;
+}
+
+.gauge-percent {
+    font-size: 1.25rem;
+    font-weight: var(--font-weight-bold);
+    fill: var(--color-text);
+}
+
+.gauge-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    margin-top: var(--spacing-xs);
+}
+
+.gauge-stats {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.attendance-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+    margin-top: var(--spacing-md);
+}
+
+.sync-time {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--color-accent);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.btn-link:hover {
+    color: var(--color-accent-dark);
+}
+
+/* Attendance Modal Styles */
+#attendance-modal .modal-content {
+    max-width: 500px;
+}
+
+.attendance-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.details-section h3 {
+    margin: 0 0 var(--spacing-md);
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.stat-card {
+    background: var(--color-background);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    text-align: center;
+}
+
+.stat-card .stat-label {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-card .stat-value {
+    display: block;
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+}
+
+.stat-card .stat-value.good {
+    color: var(--color-success);
+}
+
+.stat-card .stat-value.low {
+    color: var(--color-error);
+}
+
+.stat-card .stat-detail {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    margin-top: var(--spacing-xs);
+}
+
+.position-stats {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.position-item {
+    flex: 1;
+    background: var(--color-background);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    text-align: center;
+}
+
+.position-item .position-label {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.position-item .position-value {
+    display: block;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+}
+
+.position-item .position-percent {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+/* Recent Events List */
+.recent-events {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.event-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.event-item:last-child {
+    border-bottom: none;
+}
+
+.event-item.attended {
+    border-left: 3px solid var(--color-success);
+    padding-left: var(--spacing-sm);
+    margin-left: calc(var(--spacing-sm) * -1);
+}
+
+.event-item.leave {
+    border-left: 3px solid var(--color-warning);
+    padding-left: var(--spacing-sm);
+    margin-left: calc(var(--spacing-sm) * -1);
+}
+
+.event-item.absent {
+    border-left: 3px solid var(--color-error);
+    padding-left: var(--spacing-sm);
+    margin-left: calc(var(--spacing-sm) * -1);
+}
+
+.event-date {
+    min-width: 80px;
+}
+
+.event-date .event-day {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.event-date .event-full-date {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+}
+
+.event-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.event-type {
+    font-size: var(--font-size-sm);
+}
+
+.event-status {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.event-position {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    text-align: right;
+}

@@ -693,4 +693,150 @@ class MemberApiController
             $_SERVER['HTTP_USER_AGENT'] ?? null
         ]);
     }
+
+    // =========================================================================
+    // ATTENDANCE ENDPOINTS
+    // =========================================================================
+
+    /**
+     * GET /api/members/{id}/attendance
+     * Get attendance statistics for a member
+     */
+    public function attendance(string $id): void
+    {
+        $user = currentUser();
+        if (!$user) {
+            jsonResponse(['error' => 'Unauthorized'], 401);
+            return;
+        }
+
+        $memberId = (int)$id;
+        $member = $this->memberModel->findById($memberId);
+
+        if (!$member) {
+            jsonResponse(['error' => 'Member not found'], 404);
+            return;
+        }
+
+        // Users can view their own attendance, admins/officers can view all in their brigade
+        $canView = ($member['id'] === $user['id'])
+            || ((hasRole('admin') || hasRole('officer')) && $member['brigade_id'] === $user['brigade_id']);
+
+        if (!$canView) {
+            jsonResponse(['error' => 'Forbidden'], 403);
+            return;
+        }
+
+        global $config;
+        require_once __DIR__ . '/../../Services/AttendanceService.php';
+        $attendanceService = new AttendanceService($this->db, $config);
+
+        $stats = $attendanceService->getMemberStats($memberId);
+        $syncStatus = $attendanceService->getSyncStatus((int)$member['brigade_id']);
+
+        jsonResponse([
+            'success' => true,
+            'stats' => $stats,
+            'sync' => $syncStatus ? [
+                'last_sync' => $syncStatus['last_sync_at'],
+                'status' => $syncStatus['status'],
+            ] : null,
+        ]);
+    }
+
+    /**
+     * GET /api/members/{id}/attendance/recent
+     * Get recent attendance events for a member
+     */
+    public function attendanceRecent(string $id): void
+    {
+        $user = currentUser();
+        if (!$user) {
+            jsonResponse(['error' => 'Unauthorized'], 401);
+            return;
+        }
+
+        $memberId = (int)$id;
+        $member = $this->memberModel->findById($memberId);
+
+        if (!$member) {
+            jsonResponse(['error' => 'Member not found'], 404);
+            return;
+        }
+
+        // Users can view their own attendance, admins/officers can view all in their brigade
+        $canView = ($member['id'] === $user['id'])
+            || ((hasRole('admin') || hasRole('officer')) && $member['brigade_id'] === $user['brigade_id']);
+
+        if (!$canView) {
+            jsonResponse(['error' => 'Forbidden'], 403);
+            return;
+        }
+
+        $limit = min(20, max(1, (int)($_GET['limit'] ?? 10)));
+
+        global $config;
+        require_once __DIR__ . '/../../Services/AttendanceService.php';
+        $attendanceService = new AttendanceService($this->db, $config);
+
+        $events = $attendanceService->getRecentEvents($memberId, $limit);
+
+        // Format events for display
+        $formattedEvents = array_map(function ($event) {
+            return [
+                'date' => $event['event_date'],
+                'date_formatted' => date('j M Y', strtotime($event['event_date'])),
+                'day_name' => date('l', strtotime($event['event_date'])),
+                'type' => $event['event_type'],
+                'type_label' => AttendanceService::formatEventType($event['event_type']),
+                'status' => $event['status'],
+                'status_label' => AttendanceService::formatStatus($event['status']),
+                'position' => $event['position'],
+                'position_label' => AttendanceService::formatPosition($event['position']),
+                'truck' => $event['truck'],
+            ];
+        }, $events);
+
+        jsonResponse([
+            'success' => true,
+            'events' => $formattedEvents,
+        ]);
+    }
+
+    /**
+     * POST /api/attendance/sync
+     * Trigger attendance sync from DLB (admin only)
+     */
+    public function syncAttendance(): void
+    {
+        $user = currentUser();
+        if (!$user) {
+            jsonResponse(['error' => 'Unauthorized'], 401);
+            return;
+        }
+
+        if (!hasRole('admin')) {
+            jsonResponse(['error' => 'Forbidden - admin only'], 403);
+            return;
+        }
+
+        $input = $this->getJsonInput();
+        $fullSync = (bool)($input['full_sync'] ?? false);
+
+        global $config;
+        require_once __DIR__ . '/../../Services/AttendanceService.php';
+        $attendanceService = new AttendanceService($this->db, $config);
+
+        $result = $attendanceService->syncFromDlb((int)$user['brigade_id'], $fullSync);
+
+        if ($result['success']) {
+            $this->logAudit('attendance.sync', 'brigade', (int)$user['brigade_id'], [
+                'full_sync' => $fullSync,
+                'created' => $result['created'],
+                'updated' => $result['updated'],
+            ]);
+        }
+
+        jsonResponse($result);
+    }
 }
