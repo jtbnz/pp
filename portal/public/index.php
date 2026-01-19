@@ -166,6 +166,8 @@ $router->group('/calendar', function(Router $router) {
     $router->get('/', 'CalendarController@index');
     $router->get('/create', 'CalendarController@create');        // Admin only
     $router->post('/', 'CalendarController@store');              // Admin only
+    $router->get('/trainings', 'CalendarController@trainings');  // View all trainings
+    $router->post('/trainings/generate', 'CalendarController@generateTrainings');  // Admin only
     $router->get('/{id}', 'CalendarController@show');
     $router->get('/{id}/edit', 'CalendarController@edit');       // Admin only
     $router->put('/{id}', 'CalendarController@update');          // Admin only
