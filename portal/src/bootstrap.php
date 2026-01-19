@@ -422,8 +422,102 @@ function currentUser(): ?array
     return $user;
 }
 
-// Helper function to check if user has role
+// Helper function to get the actual user (ignores view-as mode)
+function actualUser(): ?array
+{
+    return currentUser();
+}
+
+// Helper function to check if currently in view-as mode
+function isViewingAs(): bool
+{
+    if (!isset($_SESSION['view_as_role']) || !isset($_SESSION['view_as_expires'])) {
+        return false;
+    }
+
+    // Check if view-as session has expired (30 minutes)
+    if (time() > $_SESSION['view_as_expires']) {
+        clearViewAs();
+        return false;
+    }
+
+    return true;
+}
+
+// Helper function to get the role being viewed as
+function getViewAsRole(): ?string
+{
+    if (!isViewingAs()) {
+        return null;
+    }
+    return $_SESSION['view_as_role'];
+}
+
+// Helper function to get view-as expiration time
+function getViewAsExpires(): ?int
+{
+    if (!isViewingAs()) {
+        return null;
+    }
+    return $_SESSION['view_as_expires'];
+}
+
+// Helper function to start view-as session
+function startViewAs(string $role): bool
+{
+    $user = currentUser();
+    if (!$user || $user['role'] !== 'superadmin') {
+        return false;
+    }
+
+    $allowedRoles = ['firefighter', 'officer'];
+    if (!in_array($role, $allowedRoles, true)) {
+        return false;
+    }
+
+    $_SESSION['view_as_role'] = $role;
+    $_SESSION['view_as_expires'] = time() + (30 * 60); // 30 minutes
+
+    return true;
+}
+
+// Helper function to clear view-as session
+function clearViewAs(): void
+{
+    unset($_SESSION['view_as_role']);
+    unset($_SESSION['view_as_expires']);
+}
+
+// Helper function to check if user has role (respects view-as mode)
 function hasRole(string $role): bool
+{
+    $user = currentUser();
+    if (!$user) {
+        return false;
+    }
+
+    $roleHierarchy = [
+        'firefighter' => 1,
+        'officer' => 2,
+        'admin' => 3,
+        'superadmin' => 4
+    ];
+
+    // If in view-as mode, use the impersonated role for permission checks
+    if (isViewingAs()) {
+        $effectiveRole = getViewAsRole();
+    } else {
+        $effectiveRole = $user['role'];
+    }
+
+    $userLevel = $roleHierarchy[$effectiveRole] ?? 0;
+    $requiredLevel = $roleHierarchy[$role] ?? 999;
+
+    return $userLevel >= $requiredLevel;
+}
+
+// Helper function to check user's actual role (ignores view-as mode)
+function hasActualRole(string $role): bool
 {
     $user = currentUser();
     if (!$user) {

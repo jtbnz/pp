@@ -328,6 +328,9 @@ $router->group('/admin', function(Router $router) {
     $router->get('/events/import', 'AdminController@importEventsForm');
     $router->post('/events/import', 'AdminController@importEvents');
     $router->post('/events/import/preview', 'AdminController@previewImportEvents');
+    // View-as functionality (superadmin only)
+    $router->post('/view-as', 'AdminController@startViewAs');
+    $router->post('/view-as/stop', 'AdminController@stopViewAs');
 }, ['middleware' => ['auth', 'admin']]);
 
 // Dispatch the request

@@ -1618,4 +1618,78 @@ class AdminController
 
         return $filtered;
     }
+
+    // =========================================================================
+    // VIEW AS FUNCTIONALITY (SUPERADMIN ONLY)
+    // =========================================================================
+
+    /**
+     * Start viewing as a different role
+     * POST /admin/view-as
+     */
+    public function startViewAs(): void
+    {
+        $user = currentUser();
+
+        // Only superadmins can use view-as
+        if (!$user || $user['role'] !== 'superadmin') {
+            http_response_code(403);
+            render('pages/errors/403', ['message' => 'Only super admins can use this feature']);
+            return;
+        }
+
+        // Validate CSRF
+        if (!verifyCsrfToken($_POST['_csrf_token'] ?? '')) {
+            $this->redirectWithError(url('/admin'), 'Invalid request. Please try again.');
+            return;
+        }
+
+        $role = $_POST['role'] ?? '';
+
+        if (!startViewAs($role)) {
+            $_SESSION['flash_message'] = 'Invalid role selected.';
+            $_SESSION['flash_type'] = 'error';
+        } else {
+            // Log the action
+            $this->auditLog->log($user['brigade_id'], $user['id'], 'view_as.start', [
+                'role' => $role
+            ]);
+
+            $_SESSION['flash_message'] = "Now viewing as {$role}. This is read-only mode.";
+            $_SESSION['flash_type'] = 'info';
+        }
+
+        // Redirect to home page to see the new view
+        header('Location: ' . url('/'));
+        exit;
+    }
+
+    /**
+     * Stop viewing as a different role
+     * POST /admin/view-as/stop
+     */
+    public function stopViewAs(): void
+    {
+        $user = currentUser();
+
+        if (!$user) {
+            header('Location: ' . url('/auth/login'));
+            exit;
+        }
+
+        // Log the action before clearing
+        if (isViewingAs()) {
+            $this->auditLog->log($user['brigade_id'], $user['id'], 'view_as.stop', [
+                'role' => getViewAsRole()
+            ]);
+        }
+
+        clearViewAs();
+
+        $_SESSION['flash_message'] = 'Returned to normal view.';
+        $_SESSION['flash_type'] = 'success';
+
+        header('Location: ' . url('/'));
+        exit;
+    }
 }

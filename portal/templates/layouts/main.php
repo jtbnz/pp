@@ -150,12 +150,26 @@ $user = currentUser();
                 </a>
                 <?php endif; ?>
             <?php endif; ?>
-            <?php if (hasRole('admin')): ?>
+            <?php if (hasActualRole('admin')): ?>
                 <hr class="nav-divider">
                 <a href="<?= url('/admin') ?>" class="nav-item <?= str_starts_with($currentPath, '/admin') ? 'active' : '' ?>">
                     <span class="nav-icon">&#9881;</span>
                     <span class="nav-text">Admin</span>
                 </a>
+            <?php endif; ?>
+            <?php if ($user['role'] === 'superadmin' && !isViewingAs()): ?>
+                <hr class="nav-divider">
+                <div class="view-as-selector">
+                    <span class="view-as-label">View As:</span>
+                    <form action="<?= url('/admin/view-as') ?>" method="POST" class="view-as-select-form">
+                        <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
+                        <select name="role" class="view-as-select" onchange="this.form.submit()">
+                            <option value="">Select role...</option>
+                            <option value="firefighter">Firefighter</option>
+                            <option value="officer">Officer</option>
+                        </select>
+                    </form>
+                </div>
             <?php endif; ?>
         </div>
     </nav>
@@ -164,8 +178,32 @@ $user = currentUser();
     <div class="sidebar-overlay" hidden></div>
     <?php endif; ?>
 
+    <!-- View-as banner (shown when superadmin is viewing as another role) -->
+    <?php if ($user && isViewingAs()): ?>
+    <div class="view-as-banner">
+        <div class="view-as-content">
+            <span class="view-as-icon">&#128064;</span>
+            <span class="view-as-text">
+                Viewing as <strong><?= ucfirst(e(getViewAsRole())) ?></strong>
+                <span class="view-as-readonly">(Read-only mode)</span>
+                <?php
+                $expiresAt = getViewAsExpires();
+                if ($expiresAt) {
+                    $minutesLeft = max(0, (int)ceil(($expiresAt - time()) / 60));
+                ?>
+                <span class="view-as-timer"><?= $minutesLeft ?> min remaining</span>
+                <?php } ?>
+            </span>
+            <form action="<?= url('/admin/view-as/stop') ?>" method="POST" class="view-as-form">
+                <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
+                <button type="submit" class="view-as-exit">Exit View</button>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Main content area -->
-    <main id="main-content" class="main-content <?= $user ? 'has-sidebar' : '' ?>">
+    <main id="main-content" class="main-content <?= $user ? 'has-sidebar' : '' ?> <?= isViewingAs() ? 'has-view-as-banner' : '' ?>">
         <?php if (isset($flashMessage)): ?>
             <div class="flash-message flash-<?= e($flashType ?? 'info') ?>">
                 <?= e($flashMessage) ?>
