@@ -60,25 +60,54 @@ class HolidayService
      */
     public function getAucklandHolidays(int $year): array
     {
-        $allHolidays = $this->fetchHolidays($year);
-
-        // Filter to national holidays and Auckland regional
-        return array_filter($allHolidays, function ($holiday) {
-            return ($holiday['region'] ?? 'national') === 'national'
-                || ($holiday['region'] ?? '') === 'auckland';
-        });
+        return $this->getHolidaysForRegion($year, 'auckland');
     }
 
     /**
-     * Check if a date is a public holiday in Auckland
+     * Get holidays for a specific region (national + regional anniversary)
+     *
+     * @param int $year Year to get holidays for
+     * @param string $region Region code (e.g., 'auckland', 'nelson', 'wellington')
+     * @return array Holidays for that region
+     */
+    public function getHolidaysForRegion(int $year, string $region): array
+    {
+        $allHolidays = $this->fetchHolidays($year);
+
+        // Filter to national holidays only first
+        $holidays = array_filter($allHolidays, function ($holiday) {
+            return ($holiday['region'] ?? 'national') === 'national';
+        });
+
+        // Add Auckland Anniversary if the region is Auckland (it's special-cased in fetchFromApi)
+        if ($region === 'auckland') {
+            foreach ($allHolidays as $holiday) {
+                if (($holiday['region'] ?? '') === 'auckland') {
+                    $holidays[] = $holiday;
+                }
+            }
+        } else {
+            // Add regional anniversary for other regions
+            $regionalAnniversary = $this->getRegionalAnniversary($year, $region);
+            if ($regionalAnniversary) {
+                $holidays[] = $regionalAnniversary;
+            }
+        }
+
+        return array_values($holidays);
+    }
+
+    /**
+     * Check if a date is a public holiday
      *
      * @param string $date Date to check (Y-m-d format)
+     * @param string $region Region to check (default: 'auckland')
      * @return bool True if public holiday
      */
-    public function isPublicHoliday(string $date): bool
+    public function isPublicHoliday(string $date, string $region = 'auckland'): bool
     {
         $year = (int)date('Y', strtotime($date));
-        $holidays = $this->getAucklandHolidays($year);
+        $holidays = $this->getHolidaysForRegion($year, $region);
 
         foreach ($holidays as $holiday) {
             if ($holiday['date'] === $date) {
@@ -201,12 +230,13 @@ class HolidayService
      * Get the name of a holiday on a specific date
      *
      * @param string $date Date to check (Y-m-d format)
+     * @param string $region Region to check (default: 'auckland')
      * @return string|null Holiday name or null
      */
-    public function getHolidayName(string $date): ?string
+    public function getHolidayName(string $date, string $region = 'auckland'): ?string
     {
         $year = (int)date('Y', strtotime($date));
-        $holidays = $this->getAucklandHolidays($year);
+        $holidays = $this->getHolidaysForRegion($year, $region);
 
         foreach ($holidays as $holiday) {
             if ($holiday['date'] === $date) {

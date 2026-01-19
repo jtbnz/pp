@@ -308,6 +308,10 @@ class Settings
             'display.show_ranks' => true,
             'display.calendar_start_day' => 0, // 0 = Sunday, 1 = Monday
 
+            // Calendar/Holiday settings
+            'calendar.holiday_region' => 'auckland', // NZ region for holiday filtering
+            'calendar.show_holidays' => true,
+
             // DLB Integration
             'dlb.enabled' => false,
             'dlb.auto_sync' => false,
