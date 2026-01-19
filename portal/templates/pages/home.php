@@ -82,9 +82,15 @@ ob_start();
             </div>
             <?php if (!empty($upcomingEvents)): ?>
                 <div class="events-list">
-                    <?php foreach ($upcomingEvents as $event): ?>
-                        <?php $eventDate = new DateTime($event['start_time'], new DateTimeZone('Pacific/Auckland')); ?>
-                        <a href="<?= url('/calendar/' . (int)$event['id']) ?>" class="event-item card">
+                    <?php
+                    use App\Models\Event;
+                    foreach ($upcomingEvents as $event): ?>
+                        <?php
+                        $eventDate = new DateTime($event['start_time'], new DateTimeZone('Pacific/Auckland'));
+                        $eventType = $event['event_type'] ?? 'other';
+                        $typeInfo = Event::EVENT_TYPES[$eventType] ?? Event::EVENT_TYPES['other'];
+                        ?>
+                        <a href="<?= url('/calendar/' . (int)$event['id']) ?>" class="event-item card" style="border-left: 4px solid <?= $typeInfo['color'] ?>;">
                             <div class="event-date-badge">
                                 <span class="event-day"><?= $eventDate->format('j') ?></span>
                                 <span class="event-month"><?= $eventDate->format('M') ?></span>
@@ -93,9 +99,7 @@ ob_start();
                                 <span class="event-title"><?= e($event['title']) ?></span>
                                 <span class="event-time"><?= $eventDate->format('l g:i A') ?></span>
                             </div>
-                            <?php if (!empty($event['is_training'])): ?>
-                                <span class="event-badge training">Training</span>
-                            <?php endif; ?>
+                            <span class="event-badge event-type-<?= $eventType ?>" style="background-color: <?= $typeInfo['color'] ?>;"><?= e($typeInfo['label']) ?></span>
                         </a>
                     <?php endforeach; ?>
                 </div>
@@ -368,11 +372,7 @@ ob_start();
     border-radius: 999px;
     text-transform: uppercase;
     font-weight: 500;
-}
-
-.event-badge.training {
-    background: #e8f5e9;
-    color: #2e7d32;
+    color: #fff;
 }
 
 /* Notices list */

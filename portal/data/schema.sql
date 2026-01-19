@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS events (
     all_day BOOLEAN DEFAULT 0,
     recurrence_rule TEXT,                       -- RRULE format for recurring events
     is_training BOOLEAN DEFAULT 0,              -- True for training nights
+    event_type VARCHAR(20) DEFAULT 'other',     -- training, meeting, social, firewise, other
     is_visible BOOLEAN DEFAULT 1,               -- Can hide future events
     created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

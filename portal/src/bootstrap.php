@@ -226,6 +226,16 @@ if (!$attendanceSyncExists) {
     $db->exec('CREATE INDEX IF NOT EXISTS idx_sync_brigade ON attendance_sync(brigade_id)');
 }
 
+// Ensure event_type column exists on events table (added in Issue #7)
+try {
+    $result = $db->query("SELECT event_type FROM events LIMIT 1");
+} catch (PDOException $e) {
+    // Column doesn't exist, add it
+    $db->exec("ALTER TABLE events ADD COLUMN event_type VARCHAR(20) DEFAULT 'other'");
+    // Update existing training events
+    $db->exec("UPDATE events SET event_type = 'training' WHERE is_training = 1");
+}
+
 // Session configuration (only for web requests, not CLI)
 if (PHP_SAPI !== 'cli') {
     $sessionConfig = $config['session'] ?? [];

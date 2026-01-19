@@ -121,17 +121,31 @@ class Event
      * @param array $data Event data
      * @return int New event ID
      */
+    /**
+     * Valid event types with their display colors
+     */
+    public const EVENT_TYPES = [
+        'training' => ['label' => 'Training', 'color' => '#D32F2F'],      // Red
+        'meeting' => ['label' => 'Meeting', 'color' => '#1976D2'],        // Blue
+        'social' => ['label' => 'Social', 'color' => '#388E3C'],          // Green
+        'firewise' => ['label' => 'Firewise', 'color' => '#F57C00'],      // Orange
+        'other' => ['label' => 'Other', 'color' => '#757575'],            // Grey
+    ];
+
     public function create(array $data): int
     {
+        // Determine event_type based on is_training flag if not explicitly set
+        $eventType = $data['event_type'] ?? (($data['is_training'] ?? 0) ? 'training' : 'other');
+
         $stmt = $this->db->prepare('
             INSERT INTO events (
                 brigade_id, title, description, location,
                 start_time, end_time, all_day, recurrence_rule,
-                is_training, is_visible, created_by
+                is_training, event_type, is_visible, created_by
             ) VALUES (
                 :brigade_id, :title, :description, :location,
                 :start_time, :end_time, :all_day, :recurrence_rule,
-                :is_training, :is_visible, :created_by
+                :is_training, :event_type, :is_visible, :created_by
             )
         ');
 
@@ -145,6 +159,7 @@ class Event
             'all_day' => $data['all_day'] ?? 0,
             'recurrence_rule' => $data['recurrence_rule'] ?? null,
             'is_training' => $data['is_training'] ?? 0,
+            'event_type' => $eventType,
             'is_visible' => $data['is_visible'] ?? 1,
             'created_by' => $data['created_by'] ?? null,
         ]);
@@ -166,7 +181,7 @@ class Event
 
         $allowedFields = [
             'title', 'description', 'location', 'start_time', 'end_time',
-            'all_day', 'recurrence_rule', 'is_training', 'is_visible'
+            'all_day', 'recurrence_rule', 'is_training', 'is_visible', 'event_type'
         ];
 
         foreach ($allowedFields as $field) {

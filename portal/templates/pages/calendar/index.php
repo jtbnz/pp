@@ -155,10 +155,16 @@ ob_start();
                                     </div>
                                     <?php if (!empty($day['events'])): ?>
                                         <div class="day-events">
-                                            <?php foreach (array_slice($day['events'], 0, 3) as $event): ?>
+                                            <?php
+                                            use App\Models\Event as EventModel;
+                                            foreach (array_slice($day['events'], 0, 3) as $event):
+                                                $eventType = $event['event_type'] ?? 'other';
+                                                $typeInfo = EventModel::EVENT_TYPES[$eventType] ?? EventModel::EVENT_TYPES['other'];
+                                            ?>
                                                 <a href="<?= url('/calendar/' . (int)$event['id']) ?>"
-                                                   class="day-event <?= $event['is_training'] ? 'training' : '' ?>"
-                                                   title="<?= e($event['title']) ?>">
+                                                   class="day-event event-type-<?= $eventType ?>"
+                                                   style="background: <?= $typeInfo['color'] ?>;"
+                                                   title="<?= e($event['title']) ?> (<?= e($typeInfo['label']) ?>)">
                                                     <?php if (!$event['all_day']): ?>
                                                         <span class="event-time"><?= date('H:i', strtotime($event['start_time'])) ?></span>
                                                     <?php endif; ?>
@@ -221,9 +227,13 @@ ob_start();
                         $isToday = $dayDate === date('Y-m-d');
                     ?>
                         <div class="week-day-column <?= $isToday ? 'today' : '' ?>" data-date="<?= e($dayDate) ?>">
-                            <?php foreach ($dayEvents as $event): ?>
+                            <?php foreach ($dayEvents as $event):
+                                $eventType = $event['event_type'] ?? 'other';
+                                $typeInfo = EventModel::EVENT_TYPES[$eventType] ?? EventModel::EVENT_TYPES['other'];
+                            ?>
                                 <a href="<?= url('/calendar/' . (int)$event['id']) ?>"
-                                   class="week-event <?= $event['is_training'] ? 'training' : '' ?>">
+                                   class="week-event event-type-<?= $eventType ?>"
+                                   style="background: <?= $typeInfo['color'] ?>;">
                                     <?php if (!$event['all_day']): ?>
                                         <span class="event-time"><?= date('H:i', strtotime($event['start_time'])) ?></span>
                                     <?php endif; ?>
@@ -255,12 +265,16 @@ ob_start();
                     <?php if (empty($events)): ?>
                         <p class="no-events">No events scheduled for this day.</p>
                     <?php else: ?>
-                        <?php foreach ($events as $event): ?>
+                        <?php foreach ($events as $event):
+                            $eventType = $event['event_type'] ?? 'other';
+                            $typeInfo = EventModel::EVENT_TYPES[$eventType] ?? EventModel::EVENT_TYPES['other'];
+                        ?>
                             <a href="<?= url('/calendar/' . (int)$event['id']) ?>"
-                               class="day-event-card <?= $event['is_training'] ? 'training' : '' ?>">
+                               class="day-event-card event-type-<?= $eventType ?>"
+                               style="border-left-color: <?= $typeInfo['color'] ?>;">
                                 <div class="event-time-block">
                                     <?php if ($event['all_day']): ?>
-                                        <span class="all-day-badge">All Day</span>
+                                        <span class="all-day-badge" style="background: <?= $typeInfo['color'] ?>;">All Day</span>
                                     <?php else: ?>
                                         <span class="event-start"><?= date('H:i', strtotime($event['start_time'])) ?></span>
                                         <?php if ($event['end_time']): ?>
@@ -270,6 +284,7 @@ ob_start();
                                 </div>
                                 <div class="event-details">
                                     <h3 class="event-title"><?= e($event['title']) ?></h3>
+                                    <span class="event-type-badge" style="background: <?= $typeInfo['color'] ?>;"><?= e($typeInfo['label']) ?></span>
                                     <?php if ($event['location']): ?>
                                         <p class="event-location"><?= e($event['location']) ?></p>
                                     <?php endif; ?>
@@ -497,9 +512,7 @@ ob_start();
     min-width: 0;
 }
 
-.day-event.training {
-    background: var(--color-primary);
-}
+/* Event type colors are set inline via style attribute */
 
 .day-event .event-time {
     font-weight: var(--font-weight-medium);
@@ -596,9 +609,7 @@ ob_start();
     font-size: var(--font-size-sm);
 }
 
-.week-event.training {
-    background: var(--color-primary);
-}
+/* Week event type colors are set inline via style attribute */
 
 .week-event .event-time {
     display: block;
@@ -662,8 +673,17 @@ ob_start();
     transition: transform var(--transition-fast);
 }
 
-.day-event-card.training {
-    border-left-color: var(--color-primary);
+/* Day event type border colors are set inline via style attribute */
+
+.event-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    color: #fff;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    margin-left: var(--spacing-sm);
+    vertical-align: middle;
 }
 
 .day-event-card:hover {

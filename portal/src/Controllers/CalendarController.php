@@ -257,6 +257,7 @@ class CalendarController
             'recurrence_rule' => $input['recurrence_rule'] ?? null,
             'is_training' => !empty($input['is_training']) ? 1 : 0,
             'is_visible' => !empty($input['is_visible']) || !isset($input['is_visible']) ? 1 : 0,
+            'event_type' => $input['event_type'] ?? 'other',
             'created_by' => (int)$user['id'],
         ];
 
@@ -344,7 +345,7 @@ class CalendarController
 
         $data = [];
         $allowedFields = ['title', 'description', 'location', 'start_time', 'end_time',
-            'all_day', 'recurrence_rule', 'is_training', 'is_visible'];
+            'all_day', 'recurrence_rule', 'is_training', 'is_visible', 'event_type'];
 
         foreach ($allowedFields as $field) {
             if (isset($input[$field])) {

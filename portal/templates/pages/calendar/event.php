@@ -39,11 +39,17 @@ ob_start();
     <!-- Back link -->
     <a href="<?= url('/calendar') ?>" class="back-link">&larr; Back to Calendar</a>
 
+    <?php
+    use App\Models\Event as EventModel;
+    $eventType = $event['event_type'] ?? 'other';
+    $typeInfo = EventModel::EVENT_TYPES[$eventType] ?? EventModel::EVENT_TYPES['other'];
+    ?>
     <div class="event-card">
         <!-- Event Header -->
-        <div class="event-header <?= !empty($event['is_training']) ? 'training' : '' ?>">
+        <div class="event-header" style="border-top: 4px solid <?= $typeInfo['color'] ?>;">
+            <span class="event-type-badge" style="background: <?= $typeInfo['color'] ?>;"><?= e($typeInfo['label']) ?></span>
             <?php if (!empty($event['is_training'])): ?>
-                <span class="event-badge">Training Night</span>
+                <span class="event-badge training-badge">Training Night</span>
             <?php endif; ?>
             <h1 class="event-title"><?= e($event['title'] ?? 'Event') ?></h1>
         </div>
@@ -184,18 +190,27 @@ ob_start();
 
 .event-header {
     padding: var(--spacing-lg);
-    background: var(--color-accent);
-    color: var(--color-text-inverse);
+    background: var(--color-surface);
 }
 
-.event-header.training {
-    background: var(--color-primary);
-}
-
-.event-badge {
+.event-type-badge {
     display: inline-block;
     padding: var(--spacing-xs) var(--spacing-sm);
-    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-sm);
+    margin-right: var(--spacing-xs);
+}
+
+.event-badge.training-badge {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(46, 125, 50, 0.15);
+    color: #2e7d32;
     border-radius: var(--radius-sm);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-medium);

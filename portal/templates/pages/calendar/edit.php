@@ -80,9 +80,23 @@ ob_start();
                 </div>
 
                 <div class="form-group">
+                    <label for="event_type" class="form-label">Event Type</label>
+                    <select id="event_type" name="event_type" class="form-select">
+                        <?php
+                        use App\Models\Event;
+                        $currentType = $event['event_type'] ?? 'other';
+                        foreach (Event::EVENT_TYPES as $value => $typeInfo): ?>
+                            <option value="<?= $value ?>" <?= $currentType === $value ? 'selected' : '' ?>>
+                                <?= e($typeInfo['label']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label class="checkbox-label">
-                        <input type="checkbox" name="is_training" value="1" <?= !empty($event['is_training']) ? 'checked' : '' ?>>
-                        <span>Training night</span>
+                        <input type="checkbox" name="is_training" id="is_training" value="1" <?= !empty($event['is_training']) ? 'checked' : '' ?>>
+                        <span>Training night (enables leave requests)</span>
                     </label>
                 </div>
 
@@ -177,6 +191,20 @@ document.getElementById('recurrence_preset').addEventListener('change', function
     } else {
         ruleInput.value = this.value;
     }
+});
+
+// Sync is_training checkbox with event_type dropdown
+const isTrainingCheckbox = document.getElementById('is_training');
+const eventTypeSelect = document.getElementById('event_type');
+
+isTrainingCheckbox.addEventListener('change', function() {
+    if (this.checked) {
+        eventTypeSelect.value = 'training';
+    }
+});
+
+eventTypeSelect.addEventListener('change', function() {
+    isTrainingCheckbox.checked = (this.value === 'training');
 });
 </script>
 
