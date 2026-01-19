@@ -91,7 +91,7 @@ ob_start();
                             </div>
                             <div class="event-info">
                                 <span class="event-title"><?= e($event['title']) ?></span>
-                                <span class="event-time"><?= $eventDate->format('g:i A') ?></span>
+                                <span class="event-time"><?= $eventDate->format('l g:i A') ?></span>
                             </div>
                             <?php if (!empty($event['is_training'])): ?>
                                 <span class="event-badge training">Training</span>
