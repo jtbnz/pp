@@ -153,6 +153,79 @@ if (!$tablesExist) {
     }
 }
 
+// Schema migrations for existing databases
+// Ensure extended_leave_requests table exists (added in Issue #12)
+$extendedLeaveExists = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='extended_leave_requests'")->fetch();
+if (!$extendedLeaveExists) {
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS extended_leave_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            member_id INTEGER NOT NULL,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            reason TEXT,
+            trainings_affected INTEGER NOT NULL DEFAULT 0,
+            status VARCHAR(20) NOT NULL DEFAULT 'pending',
+            requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            decided_by INTEGER,
+            decided_at DATETIME,
+            FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+            FOREIGN KEY (decided_by) REFERENCES members(id) ON DELETE SET NULL,
+            CHECK (status IN ('pending', 'approved', 'denied')),
+            CHECK (end_date >= start_date)
+        )
+    ");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_extended_leave_member ON extended_leave_requests(member_id)');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_extended_leave_dates ON extended_leave_requests(start_date, end_date)');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_extended_leave_status ON extended_leave_requests(status)');
+}
+
+// Ensure attendance_records table exists (added in Issue #16)
+$attendanceRecordsExists = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='attendance_records'")->fetch();
+if (!$attendanceRecordsExists) {
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS attendance_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            member_id INTEGER NOT NULL,
+            dlb_muster_id INTEGER NOT NULL,
+            event_date DATE NOT NULL,
+            event_type VARCHAR(20) NOT NULL,
+            status CHAR(1) NOT NULL,
+            position VARCHAR(20),
+            truck VARCHAR(50),
+            notes TEXT,
+            source VARCHAR(20) DEFAULT 'dlb',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+            UNIQUE(member_id, dlb_muster_id)
+        )
+    ");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_attendance_member ON attendance_records(member_id)');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance_records(event_date)');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_attendance_type ON attendance_records(event_type)');
+}
+
+// Ensure attendance_sync table exists (added in Issue #16)
+$attendanceSyncExists = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='attendance_sync'")->fetch();
+if (!$attendanceSyncExists) {
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS attendance_sync (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            brigade_id INTEGER NOT NULL,
+            last_sync_at DATETIME,
+            sync_from_date DATE,
+            sync_to_date DATE,
+            status VARCHAR(20) DEFAULT 'pending',
+            error_message TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (brigade_id) REFERENCES brigades(id) ON DELETE CASCADE
+        )
+    ");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_sync_brigade ON attendance_sync(brigade_id)');
+}
+
 // Session configuration (only for web requests, not CLI)
 if (PHP_SAPI !== 'cli') {
     $sessionConfig = $config['session'] ?? [];
