@@ -13,6 +13,8 @@ declare(strict_types=1);
  * - $pendingLeave: array - User's pending leave requests
  */
 
+use App\Models\Event;
+
 global $config;
 
 $pageTitle = 'Home';
@@ -82,9 +84,7 @@ ob_start();
             </div>
             <?php if (!empty($upcomingEvents)): ?>
                 <div class="events-list">
-                    <?php
-                    use App\Models\Event;
-                    foreach ($upcomingEvents as $event): ?>
+                    <?php foreach ($upcomingEvents as $event): ?>
                         <?php
                         $eventDate = new DateTime($event['start_time'], new DateTimeZone('Pacific/Auckland'));
                         $eventType = $event['event_type'] ?? 'other';
