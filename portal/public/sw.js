@@ -10,7 +10,7 @@
 // Configuration
 // ============================================================================
 
-const CACHE_NAME = 'puke-portal-v1';
+const CACHE_NAME = 'puke-portal-v2';
 const API_CACHE_NAME = 'puke-portal-api-v1';
 
 // Derive base path from service worker scope
