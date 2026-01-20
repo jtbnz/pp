@@ -213,6 +213,7 @@ class LeaveRequest
     /**
      * Get upcoming training nights for a member to request leave
      * Returns trainings that the member hasn't already requested leave for
+     * Automatically shifts training to Tuesday if Monday is a public holiday
      *
      * @param int $memberId
      * @param int $limit Maximum number of trainings to return
@@ -239,6 +240,10 @@ class LeaveRequest
         $brigadeId = (int)$memberInfo['brigade_id'];
         $trainingDay = (int)($memberInfo['training_day'] ?? 1); // Default to Monday
         $trainingTime = $memberInfo['training_time'] ?? '19:00';
+
+        // Load the HolidayService to check for public holidays
+        require_once __DIR__ . '/../Services/HolidayService.php';
+        $holidayService = new HolidayService();
 
         // Get existing leave requests for this member (pending or approved)
         $existingSql = "
@@ -278,7 +283,7 @@ class LeaveRequest
         // Start from today
         $date = new DateTime('now', new DateTimeZone('Pacific/Auckland'));
 
-        // Find the next training day
+        // Find the next training day (the regular day, e.g., Monday)
         while ($date->format('l') !== $targetDay) {
             $date->modify('+1 day');
         }
@@ -300,7 +305,7 @@ class LeaveRequest
             $dateStr = $date->format('Y-m-d');
             $iterations++;
 
-            // Check if this training is cancelled
+            // Check if this training is cancelled via event exception
             if (isset($exceptions[$dateStr]) && $exceptions[$dateStr]['is_cancelled']) {
                 // Check for replacement date
                 if (!empty($exceptions[$dateStr]['replacement_date'])) {
@@ -320,18 +325,36 @@ class LeaveRequest
                 continue;
             }
 
-            // Skip if member already has a leave request for this date
-            if (in_array($dateStr, $existingDates, true)) {
+            // Check if the regular training day is a public holiday
+            // If so, shift to the next day (e.g., Monday -> Tuesday)
+            $actualTrainingDate = $dateStr;
+            $actualDayName = $date->format('l');
+            $isMovedForHoliday = false;
+            $holidayName = null;
+
+            if ($holidayService->isPublicHoliday($dateStr)) {
+                // Move to the next day (e.g., Tuesday)
+                $shiftedDate = clone $date;
+                $shiftedDate->modify('+1 day');
+                $actualTrainingDate = $shiftedDate->format('Y-m-d');
+                $actualDayName = $shiftedDate->format('l');
+                $isMovedForHoliday = true;
+                $holidayName = $holidayService->getHolidayName($dateStr);
+            }
+
+            // Skip if member already has a leave request for the actual training date
+            if (in_array($actualTrainingDate, $existingDates, true)) {
                 $date->modify('+7 days');
                 continue;
             }
 
             $trainings[] = [
-                'date' => $dateStr,
+                'date' => $actualTrainingDate,
                 'time' => $trainingTime,
-                'day_name' => $date->format('l'),
-                'is_rescheduled' => false,
-                'original_date' => null,
+                'day_name' => $actualDayName,
+                'is_rescheduled' => $isMovedForHoliday,
+                'original_date' => $isMovedForHoliday ? $dateStr : null,
+                'move_reason' => $holidayName,
             ];
             $count++;
 

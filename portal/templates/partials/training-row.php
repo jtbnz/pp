@@ -12,6 +12,7 @@ declare(strict_types=1);
 $dateFormatted = date('j F Y', strtotime($training['date']));
 $dayName = $training['day_name'];
 $isRescheduled = $training['is_rescheduled'] ?? false;
+$moveReason = $training['move_reason'] ?? null;
 ?>
 
 <div class="training-row card" data-date="<?= $training['date'] ?>">
@@ -22,7 +23,7 @@ $isRescheduled = $training['is_rescheduled'] ?? false;
                 <span class="training-date"><?= e($dateFormatted) ?></span>
                 <?php if ($isRescheduled): ?>
                     <span class="training-rescheduled">
-                        (Moved from <?= date('j M', strtotime($training['original_date'])) ?>)
+                        (Moved from <?= date('j M', strtotime($training['original_date'])) ?><?= $moveReason ? ' - ' . e($moveReason) : '' ?>)
                     </span>
                 <?php endif; ?>
             </div>
