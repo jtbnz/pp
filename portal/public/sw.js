@@ -10,31 +10,32 @@
 // Configuration
 // ============================================================================
 
-const CACHE_NAME = 'puke-portal-v2';
+const CACHE_NAME = 'puke-portal-v3';
 const API_CACHE_NAME = 'puke-portal-api-v1';
 
-// Derive base path from service worker scope
-// e.g., if scope is 'https://kiaora.tech/pp/', basePath is '/pp'
-const BASE_PATH = new URL(self.registration?.scope || self.location.href).pathname.replace(/\/$/, '') || '';
+// Derive base path from service worker location
+// e.g., if SW is at 'https://kiaora.tech/pp/sw.js', basePath is '/pp'
+// self.location is always available, unlike self.registration which may be undefined at parse time
+const BASE_PATH = new URL('./', self.location.href).pathname.replace(/\/$/, '') || '';
 
-// Assets to precache on install (with base path)
+// Assets to precache on install (relative to base path)
 const PRECACHE_ASSETS = [
-    BASE_PATH + '/',
-    BASE_PATH + '/offline.html',
-    BASE_PATH + '/assets/css/app.css',
-    BASE_PATH + '/assets/js/app.js',
-    BASE_PATH + '/assets/js/offline-storage.js',
-    BASE_PATH + '/assets/js/push.js',
-    BASE_PATH + '/manifest.json',
-    BASE_PATH + '/assets/icons/icon-192.svg',
-    BASE_PATH + '/assets/icons/icon-512.svg',
-    BASE_PATH + '/assets/icons/badge-72.svg'
+    '/',
+    '/offline.html',
+    '/assets/css/app.css',
+    '/assets/js/app.js',
+    '/assets/js/offline-storage.js',
+    '/assets/js/push.js',
+    '/manifest.json',
+    '/assets/icons/icon-192.svg',
+    '/assets/icons/icon-512.svg',
+    '/assets/icons/badge-72.svg'
 ];
 
-// API routes that should be network-only
+// API routes that should be network-only (relative paths)
 const API_ROUTES = [
-    BASE_PATH + '/api/',
-    BASE_PATH + '/auth/'
+    '/api/',
+    '/auth/'
 ];
 
 // Cache-first static assets
@@ -57,20 +58,36 @@ const STATIC_EXTENSIONS = [
 // ============================================================================
 
 self.addEventListener('install', (event) => {
-    console.log('[SW] Install event');
+    console.log('[SW] Install event, BASE_PATH:', BASE_PATH);
+
+    // Build full URLs for precaching
+    const assetsToCache = PRECACHE_ASSETS.map(asset => BASE_PATH + asset);
+    console.log('[SW] Precaching assets:', assetsToCache);
 
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
-                console.log('[SW] Precaching assets');
-                return cache.addAll(PRECACHE_ASSETS);
+                console.log('[SW] Opening cache:', CACHE_NAME);
+                return cache.addAll(assetsToCache);
             })
             .then(() => {
+                console.log('[SW] Precache successful');
                 // Force the waiting service worker to become active
                 return self.skipWaiting();
             })
             .catch((error) => {
                 console.error('[SW] Precache failed:', error);
+                // Log which asset might have failed by trying them individually
+                assetsToCache.forEach(async (asset) => {
+                    try {
+                        const response = await fetch(asset);
+                        if (!response.ok) {
+                            console.error('[SW] Asset not OK:', asset, response.status);
+                        }
+                    } catch (e) {
+                        console.error('[SW] Asset fetch failed:', asset, e.message);
+                    }
+                });
             })
     );
 });
@@ -246,7 +263,7 @@ async function handleHtmlRequest(request) {
         }
 
         // Return offline page
-        const offlinePage = await caches.match('/offline.html');
+        const offlinePage = await caches.match(BASE_PATH + '/offline.html');
         if (offlinePage) {
             return offlinePage;
         }
@@ -322,7 +339,7 @@ async function handleDefaultRequest(request) {
  * Check if request is for an API endpoint
  */
 function isApiRequest(pathname) {
-    return API_ROUTES.some(route => pathname.startsWith(route));
+    return API_ROUTES.some(route => pathname.startsWith(BASE_PATH + route));
 }
 
 /**
@@ -453,11 +470,11 @@ self.addEventListener('push', (event) => {
     let notificationData = {
         title: 'Puke Fire Portal',
         body: 'You have a new notification',
-        icon: '/assets/icons/icon-192.png',
-        badge: '/assets/icons/badge-72.png',
+        icon: BASE_PATH + '/assets/icons/icon-192.svg',
+        badge: BASE_PATH + '/assets/icons/badge-72.svg',
         tag: 'puke-portal-notification',
         data: {
-            url: '/'
+            url: BASE_PATH + '/'
         }
     };
 

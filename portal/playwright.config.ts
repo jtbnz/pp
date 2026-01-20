@@ -68,7 +68,8 @@ export default defineConfig({
   // Web server configuration - start PHP server with testing config
   // Uses router.php to simulate /pp subdirectory deployment
   webServer: {
-    command: 'cd /Users/jon/Documents/GitHub/pp/portal && APP_ENV=testing php -S localhost:8080 tests/router.php',
+    command: 'APP_ENV=testing php -S localhost:8080 tests/router.php',
+    cwd: '/Users/Jon.White/Documents/github/pp/portal',
     url: 'http://localhost:8080/pp/health',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
