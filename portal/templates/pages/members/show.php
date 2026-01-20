@@ -54,6 +54,38 @@ ob_start();
         </div>
     <?php endif; ?>
 
+    <?php if ($isOwnProfile): ?>
+    <!-- Accessibility Settings Card (Issue #23) -->
+    <?php
+    $userPrefs = json_decode($member['preferences'] ?? '{}', true) ?: [];
+    $colorBlindModeEnabled = $userPrefs['color_blind_mode'] ?? false;
+    ?>
+    <div class="card accessibility-card mb-4">
+        <div class="card-header">
+            <h3>Accessibility</h3>
+        </div>
+        <div class="card-body">
+            <div class="accessibility-setting">
+                <div class="setting-info">
+                    <label for="color-blind-toggle" class="setting-label">Color Blind Mode</label>
+                    <p class="setting-description">
+                        Adjusts colors throughout the app to be more distinguishable for users with color vision deficiency.
+                    </p>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox"
+                               id="color-blind-toggle"
+                               <?= $colorBlindModeEnabled ? 'checked' : '' ?>
+                               data-member-id="<?= $member['id'] ?>">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Profile Card -->
     <div class="card profile-card mb-4">
         <div class="profile-header">
@@ -605,6 +637,115 @@ ob_start();
         text-align: center;
     }
 }
+
+/* Accessibility Card Styles (Issue #23) */
+.accessibility-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color, #eee);
+}
+
+.accessibility-card .card-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+}
+
+.accessibility-card .card-body {
+    padding: 1rem;
+}
+
+.accessibility-setting {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.setting-info {
+    flex: 1;
+}
+
+.setting-label {
+    display: block;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.setting-description {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary, #666);
+}
+
+.setting-control {
+    flex-shrink: 0;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    border-radius: 28px;
+    transition: background-color 0.2s ease;
+}
+
+.toggle-slider::before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--color-success, #4caf50);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(24px);
+}
+
+.toggle-switch input:focus + .toggle-slider {
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .accessibility-setting {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+}
 </style>
 
 <script>
@@ -615,6 +756,58 @@ function toggleAddPeriodForm() {
         form.querySelector('input[name="start_date"]').focus();
     }
 }
+
+// Color Blind Mode Toggle (Issue #23)
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.getElementById('color-blind-toggle');
+    if (!toggle) return;
+
+    toggle.addEventListener('change', async function() {
+        const memberId = this.dataset.memberId;
+        const enabled = this.checked;
+
+        // Disable toggle while saving
+        toggle.disabled = true;
+
+        try {
+            const response = await fetch(`<?= url('/api/members') ?>/${memberId}/preferences`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    color_blind_mode: enabled
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save preference');
+            }
+
+            // Update the HTML attribute immediately for instant feedback
+            document.documentElement.setAttribute('data-color-blind-mode', enabled ? 'true' : 'false');
+
+            // Show brief success feedback
+            const desc = document.querySelector('.accessibility-setting .setting-description');
+            const originalText = desc.textContent;
+            desc.textContent = enabled ? 'Color blind mode enabled!' : 'Color blind mode disabled.';
+            desc.style.color = 'var(--color-success, #4caf50)';
+
+            setTimeout(() => {
+                desc.textContent = originalText;
+                desc.style.color = '';
+            }, 2000);
+
+        } catch (error) {
+            console.error('Error saving color blind mode preference:', error);
+            // Revert toggle on error
+            toggle.checked = !enabled;
+            alert('Failed to save preference. Please try again.');
+        } finally {
+            toggle.disabled = false;
+        }
+    });
+});
 </script>
 
 <?php

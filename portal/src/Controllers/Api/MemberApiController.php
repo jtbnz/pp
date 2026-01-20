@@ -695,6 +695,73 @@ class MemberApiController
     }
 
     // =========================================================================
+    // USER PREFERENCES ENDPOINTS (Issue #23)
+    // =========================================================================
+
+    /**
+     * PUT /api/members/{id}/preferences
+     * Update user preferences (own profile only)
+     */
+    public function updatePreferences(string $id): void
+    {
+        $user = currentUser();
+        if (!$user) {
+            jsonResponse(['error' => 'Unauthorized'], 401);
+            return;
+        }
+
+        $memberId = (int)$id;
+
+        // Users can only update their own preferences
+        if ($memberId !== $user['id']) {
+            jsonResponse(['error' => 'You can only update your own preferences'], 403);
+            return;
+        }
+
+        $input = $this->getJsonInput();
+
+        // Get current preferences
+        $stmt = $this->db->prepare('SELECT preferences FROM members WHERE id = ?');
+        $stmt->execute([$memberId]);
+        $result = $stmt->fetch();
+
+        $currentPrefs = [];
+        if ($result && !empty($result['preferences'])) {
+            $currentPrefs = json_decode($result['preferences'], true) ?: [];
+        }
+
+        // Validate and merge new preferences
+        $allowedKeys = ['color_blind_mode'];
+        foreach ($input as $key => $value) {
+            if (in_array($key, $allowedKeys, true)) {
+                // Sanitize value based on key
+                if ($key === 'color_blind_mode') {
+                    $currentPrefs[$key] = (bool)$value;
+                }
+            }
+        }
+
+        // Save updated preferences
+        try {
+            $stmt = $this->db->prepare('UPDATE members SET preferences = ?, updated_at = datetime("now", "localtime") WHERE id = ?');
+            $stmt->execute([json_encode($currentPrefs), $memberId]);
+
+            // Update session if this affects display
+            if (isset($input['color_blind_mode'])) {
+                $_SESSION['color_blind_mode'] = (bool)$input['color_blind_mode'];
+            }
+
+            jsonResponse([
+                'message' => 'Preferences updated successfully',
+                'preferences' => $currentPrefs
+            ]);
+
+        } catch (Exception $e) {
+            jsonResponse(['error' => 'Failed to update preferences'], 500);
+        }
+    }
+
+    // =========================================================================
     // ATTENDANCE ENDPOINTS
     // =========================================================================
 

@@ -236,6 +236,14 @@ try {
     $db->exec("UPDATE events SET event_type = 'training' WHERE is_training = 1");
 }
 
+// Ensure preferences column exists on members table (added in Issue #23 - color blindness mode)
+try {
+    $result = $db->query("SELECT preferences FROM members LIMIT 1");
+} catch (PDOException $e) {
+    // Column doesn't exist, add it (JSON text for storing user preferences)
+    $db->exec("ALTER TABLE members ADD COLUMN preferences TEXT DEFAULT '{}'");
+}
+
 // Session configuration (only for web requests, not CLI)
 if (PHP_SAPI !== 'cli') {
     $sessionConfig = $config['session'] ?? [];

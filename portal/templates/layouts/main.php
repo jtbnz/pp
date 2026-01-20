@@ -14,9 +14,16 @@ declare(strict_types=1);
 $pageTitle = $pageTitle ?? '';
 $fullTitle = $pageTitle ? "{$pageTitle} - {$appName}" : $appName;
 $user = currentUser();
+
+// Get color blind mode preference from user or session
+$colorBlindMode = false;
+if ($user) {
+    $prefs = json_decode($user['preferences'] ?? '{}', true) ?: [];
+    $colorBlindMode = $prefs['color_blind_mode'] ?? false;
+}
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-color-blind-mode="<?= $colorBlindMode ? 'true' : 'false' ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">

@@ -249,6 +249,9 @@ $router->group('/api', function(Router $router) {
     $router->put('/members/{id}/service-periods/{pid}', 'Api/MemberApiController@updateServicePeriod');
     $router->delete('/members/{id}/service-periods/{pid}', 'Api/MemberApiController@deleteServicePeriod');
 
+    // User Preferences (Issue #23 - color blindness mode)
+    $router->put('/members/{id}/preferences', 'Api/MemberApiController@updatePreferences');
+
     // Member Attendance
     $router->get('/members/{id}/attendance', 'Api/MemberApiController@attendance');
     $router->get('/members/{id}/attendance/recent', 'Api/MemberApiController@attendanceRecent');

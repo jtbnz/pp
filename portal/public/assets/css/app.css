@@ -125,6 +125,155 @@
 }
 
 /* ============================================================================
+   Color Blindness Accessible Mode (Issue #23)
+   ============================================================================
+   Uses colors optimized for all common types of color vision deficiency:
+   - Protanopia (red-blind)
+   - Deuteranopia (green-blind)
+   - Tritanopia (blue-blind)
+
+   The palette uses high-contrast, distinguishable colors that work across
+   all color blindness types while maintaining brand identity where possible.
+   ============================================================================ */
+
+[data-color-blind-mode="true"] {
+    /* Primary - Use blue instead of red (red is problematic for protanopia/deuteranopia) */
+    --color-primary: #0077BB;
+    --color-primary-dark: #005588;
+    --color-primary-light: #33A1DE;
+    --color-primary-rgb: 0, 119, 187;
+
+    /* Accent - Use orange/amber (distinguishable from blue) */
+    --color-accent: #EE7733;
+    --color-accent-dark: #CC5500;
+    --color-accent-light: #FF9955;
+
+    /* Semantic colors - Using IBM Design accessible palette */
+    --color-success: #009E73;       /* Teal - distinct from red/orange */
+    --color-success-light: #33B894;
+    --color-warning: #E69F00;       /* Amber/Gold - works well for all types */
+    --color-warning-light: #FFB81C;
+    --color-error: #CC3311;         /* Darker red-orange - more distinguishable */
+    --color-error-light: #EE5544;
+    --color-info: #0077BB;          /* Same as primary blue */
+    --color-info-light: #33A1DE;
+
+    /* Event type colors for calendar (Issue #7) - Accessible palette */
+    --event-color-training: #0077BB;   /* Blue */
+    --event-color-meeting: #882288;    /* Purple */
+    --event-color-social: #009E73;     /* Teal */
+    --event-color-firewise: #E69F00;   /* Amber */
+    --event-color-other: #555555;      /* Neutral gray */
+}
+
+/* Override Event model colors when color blind mode is active */
+[data-color-blind-mode="true"] .event-type-training,
+[data-color-blind-mode="true"] [style*="background: #D32F2F"] {
+    background-color: var(--event-color-training) !important;
+}
+
+[data-color-blind-mode="true"] .event-type-meeting,
+[data-color-blind-mode="true"] [style*="background: #1976D2"] {
+    background-color: var(--event-color-meeting) !important;
+}
+
+[data-color-blind-mode="true"] .event-type-social,
+[data-color-blind-mode="true"] [style*="background: #388E3C"] {
+    background-color: var(--event-color-social) !important;
+}
+
+[data-color-blind-mode="true"] .event-type-firewise,
+[data-color-blind-mode="true"] [style*="background: #F57C00"] {
+    background-color: var(--event-color-firewise) !important;
+}
+
+[data-color-blind-mode="true"] .event-type-other,
+[data-color-blind-mode="true"] [style*="background: #757575"] {
+    background-color: var(--event-color-other) !important;
+}
+
+/* Ensure buttons and links use accessible colors */
+[data-color-blind-mode="true"] .btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+[data-color-blind-mode="true"] .btn-primary:hover {
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+}
+
+/* Status indicators with patterns for additional visual cues */
+[data-color-blind-mode="true"] .status-pending::before {
+    background: var(--color-warning);
+}
+
+[data-color-blind-mode="true"] .status-approved::before,
+[data-color-blind-mode="true"] .status-active::before {
+    background: var(--color-success);
+}
+
+[data-color-blind-mode="true"] .status-denied::before,
+[data-color-blind-mode="true"] .status-error::before {
+    background: var(--color-error);
+}
+
+/* Badge colors */
+[data-color-blind-mode="true"] .badge-firefighter {
+    background: #e3f2fd;
+    color: #0077BB;
+}
+
+[data-color-blind-mode="true"] .badge-officer {
+    background: #fff3e0;
+    color: #CC5500;
+}
+
+/* Alert/notification colors */
+[data-color-blind-mode="true"] .flash-success,
+[data-color-blind-mode="true"] .alert-success {
+    background-color: rgba(0, 158, 115, 0.1);
+    border-color: var(--color-success);
+    color: var(--color-success);
+}
+
+[data-color-blind-mode="true"] .flash-error,
+[data-color-blind-mode="true"] .alert-error {
+    background-color: rgba(204, 51, 17, 0.1);
+    border-color: var(--color-error);
+    color: var(--color-error);
+}
+
+[data-color-blind-mode="true"] .flash-warning,
+[data-color-blind-mode="true"] .alert-warning {
+    background-color: rgba(230, 159, 0, 0.1);
+    border-color: var(--color-warning);
+    color: #996600;
+}
+
+[data-color-blind-mode="true"] .flash-info,
+[data-color-blind-mode="true"] .alert-info {
+    background-color: rgba(0, 119, 187, 0.1);
+    border-color: var(--color-info);
+    color: var(--color-info);
+}
+
+/* Next training card on home page */
+[data-color-blind-mode="true"] .next-training-card {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+}
+
+/* Profile header gradient */
+[data-color-blind-mode="true"] .profile-header {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+}
+
+/* Service value highlight */
+[data-color-blind-mode="true"] .service-value {
+    color: var(--color-primary);
+}
+
+/* ============================================================================
    Reset & Base Styles
    ============================================================================ */
 
