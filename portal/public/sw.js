@@ -10,7 +10,7 @@
 // Configuration
 // ============================================================================
 
-const CACHE_NAME = 'puke-portal-v3';
+const CACHE_NAME = 'puke-portal-v4';
 const API_CACHE_NAME = 'puke-portal-api-v1';
 
 // Derive base path from service worker location
@@ -119,6 +119,14 @@ self.addEventListener('activate', (event) => {
             .then(() => {
                 // Take control of all pages immediately
                 return self.clients.claim();
+            })
+            .then(() => {
+                // Notify all clients to reload for new version
+                return self.clients.matchAll().then((clients) => {
+                    clients.forEach((client) => {
+                        client.postMessage({ type: 'SW_ACTIVATED', version: CACHE_NAME });
+                    });
+                });
             })
     );
 });
@@ -280,30 +288,37 @@ async function handleHtmlRequest(request) {
 }
 
 /**
- * Handle static assets - Cache first, network fallback
+ * Handle static assets - Stale-while-revalidate strategy
+ * Returns cached version immediately while fetching fresh version in background
  */
 async function handleStaticAsset(request) {
-    const cachedResponse = await caches.match(request);
+    const cache = await caches.open(CACHE_NAME);
+    const cachedResponse = await cache.match(request);
+
+    // Fetch fresh version in background
+    const fetchPromise = fetch(request).then((response) => {
+        if (response.ok) {
+            cache.put(request, response.clone());
+        }
+        return response;
+    }).catch(() => null);
+
+    // Return cached version if available, otherwise wait for network
     if (cachedResponse) {
         return cachedResponse;
     }
 
     try {
-        const response = await fetch(request);
-
-        // Cache successful responses
-        if (response.ok) {
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(request, response.clone());
+        const response = await fetchPromise;
+        if (response) {
+            return response;
         }
-
-        return response;
+        throw new Error('Network failed and no cache');
     } catch (error) {
         // Return placeholder for images if needed
         if (request.url.match(/\.(png|jpg|jpeg|gif|svg|webp)$/)) {
             return new Response('', { status: 404 });
         }
-
         throw error;
     }
 }

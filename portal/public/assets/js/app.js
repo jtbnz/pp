@@ -217,7 +217,7 @@ const App = {
      * Handle messages from service worker
      */
     handleSwMessage(event) {
-        const { type, data } = event.data || {};
+        const { type, data, version } = event.data || {};
 
         switch (type) {
             case 'SYNC_COMPLETE':
@@ -229,6 +229,15 @@ const App = {
 
             case 'CACHE_UPDATED':
                 this.log('Cache updated');
+                break;
+
+            case 'SW_ACTIVATED':
+                this.log('New service worker activated:', version);
+                // Auto-reload to get fresh assets from new cache
+                if (!sessionStorage.getItem('swReloaded')) {
+                    sessionStorage.setItem('swReloaded', 'true');
+                    window.location.reload();
+                }
                 break;
 
             default:
