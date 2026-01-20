@@ -5,6 +5,8 @@ declare(strict_types=1);
  * Create Event Template
  */
 
+require_once __DIR__ . '/../../../src/Models/Event.php';
+
 global $config;
 
 $pageTitle = $pageTitle ?? 'Create Event';
@@ -82,7 +84,6 @@ ob_start();
                     <label for="event_type" class="form-label">Event Type</label>
                     <select id="event_type" name="event_type" class="form-select">
                         <?php
-                        use App\Models\Event;
                         $currentType = $event['event_type'] ?? 'other';
                         foreach (Event::EVENT_TYPES as $value => $typeInfo): ?>
                             <option value="<?= $value ?>" <?= $currentType === $value ? 'selected' : '' ?>>

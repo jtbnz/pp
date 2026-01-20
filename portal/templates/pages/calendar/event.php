@@ -7,6 +7,8 @@ declare(strict_types=1);
  * Displays details of a single calendar event.
  */
 
+require_once __DIR__ . '/../../../src/Models/Event.php';
+
 global $config;
 
 $pageTitle = $pageTitle ?? 'Event';
@@ -40,9 +42,8 @@ ob_start();
     <a href="<?= url('/calendar') ?>" class="back-link">&larr; Back to Calendar</a>
 
     <?php
-    use App\Models\Event as EventModel;
     $eventType = $event['event_type'] ?? 'other';
-    $typeInfo = EventModel::EVENT_TYPES[$eventType] ?? EventModel::EVENT_TYPES['other'];
+    $typeInfo = Event::EVENT_TYPES[$eventType] ?? Event::EVENT_TYPES['other'];
     ?>
     <div class="event-card">
         <!-- Event Header -->

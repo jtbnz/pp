@@ -13,7 +13,7 @@ declare(strict_types=1);
  * - $pendingLeave: array - User's pending leave requests
  */
 
-use App\Models\Event;
+require_once __DIR__ . '/../../src/Models/Event.php';
 
 global $config;
 

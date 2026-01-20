@@ -7,6 +7,8 @@ declare(strict_types=1);
  * Displays the calendar with day/week/month view switcher.
  */
 
+require_once __DIR__ . '/../../../src/Models/Event.php';
+
 global $config;
 
 $pageTitle = $pageTitle ?? 'Calendar';
@@ -156,10 +158,9 @@ ob_start();
                                     <?php if (!empty($day['events'])): ?>
                                         <div class="day-events">
                                             <?php
-                                            use App\Models\Event as EventModel;
                                             foreach (array_slice($day['events'], 0, 3) as $event):
                                                 $eventType = $event['event_type'] ?? 'other';
-                                                $typeInfo = EventModel::EVENT_TYPES[$eventType] ?? EventModel::EVENT_TYPES['other'];
+                                                $typeInfo = Event::EVENT_TYPES[$eventType] ?? Event::EVENT_TYPES['other'];
                                             ?>
                                                 <a href="<?= url('/calendar/' . (int)$event['id']) ?>"
                                                    class="day-event event-type-<?= $eventType ?>"
@@ -229,7 +230,7 @@ ob_start();
                         <div class="week-day-column <?= $isToday ? 'today' : '' ?>" data-date="<?= e($dayDate) ?>">
                             <?php foreach ($dayEvents as $event):
                                 $eventType = $event['event_type'] ?? 'other';
-                                $typeInfo = EventModel::EVENT_TYPES[$eventType] ?? EventModel::EVENT_TYPES['other'];
+                                $typeInfo = Event::EVENT_TYPES[$eventType] ?? Event::EVENT_TYPES['other'];
                             ?>
                                 <a href="<?= url('/calendar/' . (int)$event['id']) ?>"
                                    class="week-event event-type-<?= $eventType ?>"
@@ -267,7 +268,7 @@ ob_start();
                     <?php else: ?>
                         <?php foreach ($events as $event):
                             $eventType = $event['event_type'] ?? 'other';
-                            $typeInfo = EventModel::EVENT_TYPES[$eventType] ?? EventModel::EVENT_TYPES['other'];
+                            $typeInfo = Event::EVENT_TYPES[$eventType] ?? Event::EVENT_TYPES['other'];
                         ?>
                             <a href="<?= url('/calendar/' . (int)$event['id']) ?>"
                                class="day-event-card event-type-<?= $eventType ?>"
