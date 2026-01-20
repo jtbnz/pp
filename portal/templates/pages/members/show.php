@@ -67,9 +67,9 @@ ob_start();
         <div class="card-body">
             <div class="accessibility-setting">
                 <div class="setting-info">
-                    <label for="color-blind-toggle" class="setting-label">Color Blind Mode</label>
+                    <label for="color-blind-toggle" class="setting-label">Colour Blind Mode</label>
                     <p class="setting-description">
-                        Adjusts colors throughout the app to be more distinguishable for users with color vision deficiency.
+                        Adjusts colours throughout the app to be more distinguishable for users with colour vision deficiency.
                     </p>
                 </div>
                 <div class="setting-control">
@@ -757,10 +757,14 @@ function toggleAddPeriodForm() {
     }
 }
 
-// Color Blind Mode Toggle (Issue #23)
+// Colour Blind Mode Toggle (Issue #23)
 document.addEventListener('DOMContentLoaded', function() {
     const toggle = document.getElementById('color-blind-toggle');
     if (!toggle) return;
+
+    const desc = document.querySelector('.accessibility-setting .setting-description');
+    const originalText = 'Adjusts colours throughout the app to be more distinguishable for users with colour vision deficiency.';
+    let feedbackTimeout = null;
 
     toggle.addEventListener('change', async function() {
         const memberId = this.dataset.memberId;
@@ -768,6 +772,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Disable toggle while saving
         toggle.disabled = true;
+
+        // Clear any pending feedback timeout
+        if (feedbackTimeout) {
+            clearTimeout(feedbackTimeout);
+            feedbackTimeout = null;
+        }
 
         try {
             const response = await fetch(`<?= url('/api/members') ?>/${memberId}/preferences`, {
@@ -788,18 +798,16 @@ document.addEventListener('DOMContentLoaded', function() {
             document.documentElement.setAttribute('data-color-blind-mode', enabled ? 'true' : 'false');
 
             // Show brief success feedback
-            const desc = document.querySelector('.accessibility-setting .setting-description');
-            const originalText = desc.textContent;
-            desc.textContent = enabled ? 'Color blind mode enabled!' : 'Color blind mode disabled.';
+            desc.textContent = enabled ? 'Colour blind mode enabled!' : 'Colour blind mode disabled.';
             desc.style.color = 'var(--color-success, #4caf50)';
 
-            setTimeout(() => {
+            feedbackTimeout = setTimeout(() => {
                 desc.textContent = originalText;
                 desc.style.color = '';
             }, 2000);
 
         } catch (error) {
-            console.error('Error saving color blind mode preference:', error);
+            console.error('Error saving colour blind mode preference:', error);
             // Revert toggle on error
             toggle.checked = !enabled;
             alert('Failed to save preference. Please try again.');

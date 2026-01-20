@@ -392,6 +392,7 @@ button {
     background: var(--color-warning);
     color: var(--color-text-inverse);
     padding: var(--spacing-xs) var(--spacing-md);
+    padding-top: calc(var(--spacing-xs) + env(safe-area-inset-top, 0px));
     text-align: center;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
@@ -415,7 +416,8 @@ button {
     top: 0;
     left: 0;
     right: 0;
-    height: var(--header-height);
+    height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
     background: var(--color-primary);
     color: var(--color-text-inverse);
     box-shadow: var(--shadow-md);
@@ -614,7 +616,7 @@ button {
 
 .sidebar {
     position: fixed;
-    top: var(--header-height);
+    top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
     left: 0;
     bottom: 0;
     width: var(--sidebar-width);
@@ -727,7 +729,7 @@ button {
    ============================================================================ */
 
 .main-content {
-    padding-top: var(--header-height);
+    padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
     padding-bottom: var(--bottom-nav-height);
     min-height: 100vh;
 }
@@ -2465,6 +2467,7 @@ button {
     background: linear-gradient(135deg, #7B1FA2 0%, #512DA8 100%);
     color: #FFFFFF;
     padding: var(--spacing-sm) var(--spacing-md);
+    padding-top: calc(var(--spacing-sm) + env(safe-area-inset-top, 0px));
     box-shadow: var(--shadow-md);
 }
 
@@ -2521,23 +2524,23 @@ button {
 
 /* Adjust main content when view-as banner is showing */
 .has-view-as-banner {
-    margin-top: 48px;
+    margin-top: calc(48px + env(safe-area-inset-top, 0px));
 }
 
 @media (min-width: 768px) {
     .has-view-as-banner {
-        margin-top: 40px;
+        margin-top: calc(40px + env(safe-area-inset-top, 0px));
     }
 }
 
 /* Also push header down when banner is showing */
 body:has(.view-as-banner) .app-header {
-    top: 48px;
+    top: calc(48px + env(safe-area-inset-top, 0px));
 }
 
 @media (min-width: 768px) {
     body:has(.view-as-banner) .app-header {
-        top: 40px;
+        top: calc(40px + env(safe-area-inset-top, 0px));
     }
 }
 
