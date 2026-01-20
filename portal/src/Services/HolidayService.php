@@ -284,6 +284,29 @@ class HolidayService
     }
 
     /**
+     * Regional anniversary day names to filter out from national holidays
+     * These are region-specific and should not be treated as national holidays
+     */
+    private const REGIONAL_ANNIVERSARY_NAMES = [
+        'Auckland Anniversary Day',
+        'Auckland/Northland Anniversary Day',
+        'Northland Anniversary Day',
+        'Nelson Anniversary Day',
+        'Wellington Anniversary Day',
+        'Canterbury Anniversary Day',
+        'Otago Anniversary Day',
+        'Southland Anniversary Day',
+        'Taranaki Anniversary Day',
+        "Hawke's Bay Anniversary Day",
+        'Marlborough Anniversary Day',
+        'Westland Anniversary Day',
+        'Chatham Islands Anniversary Day',
+        // Common variations
+        'Canterbury (South) Anniversary Day',
+        'Canterbury (North and Central) Anniversary Day',
+    ];
+
+    /**
      * Fetch holidays from external API
      *
      * @param int $year Year to fetch
@@ -314,9 +337,16 @@ class HolidayService
 
         $holidays = [];
         foreach ($data as $holiday) {
+            $name = $holiday['localName'] ?? $holiday['name'] ?? '';
+
+            // Skip regional anniversary days - they will be added separately for the configured region
+            if ($this->isRegionalAnniversary($name)) {
+                continue;
+            }
+
             $holidays[] = [
                 'date' => $holiday['date'] ?? '',
-                'name' => $holiday['localName'] ?? $holiday['name'] ?? '',
+                'name' => $name,
                 'region' => 'national',
             ];
         }
@@ -330,6 +360,28 @@ class HolidayService
         ];
 
         return $holidays;
+    }
+
+    /**
+     * Check if a holiday name is a regional anniversary day
+     *
+     * @param string $name Holiday name
+     * @return bool True if it's a regional anniversary
+     */
+    private function isRegionalAnniversary(string $name): bool
+    {
+        foreach (self::REGIONAL_ANNIVERSARY_NAMES as $regionalName) {
+            if (stripos($name, $regionalName) !== false || stripos($regionalName, $name) !== false) {
+                return true;
+            }
+        }
+
+        // Also check for generic "Anniversary Day" pattern
+        if (preg_match('/anniversary\s*day/i', $name)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
