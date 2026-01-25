@@ -330,11 +330,12 @@ class PushNotificationHandler {
     }
 
     /**
-     * Send a test notification (admin only)
-     * @returns {Promise<boolean>}
+     * Send a test notification to current user
+     * @returns {Promise<{success: boolean, message: string}>}
      */
     async sendTest() {
         try {
+            console.log('[Push] Sending test notification...');
             const response = await fetch(this.basePath + '/api/push/test', {
                 method: 'POST',
                 headers: {
@@ -346,14 +347,24 @@ class PushNotificationHandler {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to send test notification');
+                console.error('[Push] Test notification failed:', data);
+                return {
+                    success: false,
+                    message: data.message || data.error || 'Failed to send test notification'
+                };
             }
 
-            console.log('[Push] Test notification sent');
-            return true;
+            console.log('[Push] Test notification sent successfully');
+            return {
+                success: true,
+                message: data.message || 'Test notification sent'
+            };
         } catch (error) {
             console.error('[Push] Test notification error:', error);
-            return false;
+            return {
+                success: false,
+                message: 'Network error: ' + error.message
+            };
         }
     }
 }
@@ -367,6 +378,7 @@ class PushNotificationHandler {
  */
 function initPushUI() {
     const toggleButton = document.getElementById('push-toggle');
+    const testButton = document.getElementById('push-test');
     const statusText = document.getElementById('push-status');
 
     if (!toggleButton) {
@@ -379,6 +391,9 @@ function initPushUI() {
         if (!window.pukePush.isSupported()) {
             toggleButton.disabled = true;
             toggleButton.textContent = 'Not Supported';
+            if (testButton) {
+                testButton.style.display = 'none';
+            }
             if (statusText) {
                 statusText.textContent = 'Push notifications are not supported in this browser';
             }
@@ -388,6 +403,9 @@ function initPushUI() {
         // Check if push handler was initialized successfully
         if (!window.pukePush.isInitialized) {
             toggleButton.disabled = true;
+            if (testButton) {
+                testButton.style.display = 'none';
+            }
 
             // Show appropriate message based on error type
             switch (window.pukePush.initError) {
@@ -417,6 +435,9 @@ function initPushUI() {
         if (permission === 'denied') {
             toggleButton.disabled = true;
             toggleButton.textContent = 'Blocked';
+            if (testButton) {
+                testButton.style.display = 'none';
+            }
             if (statusText) {
                 statusText.textContent = 'Notifications are blocked. Please enable them in your browser settings.';
             }
@@ -427,6 +448,12 @@ function initPushUI() {
         toggleButton.disabled = false;
         toggleButton.textContent = isSubscribed ? 'Disable Notifications' : 'Enable Notifications';
         toggleButton.classList.toggle('subscribed', isSubscribed);
+
+        // Show test button only if subscribed
+        if (testButton) {
+            testButton.style.display = isSubscribed ? 'block' : 'none';
+            testButton.disabled = false;
+        }
 
         if (statusText) {
             statusText.textContent = isSubscribed
@@ -457,6 +484,59 @@ function initPushUI() {
 
         updateUI();
     });
+
+    // Handle test button click
+    if (testButton) {
+        testButton.addEventListener('click', async () => {
+            testButton.disabled = true;
+            const originalText = testButton.textContent;
+            testButton.textContent = 'Sending...';
+
+            if (statusText) {
+                statusText.textContent = 'Sending test notification...';
+                statusText.style.color = '';
+            }
+
+            try {
+                const result = await window.pukePush.sendTest();
+
+                if (result.success) {
+                    if (statusText) {
+                        statusText.textContent = 'Test notification sent! Check your device.';
+                        statusText.style.color = 'var(--success, #4caf50)';
+                    }
+                    // Reset status text after 5 seconds
+                    setTimeout(() => {
+                        if (statusText) {
+                            statusText.textContent = 'You will receive push notifications';
+                            statusText.style.color = '';
+                        }
+                    }, 5000);
+                } else {
+                    if (statusText) {
+                        statusText.textContent = result.message || 'Failed to send test notification';
+                        statusText.style.color = 'var(--error, #D32F2F)';
+                    }
+                    // Reset status text after 5 seconds
+                    setTimeout(() => {
+                        if (statusText) {
+                            statusText.textContent = 'You will receive push notifications';
+                            statusText.style.color = '';
+                        }
+                    }, 5000);
+                }
+            } catch (error) {
+                console.error('[Push] Test button error:', error);
+                if (statusText) {
+                    statusText.textContent = 'Error sending test notification';
+                    statusText.style.color = 'var(--error, #D32F2F)';
+                }
+            } finally {
+                testButton.disabled = false;
+                testButton.textContent = originalText;
+            }
+        });
+    }
 
     // Initial UI update
     updateUI();
