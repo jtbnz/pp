@@ -577,6 +577,17 @@ async function syncMembers() {
 
         const data = await response.json();
 
+        // DEBUG: Log full response to console (press F12 -> Console tab to see this)
+        console.log('=== SYNC MEMBERS DEBUG ===');
+        console.log('Full response:', JSON.stringify(data, null, 2));
+        if (data.results && data.results.debug) {
+            console.log('DLB members sample:', data.results.debug.dlb_members_sample);
+            console.log('Local members:', data.results.debug.local_members);
+        }
+        if (data.results && data.results.skipped_members) {
+            console.log('Skipped members:', data.results.skipped_members);
+        }
+
         if (data.success) {
             indicator.className = 'status-indicator status-connected';
             text.textContent = data.message || 'Members synced successfully';
@@ -587,6 +598,7 @@ async function syncMembers() {
     } catch (error) {
         indicator.className = 'status-indicator status-error';
         text.textContent = 'Sync error: ' + error.message;
+        console.error('Sync error:', error);
     } finally {
         syncMembersBtn.disabled = false;
     }
