@@ -809,11 +809,20 @@ class MemberApiController
         $stats = $attendanceService->getMemberStats($memberId);
         $syncStatus = $attendanceService->getSyncStatus((int)$member['brigade_id']);
 
+        // Format last_sync timestamp with timezone for correct client-side parsing
+        $lastSync = null;
+        if ($syncStatus && $syncStatus['last_sync_at']) {
+            // Create DateTime assuming stored time is in Pacific/Auckland (per project spec)
+            $nzTimezone = new \DateTimeZone('Pacific/Auckland');
+            $dt = new \DateTime($syncStatus['last_sync_at'], $nzTimezone);
+            $lastSync = $dt->format(\DateTime::ATOM); // ISO 8601 format with timezone offset
+        }
+
         jsonResponse([
             'success' => true,
             'stats' => $stats,
             'sync' => $syncStatus ? [
-                'last_sync' => $syncStatus['last_sync_at'],
+                'last_sync' => $lastSync,
                 'status' => $syncStatus['status'],
             ] : null,
         ]);
