@@ -457,19 +457,7 @@ document.querySelectorAll('.flash-dismiss').forEach(btn => {
 const dlbEnabledCheckbox = document.getElementById('dlb_enabled');
 const dlbSettings = document.getElementById('dlb-settings');
 
-function toggleDlbSettings() {
-    if (dlbEnabledCheckbox.checked) {
-        dlbSettings.classList.remove('hidden');
-        checkDlbConnection();
-    } else {
-        dlbSettings.classList.add('hidden');
-    }
-}
-
-dlbEnabledCheckbox.addEventListener('change', toggleDlbSettings);
-toggleDlbSettings();
-
-// Test DLB connection
+// Test DLB connection - define these BEFORE toggleDlbSettings since it uses checkDlbConnection
 const testConnectionBtn = document.getElementById('test-dlb-connection');
 const connectionStatus = document.getElementById('dlb-connection-status');
 
@@ -504,6 +492,18 @@ async function checkDlbConnection() {
 }
 
 testConnectionBtn.addEventListener('click', checkDlbConnection);
+
+function toggleDlbSettings() {
+    if (dlbEnabledCheckbox.checked) {
+        dlbSettings.classList.remove('hidden');
+        checkDlbConnection();
+    } else {
+        dlbSettings.classList.add('hidden');
+    }
+}
+
+dlbEnabledCheckbox.addEventListener('change', toggleDlbSettings);
+toggleDlbSettings();
 
 // Sync attendance buttons
 const syncBtn = document.getElementById('sync-attendance');
