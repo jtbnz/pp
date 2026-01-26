@@ -27,10 +27,7 @@
     "autoload": {
         "psr-4": {
             "Portal\\": "src/"
-        },
-        "files": [
-            "src/bootstrap.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {
@@ -42,7 +39,7 @@
         "test:coverage": "phpunit --coverage-html coverage",
         "cs-check": "phpcs --standard=PSR12 src/",
         "cs-fix": "phpcbf --standard=PSR12 src/",
-        "serve": "php -S localhost:8080 -t public",
+        "serve": "php -S localhost:6080 -t public",
         "db:init": "php scripts/init-database.php",
         "db:seed": "php scripts/seed-database.php"
     },
