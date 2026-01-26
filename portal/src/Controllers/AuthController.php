@@ -6,6 +6,7 @@ namespace Portal\Controllers;
 use Portal\Models\Member;
 use Portal\Models\InviteToken;
 use Portal\Services\AuthService;
+use Portal\Services\EmailService;
 use Portal\Middleware\Auth;
 use PDO;
 use DateTime;
@@ -506,19 +507,12 @@ class AuthController
         $basePath = $this->config['base_path'] ?? '';
         $magicLinkUrl = $this->config['app_url'] . $basePath . '/auth/verify/' . $token;
 
-        // Prepare email data
-        $emailData = [
-            'memberName' => $member['name'],
-            'brigadeName' => $member['brigade_name'] ?? 'Puke Fire Brigade',
-            'magicLinkUrl' => $magicLinkUrl,
-            'expiryDays' => $this->config['auth']['invite_expiry_days'] ?? 7
-        ];
-
-        // Send email (using simple mail for now - can be replaced with proper mailer)
-        $this->sendEmail(
+        // Use EmailService for consistent email delivery (supports SMTP configuration)
+        $emailService = new EmailService($this->config);
+        $emailService->sendMagicLink(
             $member['email'],
-            'Sign in to ' . ($this->config['app_name'] ?? 'Puke Portal'),
-            $this->renderEmailTemplate('emails/magic-link', $emailData)
+            $member['name'],
+            $magicLinkUrl
         );
     }
 

@@ -185,12 +185,45 @@ ob_start();
 
     <!-- Service History -->
     <section class="service-history mt-4">
-        <h2>Service History</h2>
+        <div class="service-history-header">
+            <h2>Service History</h2>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAddPeriodForm()">
+                Add Period
+            </button>
+        </div>
         <div class="card">
             <div class="card-body">
                 <p class="service-total">
                     <strong>Total Service:</strong> <?= e($serviceInfo['display']) ?>
                 </p>
+
+                <!-- Add Service Period Form (hidden by default) -->
+                <form id="add-period-form" action="<?= url('/members/' . $member['id'] . '/service-periods') ?>" method="POST" class="service-period-form" hidden>
+                    <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="start_date" class="form-label">Start Date *</label>
+                            <input type="date" id="start_date" name="start_date" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" id="end_date" name="end_date" class="form-input">
+                            <span class="form-hint">Leave empty if currently serving</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes" class="form-label">Notes</label>
+                        <input type="text" id="notes" name="notes" class="form-input" placeholder="Reason for gap, etc.">
+                    </div>
+
+                    <div class="form-actions-inline">
+                        <button type="submit" class="btn btn-primary">Add Period</button>
+                        <button type="button" class="btn btn-text" onclick="toggleAddPeriodForm()">Cancel</button>
+                    </div>
+                </form>
 
                 <?php if (empty($servicePeriods)): ?>
                 <p class="text-secondary">No service periods recorded</p>
@@ -201,6 +234,7 @@ ob_start();
                             <th>Start Date</th>
                             <th>End Date</th>
                             <th>Notes</th>
+                            <th class="actions-col">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -209,6 +243,13 @@ ob_start();
                             <td><?= e(date('j M Y', strtotime($period['start_date']))) ?></td>
                             <td><?= $period['end_date'] ? e(date('j M Y', strtotime($period['end_date']))) : '<em>Present</em>' ?></td>
                             <td><?= e($period['notes'] ?? '-') ?></td>
+                            <td class="actions-col">
+                                <form action="<?= url('/members/' . $member['id'] . '/service-periods/' . $period['id']) ?>" method="POST" style="display: inline;" onsubmit="return confirm('Delete this service period?');">
+                                    <input type="hidden" name="_csrf_token" value="<?= csrfToken() ?>">
+                                    <input type="hidden" name="_method" value="DELETE">
+                                    <button type="submit" class="btn btn-sm btn-text btn-danger">Delete</button>
+                                </form>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -455,7 +496,55 @@ ob_start();
 .checkbox-text {
     font-weight: 500;
 }
+
+.service-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.service-history-header h2 {
+    margin: 0;
+}
+
+.service-period-form {
+    background: var(--bg-secondary, #f9f9f9);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.form-actions-inline {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.actions-col {
+    width: 80px;
+    text-align: right;
+}
+
+.btn-danger {
+    color: var(--error, #f44336);
+}
+
+.btn-danger:hover {
+    background: rgba(244, 67, 54, 0.1);
+}
 </style>
+
+<script>
+function toggleAddPeriodForm() {
+    const form = document.getElementById('add-period-form');
+    form.hidden = !form.hidden;
+    if (!form.hidden) {
+        form.querySelector('input[name="start_date"]').focus();
+    }
+}
+</script>
 
 <?php
 $content = ob_get_clean();
