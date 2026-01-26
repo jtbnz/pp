@@ -101,12 +101,13 @@ $router->get('/health', function() {
 $router->get('/manifest.json', function() {
     global $config;
     $basePath = $config['base_path'] ?? '';
+    $appName = $config['app_name'] ?? 'Puke Fire Portal';
 
     header('Content-Type: application/manifest+json');
     echo json_encode([
-        'name' => $config['app_name'] ?? 'Puke Fire Portal',
-        'short_name' => 'Puke Portal',
-        'description' => 'Puke Volunteer Fire Brigade member portal for calendar, notices, and leave management',
+        'name' => $appName,
+        'short_name' => $appName,
+        'description' => $appName . ' - Member portal for calendar, notices, and leave management',
         'start_url' => $basePath . '/',
         'display' => 'standalone',
         'theme_color' => $config['theme']['primary_color'] ?? '#D32F2F',
