@@ -301,6 +301,33 @@ ob_start();
                             Test Connection
                         </button>
                     </div>
+
+                    <div class="dlb-sync mt-3">
+                        <h3 class="text-sm font-semibold mb-2">Member Sync</h3>
+                        <p class="text-secondary text-sm mb-2">Link Portal members to their DLB records (required for attendance).</p>
+                        <div id="dlb-member-sync-status" class="connection-status mb-2" style="display: none;">
+                            <span class="status-indicator"></span>
+                            <span class="status-text"></span>
+                        </div>
+                        <button type="button" id="sync-members" class="btn btn-secondary btn-sm">
+                            Sync Members from DLB
+                        </button>
+                    </div>
+
+                    <div class="dlb-sync mt-3">
+                        <h3 class="text-sm font-semibold mb-2">Attendance Sync</h3>
+                        <p class="text-secondary text-sm mb-2">Pull attendance history from DLB to display on member profiles.</p>
+                        <div id="dlb-sync-status" class="connection-status mb-2" style="display: none;">
+                            <span class="status-indicator"></span>
+                            <span class="status-text"></span>
+                        </div>
+                        <button type="button" id="sync-attendance" class="btn btn-secondary btn-sm">
+                            Sync Attendance Now
+                        </button>
+                        <button type="button" id="sync-attendance-full" class="btn btn-secondary btn-sm">
+                            Full Sync (12 months)
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -477,6 +504,95 @@ async function checkDlbConnection() {
 }
 
 testConnectionBtn.addEventListener('click', checkDlbConnection);
+
+// Sync attendance buttons
+const syncBtn = document.getElementById('sync-attendance');
+const syncFullBtn = document.getElementById('sync-attendance-full');
+const syncStatus = document.getElementById('dlb-sync-status');
+
+async function syncAttendance(fullSync = false) {
+    const indicator = syncStatus.querySelector('.status-indicator');
+    const text = syncStatus.querySelector('.status-text');
+
+    syncStatus.style.display = 'flex';
+    indicator.className = 'status-indicator status-checking';
+    text.textContent = fullSync ? 'Syncing 12 months of attendance...' : 'Syncing recent attendance...';
+
+    syncBtn.disabled = true;
+    syncFullBtn.disabled = true;
+
+    try {
+        const response = await fetch('<?= url('/api/attendance/sync') ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ full_sync: fullSync })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            indicator.className = 'status-indicator status-connected';
+            text.textContent = `Sync complete: ${data.created || 0} new, ${data.updated || 0} updated`;
+        } else {
+            indicator.className = 'status-indicator status-error';
+            text.textContent = data.error || 'Sync failed';
+        }
+    } catch (error) {
+        indicator.className = 'status-indicator status-error';
+        text.textContent = 'Sync error: ' + error.message;
+    } finally {
+        syncBtn.disabled = false;
+        syncFullBtn.disabled = false;
+    }
+}
+
+syncBtn.addEventListener('click', () => syncAttendance(false));
+syncFullBtn.addEventListener('click', () => syncAttendance(true));
+
+// Sync members button
+const syncMembersBtn = document.getElementById('sync-members');
+const memberSyncStatus = document.getElementById('dlb-member-sync-status');
+
+async function syncMembers() {
+    const indicator = memberSyncStatus.querySelector('.status-indicator');
+    const text = memberSyncStatus.querySelector('.status-text');
+
+    memberSyncStatus.style.display = 'flex';
+    indicator.className = 'status-indicator status-checking';
+    text.textContent = 'Syncing members from DLB...';
+
+    syncMembersBtn.disabled = true;
+
+    try {
+        const response = await fetch('<?= url('/api/sync/import-members') ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            indicator.className = 'status-indicator status-connected';
+            text.textContent = data.message || 'Members synced successfully';
+        } else {
+            indicator.className = 'status-indicator status-error';
+            text.textContent = data.error || 'Sync failed';
+        }
+    } catch (error) {
+        indicator.className = 'status-indicator status-error';
+        text.textContent = 'Sync error: ' + error.message;
+    } finally {
+        syncMembersBtn.disabled = false;
+    }
+}
+
+syncMembersBtn.addEventListener('click', syncMembers);
 </script>
 
 <?php
