@@ -75,6 +75,23 @@ set_exception_handler(function (Throwable $e): void {
 // Load Composer autoloader
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Create class aliases for backward compatibility in templates
+class_alias(Portal\Models\Event::class, 'Event');
+class_alias(Portal\Models\Notice::class, 'Notice');
+class_alias(Portal\Models\LeaveRequest::class, 'LeaveRequest');
+class_alias(Portal\Models\Poll::class, 'Poll');
+class_alias(Portal\Models\Member::class, 'Member');
+class_alias(Portal\Models\Brigade::class, 'Brigade');
+class_alias(Portal\Models\MagicLink::class, 'MagicLink');
+class_alias(Portal\Models\RateLimit::class, 'RateLimit');
+class_alias(Portal\Models\Notification::class, 'Notification');
+class_alias(Portal\Services\PushService::class, 'PushService');
+class_alias(Portal\Services\DlbService::class, 'DlbService');
+class_alias(Portal\Services\CalendarService::class, 'CalendarService');
+class_alias(Portal\Services\EmailService::class, 'EmailService');
+class_alias(Portal\Services\NotificationService::class, 'NotificationService');
+class_alias(Portal\Helpers\Markdown::class, 'Markdown');
+
 // Load configuration based on APP_ENV environment variable
 $appEnv = getenv('APP_ENV') ?: 'production';
 if ($appEnv === 'testing' && file_exists(__DIR__ . '/../config/config.testing.php')) {
