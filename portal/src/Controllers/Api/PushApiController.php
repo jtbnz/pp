@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Portal\Controllers\Api;
 
 use Portal\Services\PushService;
+use Portal\Services\NotificationService;
 use PDO;
 
 /**
@@ -191,28 +192,43 @@ class PushApiController
             return;
         }
 
-        // Send test notification to current user
         $basePath = $this->config['base_path'] ?? '';
-        $success = $this->pushService->send(
+        $title = 'Test Notification';
+        $body = 'This is a test notification from Puke Portal. If you see this, push notifications are working!';
+
+        // Send push notification to current user
+        $pushSuccess = $this->pushService->send(
             (int) $user['id'],
-            'Test Notification',
-            'This is a test notification from Puke Portal. If you see this, push notifications are working!',
+            $title,
+            $body,
             [
                 'type' => 'test',
                 'url' => $basePath . '/',
             ]
         );
 
-        if ($success) {
+        // Also create an in-app notification so it appears in the notification center
+        $notificationService = new NotificationService($this->db, $basePath);
+        $notificationService->create(
+            (int) $user['id'],
+            (int) $user['brigade_id'],
+            NotificationService::TYPE_MESSAGE,
+            $title,
+            $body,
+            $basePath . '/'
+        );
+
+        if ($pushSuccess) {
             jsonResponse([
                 'success' => true,
                 'message' => 'Test notification sent successfully'
             ]);
         } else {
+            // Push might have failed (no subscription) but in-app notification was created
             jsonResponse([
-                'success' => false,
-                'message' => 'No subscriptions found or notification failed to send. Make sure notifications are enabled.'
-            ], 400);
+                'success' => true,
+                'message' => 'Test notification created. Push notification may not have been sent if browser notifications are not enabled.'
+            ]);
         }
     }
 
