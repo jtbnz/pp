@@ -170,7 +170,7 @@ class PushApiController
     }
 
     /**
-     * Send a test push notification (admin only)
+     * Send a test push notification to current user
      * POST /api/push/test
      */
     public function test(): void
@@ -179,12 +179,6 @@ class PushApiController
         $user = currentUser();
         if (!$user) {
             jsonResponse(['error' => 'Unauthorized'], 401);
-            return;
-        }
-
-        // Require admin role
-        if (!hasRole('admin')) {
-            jsonResponse(['error' => 'Forbidden - admin access required'], 403);
             return;
         }
 
@@ -198,7 +192,7 @@ class PushApiController
         $success = $this->pushService->send(
             (int) $user['id'],
             'Test Notification',
-            'This is a test notification from Puke Portal.',
+            'This is a test notification from Puke Portal. If you see this, push notifications are working! 🔔',
             [
                 'type' => 'test',
                 'url' => $this->config['app_url'] ?? '/',
@@ -208,12 +202,12 @@ class PushApiController
         if ($success) {
             jsonResponse([
                 'success' => true,
-                'message' => 'Test notification sent'
+                'message' => 'Test notification sent successfully'
             ]);
         } else {
             jsonResponse([
                 'success' => false,
-                'message' => 'No subscriptions found or notification failed to send'
+                'message' => 'No subscriptions found or notification failed to send. Make sure notifications are enabled.'
             ], 400);
         }
     }

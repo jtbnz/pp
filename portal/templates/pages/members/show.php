@@ -184,6 +184,9 @@ ob_start();
                 <button type="button" id="push-toggle" class="btn btn-primary">
                     Enable Notifications
                 </button>
+                <button type="button" id="push-test" class="btn btn-secondary" style="display: none;">
+                    Send Test Notification
+                </button>
                 <p id="push-status" class="push-status text-secondary mt-2"></p>
             </div>
         </div>
@@ -592,12 +595,21 @@ ob_start();
 }
 
 .notification-controls {
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.notification-controls .btn {
+    width: 100%;
+    max-width: 300px;
 }
 
 .push-status {
     font-size: 0.875rem;
     min-height: 1.5em;
+    text-align: center;
 }
 
 #push-toggle.subscribed {
