@@ -1,6 +1,15 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers;
+
+use Portal\Models\Member;
+use Portal\Models\InviteToken;
+use Portal\Services\AuthService;
+use Portal\Middleware\Auth;
+use PDO;
+use DateTime;
+
 /**
  * Authentication Controller
  *

@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Services;
+
+use PDO;
+
 /**
  * Authentication Service
  *

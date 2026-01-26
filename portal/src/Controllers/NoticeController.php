@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers;
+
+use Portal\Models\Notice;
+use Portal\Helpers\Markdown;
+use PDOException;
+
 /**
  * Notice Controller
  *
@@ -12,9 +18,6 @@ class NoticeController
 
     public function __construct()
     {
-        require_once __DIR__ . '/../Models/Notice.php';
-        require_once __DIR__ . '/../Helpers/Markdown.php';
-
         $this->noticeModel = new Notice();
     }
 

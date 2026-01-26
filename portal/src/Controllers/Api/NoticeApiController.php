@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers\Api;
+
+use Portal\Models\Notice;
+use Portal\Helpers\Markdown;
+
 /**
  * Notice API Controller
  *
@@ -12,9 +17,6 @@ class NoticeApiController
 
     public function __construct()
     {
-        require_once __DIR__ . '/../../Models/Notice.php';
-        require_once __DIR__ . '/../../Helpers/Markdown.php';
-
         $this->noticeModel = new Notice();
     }
 

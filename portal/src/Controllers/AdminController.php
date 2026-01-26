@@ -1,6 +1,20 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers;
+
+use Portal\Models\Member;
+use Portal\Models\Event;
+use Portal\Models\Notice;
+use Portal\Models\AuditLog;
+use Portal\Models\Settings;
+use Portal\Models\Poll;
+use Portal\Services\EmailService;
+use Portal\Services\AuthService;
+use PDO;
+use Exception;
+use DateTime;
+
 /**
  * Admin Controller
  *
@@ -198,7 +212,6 @@ class AdminController
 
             // Send invite email with magic link
             global $config;
-            require_once __DIR__ . '/../Services/EmailService.php';
             $emailService = new EmailService($config);
 
             // Get brigade name
@@ -281,7 +294,6 @@ class AdminController
 
         try {
             // Create magic link token
-            require_once __DIR__ . '/../Services/AuthService.php';
             global $config;
             $authService = new AuthService($this->db, $config);
 
@@ -292,7 +304,6 @@ class AdminController
             );
 
             // Send magic link email
-            require_once __DIR__ . '/../Services/EmailService.php';
             $emailService = new EmailService($config);
 
             $basePath = $config['base_path'] ?? '';
@@ -838,7 +849,6 @@ class AdminController
         $status = $_GET['status'] ?? null;
         $filters = $status ? ['status' => $status] : [];
 
-        require_once __DIR__ . '/../Models/Poll.php';
         $pollModel = new Poll($this->db);
 
         $polls = $pollModel->findAll($brigadeId, $filters);
@@ -878,7 +888,6 @@ class AdminController
             return;
         }
 
-        require_once __DIR__ . '/../Models/Poll.php';
         $pollModel = new Poll($this->db);
 
         // Build data
@@ -935,7 +944,6 @@ class AdminController
         $brigadeId = $user['brigade_id'];
         $pollId = (int)$id;
 
-        require_once __DIR__ . '/../Models/Poll.php';
         $pollModel = new Poll($this->db);
 
         $poll = $pollModel->findById($pollId);
@@ -968,7 +976,6 @@ class AdminController
             return;
         }
 
-        require_once __DIR__ . '/../Models/Poll.php';
         $pollModel = new Poll($this->db);
 
         $poll = $pollModel->findById($pollId);
@@ -1041,7 +1048,6 @@ class AdminController
             return;
         }
 
-        require_once __DIR__ . '/../Models/Poll.php';
         $pollModel = new Poll($this->db);
 
         $poll = $pollModel->findById($pollId);
@@ -1089,7 +1095,6 @@ class AdminController
             return;
         }
 
-        require_once __DIR__ . '/../Models/Poll.php';
         $pollModel = new Poll($this->db);
 
         $poll = $pollModel->findById($pollId);

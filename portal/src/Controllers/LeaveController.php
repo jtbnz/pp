@@ -1,6 +1,14 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers;
+
+use Portal\Models\LeaveRequest;
+use Portal\Models\ExtendedLeaveRequest;
+use Portal\Services\PushService;
+use Portal\Services\EmailService;
+use PDOException;
+
 /**
  * Leave Controller
  *
@@ -13,9 +21,6 @@ class LeaveController
 
     public function __construct()
     {
-        require_once __DIR__ . '/../Models/LeaveRequest.php';
-        require_once __DIR__ . '/../Models/ExtendedLeaveRequest.php';
-
         $this->leaveModel = new LeaveRequest();
         $this->extendedLeaveModel = new ExtendedLeaveRequest();
     }
@@ -944,7 +949,6 @@ class LeaveController
         }
 
         // Send push notifications
-        require_once __DIR__ . '/../Services/PushService.php';
         $pushService = new PushService($config['push'] ?? [], $db);
 
         if ($pushService->isEnabled()) {
@@ -962,7 +966,6 @@ class LeaveController
         }
 
         // Send email notifications
-        require_once __DIR__ . '/../Services/EmailService.php';
         $emailService = new EmailService($config);
         $emailService->sendLeaveNotification($officers, [
             'member_name' => $member['name'],
@@ -1097,7 +1100,6 @@ class LeaveController
         }
 
         // Send push notifications
-        require_once __DIR__ . '/../Services/PushService.php';
         $pushService = new PushService($config['push'] ?? [], $db);
 
         if ($pushService->isEnabled()) {

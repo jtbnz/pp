@@ -1,6 +1,15 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers;
+
+use Portal\Models\Member;
+use Portal\Services\EmailService;
+use PDO;
+use DateTimeImmutable;
+use Exception;
+use InvalidArgumentException;
+
 /**
  * Member Controller
  *
@@ -272,7 +281,6 @@ class MemberController
 
             // Send invite email with magic link
             global $config;
-            require_once __DIR__ . '/../Services/EmailService.php';
             $emailService = new EmailService($config);
 
             // Get brigade name

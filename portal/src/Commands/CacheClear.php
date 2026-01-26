@@ -9,7 +9,7 @@ declare(strict_types=1);
  * Usage: php artisan cache:clear [--opcache] [--files] [--all]
  */
 
-namespace Commands;
+namespace Portal\Commands;
 
 class CacheClear
 {

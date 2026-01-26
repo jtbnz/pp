@@ -1,6 +1,13 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Models;
+
+use PDO;
+use DateTime;
+use DateTimeImmutable;
+use InvalidArgumentException;
+
 /**
  * Member Model
  *

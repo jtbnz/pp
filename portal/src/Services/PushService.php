@@ -1,8 +1,11 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Services;
+
 use Minishlink\WebPush\WebPush;
 use Minishlink\WebPush\Subscription;
+use PDO;
 
 /**
  * Push Notification Service

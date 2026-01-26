@@ -1,6 +1,15 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers\Api;
+
+use Portal\Models\Member;
+use Portal\Services\AttendanceService;
+use PDO;
+use DateTimeImmutable;
+use InvalidArgumentException;
+use Exception;
+
 /**
  * Member API Controller
  *
@@ -795,7 +804,6 @@ class MemberApiController
         }
 
         global $config;
-        require_once __DIR__ . '/../../Services/AttendanceService.php';
         $attendanceService = new AttendanceService($this->db, $config);
 
         $stats = $attendanceService->getMemberStats($memberId);
@@ -843,7 +851,6 @@ class MemberApiController
         $limit = min(20, max(1, (int)($_GET['limit'] ?? 10)));
 
         global $config;
-        require_once __DIR__ . '/../../Services/AttendanceService.php';
         $attendanceService = new AttendanceService($this->db, $config);
 
         $events = $attendanceService->getRecentEvents($memberId, $limit);
@@ -891,7 +898,6 @@ class MemberApiController
         $fullSync = (bool)($input['full_sync'] ?? false);
 
         global $config;
-        require_once __DIR__ . '/../../Services/AttendanceService.php';
         $attendanceService = new AttendanceService($this->db, $config);
 
         $result = $attendanceService->syncFromDlb((int)$user['brigade_id'], $fullSync);

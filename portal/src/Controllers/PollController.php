@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers;
+
+use Portal\Models\Poll;
+use Portal\Models\AuditLog;
+use PDO;
+
 /**
  * Poll Controller
  *

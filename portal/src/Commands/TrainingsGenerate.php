@@ -10,7 +10,7 @@ declare(strict_types=1);
  * Usage: php artisan trainings:generate [--months=12] [--brigade=1] [--dry-run]
  */
 
-namespace Commands;
+namespace Portal\Commands;
 
 class TrainingsGenerate
 {

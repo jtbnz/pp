@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Models;
+
+use PDO;
+use DateTime;
+use DateTimeZone;
+
 /**
  * Event Model
  *

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal;
+
 /**
  * Simple regex-based router with support for:
  * - Route groups with prefixes
@@ -356,29 +358,20 @@ class Router
             // Controller@method format
             [$controllerPath, $methodName] = explode('@', $handler, 2);
 
-            // Load controller - supports nested paths like Api/MemberApiController
-            $controllerFile = __DIR__ . '/Controllers/' . $controllerPath . '.php';
-            if (!file_exists($controllerFile)) {
-                $this->notFound("Controller not found: {$controllerPath}");
+            // Build fully qualified class name
+            // Api/MemberApiController becomes Portal\Controllers\Api\MemberApiController
+            $namespacePath = str_replace('/', '\\', $controllerPath);
+            $fullyQualifiedClass = 'Portal\\Controllers\\' . $namespacePath;
+
+            if (!class_exists($fullyQualifiedClass)) {
+                $this->notFound("Controller class not found: {$fullyQualifiedClass}");
                 return;
             }
 
-            require_once $controllerFile;
-
-            // Get the class name (last part of the path)
-            $controllerName = str_contains($controllerPath, '/')
-                ? basename($controllerPath)
-                : $controllerPath;
-
-            if (!class_exists($controllerName)) {
-                $this->notFound("Controller class not found: {$controllerName}");
-                return;
-            }
-
-            $controller = new $controllerName();
+            $controller = new $fullyQualifiedClass();
 
             if (!method_exists($controller, $methodName)) {
-                $this->notFound("Method not found: {$controllerName}@{$methodName}");
+                $this->notFound("Method not found: {$fullyQualifiedClass}@{$methodName}");
                 return;
             }
 

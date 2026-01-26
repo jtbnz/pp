@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/DlbClient.php';
+namespace Portal\Services;
+
+use PDO;
 
 /**
  * Attendance Service

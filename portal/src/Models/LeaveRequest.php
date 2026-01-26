@@ -1,6 +1,13 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Models;
+
+use Portal\Services\HolidayService;
+use PDO;
+use DateTime;
+use DateTimeZone;
+
 /**
  * LeaveRequest Model
  *
@@ -242,7 +249,6 @@ class LeaveRequest
         $trainingTime = $memberInfo['training_time'] ?? '19:00';
 
         // Load the HolidayService to check for public holidays
-        require_once __DIR__ . '/../Services/HolidayService.php';
         $holidayService = new HolidayService();
 
         // Get existing leave requests for this member (pending or approved)

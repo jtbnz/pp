@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Exceptions;
+
+use Exception;
+use Throwable;
+
 /**
  * DLB API Exception
  *

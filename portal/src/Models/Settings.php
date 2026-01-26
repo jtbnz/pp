@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Models;
+
+use PDO;
+use RuntimeException;
+use Exception;
+
 /**
  * Settings Model
  *

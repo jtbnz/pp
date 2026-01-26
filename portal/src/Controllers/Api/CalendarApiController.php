@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers\Api;
+
+use Portal\Models\Event;
+use Portal\Services\HolidayService;
+use Portal\Services\IcsService;
+
 /**
  * Calendar API Controller
  *
@@ -15,10 +21,6 @@ class CalendarApiController
 
     public function __construct()
     {
-        require_once __DIR__ . '/../../Models/Event.php';
-        require_once __DIR__ . '/../../Services/HolidayService.php';
-        require_once __DIR__ . '/../../Services/IcsService.php';
-
         $this->eventModel = new Event();
         $this->holidayService = new HolidayService();
         $this->icsService = new IcsService();

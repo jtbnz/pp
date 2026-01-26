@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../Exceptions/DlbApiException.php';
+namespace Portal\Services;
+
+use Portal\Exceptions\DlbApiException;
 
 /**
  * DLB Client

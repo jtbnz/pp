@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers\Api;
+
+use PDO;
+
 /**
  * Session API Controller
  *

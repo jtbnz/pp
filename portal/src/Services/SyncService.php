@@ -1,8 +1,10 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/DlbClient.php';
-require_once __DIR__ . '/../Exceptions/DlbApiException.php';
+namespace Portal\Services;
+
+use Portal\Exceptions\DlbApiException;
+use PDO;
 
 /**
  * Sync Service

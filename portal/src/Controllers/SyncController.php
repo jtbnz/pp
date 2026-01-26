@@ -1,8 +1,13 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../Services/DlbClient.php';
-require_once __DIR__ . '/../Services/SyncService.php';
+namespace Portal\Controllers;
+
+use Portal\Services\DlbClient;
+use Portal\Services\SyncService;
+use Portal\Exceptions\DlbApiException;
+use PDO;
+use RuntimeException;
 
 /**
  * Sync Controller

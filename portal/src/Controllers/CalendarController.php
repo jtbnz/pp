@@ -1,6 +1,16 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers;
+
+use Portal\Models\Event;
+use Portal\Models\Settings;
+use Portal\Services\HolidayService;
+use Portal\Services\IcsService;
+use PDOException;
+use DateTime;
+use DateTimeZone;
+
 /**
  * Calendar Controller
  *
@@ -15,11 +25,6 @@ class CalendarController
 
     public function __construct()
     {
-        require_once __DIR__ . '/../Models/Event.php';
-        require_once __DIR__ . '/../Models/Settings.php';
-        require_once __DIR__ . '/../Services/HolidayService.php';
-        require_once __DIR__ . '/../Services/IcsService.php';
-
         $this->eventModel = new Event();
         $this->holidayService = new HolidayService();
         $this->icsService = new IcsService();

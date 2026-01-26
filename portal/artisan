@@ -34,6 +34,14 @@ ini_set('display_errors', '1');
 // Define root path
 define('ROOT_PATH', __DIR__);
 
+// Load Composer autoloader
+require_once ROOT_PATH . '/vendor/autoload.php';
+
+use Portal\Commands\AdminCreate;
+use Portal\Commands\TrainingsGenerate;
+use Portal\Commands\SessionCleanup;
+use Portal\Commands\CacheClear;
+
 // Colors for terminal output
 class ConsoleColors
 {
@@ -190,28 +198,13 @@ function initSchema(PDO $db): void
 function getCommandClass(string $command): ?string
 {
     $commandMap = [
-        'admin:create' => 'Commands\\AdminCreate',
-        'trainings:generate' => 'Commands\\TrainingsGenerate',
-        'session:clear' => 'Commands\\SessionCleanup',
-        'cache:clear' => 'Commands\\CacheClear',
+        'admin:create' => AdminCreate::class,
+        'trainings:generate' => TrainingsGenerate::class,
+        'session:clear' => SessionCleanup::class,
+        'cache:clear' => CacheClear::class,
     ];
 
     return $commandMap[$command] ?? null;
-}
-
-/**
- * Get command file path
- */
-function getCommandFile(string $command): ?string
-{
-    $fileMap = [
-        'admin:create' => ROOT_PATH . '/src/Commands/AdminCreate.php',
-        'trainings:generate' => ROOT_PATH . '/src/Commands/TrainingsGenerate.php',
-        'session:clear' => ROOT_PATH . '/src/Commands/SessionCleanup.php',
-        'cache:clear' => ROOT_PATH . '/src/Commands/CacheClear.php',
-    ];
-
-    return $fileMap[$command] ?? null;
 }
 
 // ============================================================================
@@ -245,15 +238,11 @@ switch ($command) {
 // Check for command help
 if (in_array('--help', $args, true) || in_array('-h', $args, true)) {
     $commandClass = getCommandClass($command);
-    $commandFile = getCommandFile($command);
 
-    if ($commandClass && $commandFile && file_exists($commandFile)) {
-        require_once $commandFile;
-        if (method_exists($commandClass, 'getUsage')) {
-            printHeader();
-            echo $commandClass::getUsage() . PHP_EOL;
-            exit(0);
-        }
+    if ($commandClass && class_exists($commandClass) && method_exists($commandClass, 'getUsage')) {
+        printHeader();
+        echo $commandClass::getUsage() . PHP_EOL;
+        exit(0);
     }
 
     output("Unknown command: {$command}", ConsoleColors::RED);
@@ -261,23 +250,14 @@ if (in_array('--help', $args, true) || in_array('-h', $args, true)) {
     exit(1);
 }
 
-// Get command class
+// Get command class (autoloaded via Composer)
 $commandClass = getCommandClass($command);
-$commandFile = getCommandFile($command);
 
-if (!$commandClass || !$commandFile) {
+if (!$commandClass) {
     output("Unknown command: {$command}", ConsoleColors::RED);
     output('Run "php artisan list" to see available commands.');
     exit(1);
 }
-
-if (!file_exists($commandFile)) {
-    output("Command file not found: {$commandFile}", ConsoleColors::RED);
-    exit(1);
-}
-
-// Load command
-require_once $commandFile;
 
 if (!class_exists($commandClass)) {
     output("Command class not found: {$commandClass}", ConsoleColors::RED);

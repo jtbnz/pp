@@ -14,6 +14,12 @@ date_default_timezone_set('Pacific/Auckland');
 // Load bootstrap (autoloader, config, database)
 require_once __DIR__ . '/../src/bootstrap.php';
 
+use Portal\Router;
+use Portal\Models\Event;
+use Portal\Models\Notice;
+use Portal\Models\LeaveRequest;
+use Portal\Models\Poll;
+
 // Create router instance
 $router = new Router();
 
@@ -45,7 +51,6 @@ $router->get('/', function() {
         $brigadeId = (int)$user['brigade_id'];
 
         // Get next training night
-        require_once __DIR__ . '/../src/Models/Event.php';
         $eventModel = new Event();
         $trainings = $eventModel->findTrainingNights($brigadeId, date('Y-m-d'), date('Y-m-d', strtotime('+3 months')));
         $nextTraining = !empty($trainings) ? $trainings[0] : null;
@@ -55,17 +60,14 @@ $router->get('/', function() {
         $upcomingEvents = array_slice($upcomingEvents, 0, 5);
 
         // Get recent notices
-        require_once __DIR__ . '/../src/Models/Notice.php';
         $noticeModel = new Notice();
         $recentNotices = $noticeModel->findActive($brigadeId, 3);
 
         // Get pending leave requests for this member
-        require_once __DIR__ . '/../src/Models/LeaveRequest.php';
         $leaveModel = new LeaveRequest();
         $pendingLeave = $leaveModel->findByMember((int)$user['id'], 'pending');
 
         // Get active polls and unvoted count
-        require_once __DIR__ . '/../src/Models/Poll.php';
         $pollModel = new Poll();
         $activePolls = $pollModel->findActive($brigadeId);
         $unvotedPollCount = $pollModel->getUnvotedCount($brigadeId, (int)$user['id']);

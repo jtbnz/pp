@@ -9,7 +9,7 @@ declare(strict_types=1);
  * Usage: php artisan admin:create --email=EMAIL --name=NAME [--role=ROLE] [--brigade=ID]
  */
 
-namespace Commands;
+namespace Portal\Commands;
 
 class AdminCreate
 {

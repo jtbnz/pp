@@ -9,7 +9,7 @@ declare(strict_types=1);
  * Usage: php artisan session:clear [--dry-run]
  */
 
-namespace Commands;
+namespace Portal\Commands;
 
 class SessionCleanup
 {

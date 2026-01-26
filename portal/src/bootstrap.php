@@ -72,27 +72,8 @@ set_exception_handler(function (Throwable $e): void {
     exit(1);
 });
 
-// Autoloader for application classes
-spl_autoload_register(function (string $class): void {
-    // Convert namespace to path
-    // Classes are in src/ directory without namespace prefix
-    $file = __DIR__ . '/' . str_replace('\\', '/', $class) . '.php';
-
-    if (file_exists($file)) {
-        require $file;
-        return;
-    }
-
-    // Try subdirectories: Controllers, Models, Services, Middleware, Helpers
-    $directories = ['Controllers', 'Models', 'Services', 'Middleware', 'Helpers'];
-    foreach ($directories as $dir) {
-        $file = __DIR__ . '/' . $dir . '/' . $class . '.php';
-        if (file_exists($file)) {
-            require $file;
-            return;
-        }
-    }
-});
+// Load Composer autoloader
+require_once __DIR__ . '/../vendor/autoload.php';
 
 // Load configuration based on APP_ENV environment variable
 $appEnv = getenv('APP_ENV') ?: 'production';
@@ -670,5 +651,4 @@ function nowUtc(): string
     return gmdate('Y-m-d H:i:s');
 }
 
-// Include the Router class
-require_once __DIR__ . '/Router.php';
+// Router is autoloaded via Composer PSR-4

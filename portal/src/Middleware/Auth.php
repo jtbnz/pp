@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Middleware;
+
+use PDO;
+
 /**
  * Authentication Middleware
  *

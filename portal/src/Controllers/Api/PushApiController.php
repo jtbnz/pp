@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers\Api;
+
+use Portal\Services\PushService;
+use PDO;
+
 /**
  * Push API Controller
  *
@@ -16,8 +21,6 @@ class PushApiController
     public function __construct()
     {
         global $db, $config;
-
-        require_once __DIR__ . '/../../Services/PushService.php';
 
         $this->db = $db;
         $this->config = $config;

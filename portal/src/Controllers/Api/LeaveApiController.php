@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+namespace Portal\Controllers\Api;
+
+use Portal\Models\LeaveRequest;
+use PDOException;
+
 /**
  * Leave API Controller
  *
@@ -13,8 +18,6 @@ class LeaveApiController
 
     public function __construct()
     {
-        require_once __DIR__ . '/../../Models/LeaveRequest.php';
-
         $this->leaveModel = new LeaveRequest();
     }
 
