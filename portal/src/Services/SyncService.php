@@ -371,6 +371,92 @@ class SyncService
     }
 
     /**
+     * Normalize a name by removing common rank prefixes for matching
+     *
+     * @param string $name Name to normalize
+     * @return string Normalized name (lowercase, no rank prefix)
+     */
+    private function normalizeName(string $name): string
+    {
+        $name = strtolower(trim($name));
+
+        // Common NZ Fire rank prefixes to strip
+        $rankPrefixes = [
+            'cfo ', 'dcfo ', 'acfo ', 'so ', 'sso ', 'stn off ', 'station officer ',
+            'ff ', 'qff ', 'sff ', 'firefighter ', 'qualified firefighter ',
+            'senior firefighter ', 'chief fire officer ', 'deputy chief ',
+            'assistant chief ', 'recruit ', 'trainee '
+        ];
+
+        foreach ($rankPrefixes as $prefix) {
+            if (str_starts_with($name, $prefix)) {
+                $name = substr($name, strlen($prefix));
+                break;
+            }
+        }
+
+        return trim($name);
+    }
+
+    /**
+     * Publish a new member from Portal to DLB
+     *
+     * Creates the member in DLB and links them by updating dlb_member_id.
+     *
+     * @param int $memberId Local member ID
+     * @param string $name Member name
+     * @param string|null $rank Member rank (FF, QFF, etc.)
+     * @return array Result with success status and dlb_member_id
+     */
+    public function publishMemberToDlb(int $memberId, string $name, ?string $rank = null): array
+    {
+        $result = [
+            'success' => false,
+            'dlb_member_id' => null,
+            'error' => null
+        ];
+
+        try {
+            // Extract clean name without rank prefix for DLB
+            $cleanName = $this->normalizeName($name);
+            // Capitalize first letter of each word
+            $cleanName = ucwords($cleanName);
+
+            // Create member in DLB (rank defaults to 'FF' if not provided)
+            $dlbResult = $this->dlbClient->createMember(
+                $cleanName,
+                $rank ?? 'FF',
+                true
+            );
+
+            $dlbMemberId = (int)($dlbResult['id'] ?? $dlbResult['member']['id'] ?? 0);
+
+            if ($dlbMemberId > 0) {
+                // Update local member with dlb_member_id
+                $updateStmt = $this->db->prepare('UPDATE members SET dlb_member_id = ? WHERE id = ?');
+                $updateStmt->execute([$dlbMemberId, $memberId]);
+
+                $result['success'] = true;
+                $result['dlb_member_id'] = $dlbMemberId;
+
+                $this->logSync('publish', $memberId, 'success', "Published to DLB as member #{$dlbMemberId}");
+            } else {
+                $result['error'] = 'DLB did not return a member ID';
+                $this->logSync('publish', $memberId, 'failed', 'No member ID returned from DLB');
+            }
+
+        } catch (DlbApiException $e) {
+            $result['error'] = $e->getMessage();
+            $this->logSync('publish', $memberId, 'failed', $e->getMessage());
+        } catch (\Exception $e) {
+            $result['error'] = $e->getMessage();
+            $this->logSync('publish', $memberId, 'failed', $e->getMessage());
+        }
+
+        return $result;
+    }
+
+    /**
      * Import members from DLB into Portal
      *
      * Creates new member records for DLB members that don't exist locally.
@@ -402,11 +488,15 @@ class SyncService
         $stmt->execute([$brigadeId]);
         $localMembers = $stmt->fetchAll();
 
-        // Create lookup tables
+        // Create lookup tables - both exact and normalized names
         $localByName = [];
+        $localByNormalizedName = [];
         $localByDlbId = [];
         foreach ($localMembers as $local) {
-            $localByName[strtolower(trim($local['name']))] = $local;
+            $exactKey = strtolower(trim($local['name']));
+            $normalizedKey = $this->normalizeName($local['name']);
+            $localByName[$exactKey] = $local;
+            $localByNormalizedName[$normalizedKey] = $local;
             if (!empty($local['dlb_member_id'])) {
                 $localByDlbId[(int)$local['dlb_member_id']] = $local;
             }
@@ -417,6 +507,7 @@ class SyncService
             $dlbId = (int)$dlbMember['id'];
             $name = trim($dlbMember['name']);
             $nameKey = strtolower($name);
+            $normalizedKey = $this->normalizeName($name);
             $rank = $dlbMember['rank'] ?? null;
             $isActive = !empty($dlbMember['is_active']);
 
@@ -434,10 +525,16 @@ class SyncService
                 continue;
             }
 
-            // Check if exists by name
+            // Check if exists by exact name match first
+            $local = null;
             if (isset($localByName[$nameKey])) {
                 $local = $localByName[$nameKey];
+            } elseif (isset($localByNormalizedName[$normalizedKey])) {
+                // Try normalized name match (strips rank prefixes like "CFO ", "FF ", etc.)
+                $local = $localByNormalizedName[$normalizedKey];
+            }
 
+            if ($local !== null) {
                 // Link existing member to DLB
                 $updateStmt = $this->db->prepare('UPDATE members SET dlb_member_id = ?, rank = COALESCE(rank, ?) WHERE id = ?');
                 $updateStmt->execute([$dlbId, $rank, $local['id']]);

@@ -5,6 +5,8 @@ namespace Portal\Controllers;
 
 use Portal\Models\Member;
 use Portal\Services\EmailService;
+use Portal\Services\DlbClient;
+use Portal\Services\SyncService;
 use PDO;
 use DateTimeImmutable;
 use Exception;
@@ -279,8 +281,29 @@ class MemberController
                 'invited_by' => $user['id']
             ]);
 
-            // Send invite email with magic link
+            // Auto-publish to DLB if configured
             global $config;
+            $dlbEnabled = $config['dlb']['enabled'] ?? false;
+            $dlbToken = $config['dlb']['api_token'] ?? '';
+            $dlbPublished = false;
+
+            if ($dlbEnabled && !empty($dlbToken)) {
+                try {
+                    $dlbClient = new DlbClient(
+                        $config['dlb']['base_url'] ?? '',
+                        $dlbToken,
+                        $config['dlb']['timeout'] ?? 30
+                    );
+                    $syncService = new SyncService($dlbClient, $this->db);
+                    $publishResult = $syncService->publishMemberToDlb($memberId, $name, $rank);
+                    $dlbPublished = $publishResult['success'];
+                } catch (Exception $e) {
+                    // Log but don't fail - DLB sync is optional
+                    error_log("Failed to publish member to DLB: " . $e->getMessage());
+                }
+            }
+
+            // Send invite email with magic link
             $emailService = new EmailService($config);
 
             // Get brigade name
@@ -290,10 +313,11 @@ class MemberController
 
             $emailSent = $emailService->sendInvite($email, $inviteToken, $brigadeName);
 
+            $dlbNote = $dlbPublished ? ' Synced to DLB.' : ($dlbEnabled ? ' DLB sync pending.' : '');
             if ($emailSent) {
-                $_SESSION['flash_message'] = "Member invited successfully. An invitation email has been sent to {$email}.";
+                $_SESSION['flash_message'] = "Member invited successfully. An invitation email has been sent to {$email}.{$dlbNote}";
             } else {
-                $_SESSION['flash_message'] = "Member invited successfully. Email could not be sent. Manual invite link: " . url('/auth/verify/' . $inviteToken);
+                $_SESSION['flash_message'] = "Member invited successfully.{$dlbNote} Email could not be sent. Manual invite link: " . url('/auth/verify/' . $inviteToken);
             }
             $_SESSION['flash_type'] = 'success';
 
