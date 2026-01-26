@@ -868,6 +868,8 @@ class MemberApiController
                 'position' => $event['position'],
                 'position_label' => AttendanceService::formatPosition($event['position']),
                 'truck' => $event['truck'],
+                'icad_number' => $event['icad_number'],
+                'call_type' => $event['call_type'],
             ];
         }, $events);
 

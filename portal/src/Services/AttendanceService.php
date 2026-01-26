@@ -197,6 +197,8 @@ class AttendanceService
                 ar.status,
                 ar.position,
                 ar.truck,
+                ar.icad_number,
+                ar.call_type,
                 ar.notes
             FROM attendance_records ar
             WHERE ar.member_id = ?
@@ -278,6 +280,8 @@ class AttendanceService
                 $musterId = (int)$muster['id'];
                 $eventDate = $muster['call_date'];
                 $eventType = $this->determineEventType($muster);
+                $icadNumber = $muster['icad_number'] ?? null;
+                $callType = $muster['call_type'] ?? null;
 
                 foreach ($attendance as $record) {
                     $dlbMemberId = (int)($record['member_id'] ?? 0);
@@ -298,7 +302,9 @@ class AttendanceService
                         $record['status'] ?? 'A',
                         $record['position'] ?? null,
                         $record['truck'] ?? null,
-                        $record['notes'] ?? null
+                        $record['notes'] ?? null,
+                        $icadNumber,
+                        $callType
                     );
 
                     if ($result === 'created') {
@@ -366,11 +372,13 @@ class AttendanceService
         string $status,
         ?string $position,
         ?string $truck,
-        ?string $notes
+        ?string $notes,
+        ?string $icadNumber = null,
+        ?string $callType = null
     ): string {
         // Check if record exists
         $stmt = $this->db->prepare("
-            SELECT id, status, position, truck
+            SELECT id, status, position, truck, icad_number, call_type
             FROM attendance_records
             WHERE member_id = ? AND dlb_muster_id = ?
         ");
@@ -381,13 +389,15 @@ class AttendanceService
             // Update if changed
             if ($existing['status'] !== $status ||
                 $existing['position'] !== $position ||
-                $existing['truck'] !== $truck) {
+                $existing['truck'] !== $truck ||
+                $existing['icad_number'] !== $icadNumber ||
+                $existing['call_type'] !== $callType) {
                 $stmt = $this->db->prepare("
                     UPDATE attendance_records
-                    SET status = ?, position = ?, truck = ?, notes = ?, updated_at = datetime('now', 'localtime')
+                    SET status = ?, position = ?, truck = ?, notes = ?, icad_number = ?, call_type = ?, updated_at = datetime('now', 'localtime')
                     WHERE id = ?
                 ");
-                $stmt->execute([$status, $position, $truck, $notes, $existing['id']]);
+                $stmt->execute([$status, $position, $truck, $notes, $icadNumber, $callType, $existing['id']]);
                 return 'updated';
             }
             return 'unchanged';
@@ -396,10 +406,10 @@ class AttendanceService
         // Create new record
         $stmt = $this->db->prepare("
             INSERT INTO attendance_records
-                (member_id, dlb_muster_id, event_date, event_type, status, position, truck, notes, source)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'dlb')
+                (member_id, dlb_muster_id, event_date, event_type, status, position, truck, notes, icad_number, call_type, source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dlb')
         ");
-        $stmt->execute([$memberId, $dlbMusterId, $eventDate, $eventType, $status, $position, $truck, $notes]);
+        $stmt->execute([$memberId, $dlbMusterId, $eventDate, $eventType, $status, $position, $truck, $notes, $icadNumber, $callType]);
 
         return 'created';
     }

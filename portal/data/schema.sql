@@ -493,6 +493,8 @@ CREATE TABLE IF NOT EXISTS attendance_records (
     status CHAR(1) NOT NULL,                      -- I=In attendance, L=Leave, A=Absent
     position VARCHAR(20),                         -- 'OIC', 'driver', 'crew'
     truck VARCHAR(50),                            -- '551', '557', etc.
+    icad_number VARCHAR(50),                      -- ICAD/CAD number for callouts
+    call_type VARCHAR(50),                        -- Call type from DLB (e.g., 'Structure Fire', 'Training')
     notes TEXT,
     source VARCHAR(20) DEFAULT 'dlb',            -- 'dlb', 'manual'
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

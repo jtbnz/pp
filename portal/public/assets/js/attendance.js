@@ -316,14 +316,23 @@
                 return;
             }
 
-            container.innerHTML = data.events.map(event => `
+            container.innerHTML = data.events.map(event => {
+                // Use call_type if available, otherwise fallback to type_label
+                const eventTypeDisplay = event.call_type || event.type_label;
+                // Show ICAD number for callouts
+                const icadDisplay = event.icad_number && event.type === 'callout'
+                    ? `<span class="event-icad">${event.icad_number}</span>`
+                    : '';
+
+                return `
                 <div class="event-item ${event.status === 'I' ? 'attended' : event.status === 'L' ? 'leave' : 'absent'}">
                     <div class="event-date">
                         <span class="event-day">${event.day_name.substring(0, 3)}</span>
                         <span class="event-full-date">${event.date_formatted}</span>
                     </div>
                     <div class="event-info">
-                        <span class="event-type">${event.type_label}</span>
+                        <span class="event-type">${eventTypeDisplay}</span>
+                        ${icadDisplay}
                         <span class="event-status">${event.status_label}</span>
                     </div>
                     ${event.status === 'I' ? `
@@ -332,7 +341,7 @@
                     </div>
                     ` : ''}
                 </div>
-            `).join('');
+            `}).join('');
         })
         .catch(error => {
             console.error('Error loading recent events:', error);

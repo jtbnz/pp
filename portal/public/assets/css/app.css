@@ -2447,6 +2447,12 @@ button {
     color: var(--color-text-secondary);
 }
 
+.event-icad {
+    font-size: var(--font-size-xs);
+    color: var(--color-primary);
+    font-family: var(--font-mono, monospace);
+}
+
 .event-position {
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
