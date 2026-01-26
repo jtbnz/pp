@@ -476,32 +476,22 @@ class SyncService
             'errors' => [],
             'imported_members' => [],
             'linked_members' => [],
-            'skipped_members' => [],
-            'debug' => [] // DEBUG: temporary debug info
+            'skipped_members' => []
         ];
 
         // Get members from DLB
         $dlbMembers = $this->dlbClient->getMembers();
         $results['total_dlb'] = count($dlbMembers);
 
-        // DEBUG: Log first few DLB members to see structure
-        error_log("DEBUG: DLB returned " . count($dlbMembers) . " members");
-        if (!empty($dlbMembers)) {
-            error_log("DEBUG: First DLB member structure: " . json_encode($dlbMembers[0]));
-        }
-
         // Get existing local members for this brigade (by name and by dlb_member_id)
         $stmt = $this->db->prepare('SELECT id, name, email, dlb_member_id FROM members WHERE brigade_id = ?');
         $stmt->execute([$brigadeId]);
         $localMembers = $stmt->fetchAll();
 
-        error_log("DEBUG: Local members found: " . count($localMembers) . " for brigade_id: " . $brigadeId);
-
         // Create lookup tables - both exact and normalized names
         $localByName = [];
         $localByNormalizedName = [];
         $localByDlbId = [];
-        $debugLocalMembers = []; // DEBUG: for API response
         foreach ($localMembers as $local) {
             $exactKey = strtolower(trim($local['name']));
             $normalizedKey = $this->normalizeName($local['name']);
@@ -510,26 +500,7 @@ class SyncService
             if (!empty($local['dlb_member_id'])) {
                 $localByDlbId[(int)$local['dlb_member_id']] = $local;
             }
-            // DEBUG: Log local member lookup keys
-            error_log("DEBUG: Local member '{$local['name']}' -> exact: '{$exactKey}', normalized: '{$normalizedKey}', dlb_id: " . ($local['dlb_member_id'] ?? 'null'));
-            $debugLocalMembers[] = [
-                'name' => $local['name'],
-                'exact_key' => $exactKey,
-                'normalized_key' => $normalizedKey,
-                'dlb_member_id' => $local['dlb_member_id'] ?? null
-            ];
         }
-
-        // DEBUG: Add lookup info to results
-        $results['debug']['local_members_count'] = count($localMembers);
-        $results['debug']['dlb_members_count'] = count($dlbMembers);
-        $results['debug']['local_lookup_keys'] = array_keys($localByName);
-        $results['debug']['local_normalized_keys'] = array_keys($localByNormalizedName);
-        $results['debug']['already_linked_dlb_ids'] = array_keys($localByDlbId);
-        $results['debug']['local_members'] = $debugLocalMembers;
-
-        // DEBUG: Add first few DLB members to see their structure
-        $results['debug']['dlb_members_sample'] = array_slice($dlbMembers, 0, 5);
 
         // Process each DLB member
         foreach ($dlbMembers as $dlbMember) {
@@ -540,12 +511,8 @@ class SyncService
             $rank = $dlbMember['rank'] ?? null;
             $isActive = !empty($dlbMember['is_active']);
 
-            // DEBUG: Log each DLB member processing
-            error_log("DEBUG: Processing DLB member: '{$name}' (id={$dlbId}) -> nameKey: '{$nameKey}', normalized: '{$normalizedKey}', is_active: " . ($isActive ? 'yes' : 'no'));
-
             // Skip inactive DLB members
             if (!$isActive) {
-                error_log("DEBUG: SKIPPED '{$name}' - inactive in DLB");
                 $results['skipped']++;
                 $results['skipped_members'][] = ['name' => $name, 'reason' => 'Inactive in DLB'];
                 continue;
@@ -553,7 +520,6 @@ class SyncService
 
             // Check if already linked by dlb_member_id
             if (isset($localByDlbId[$dlbId])) {
-                error_log("DEBUG: SKIPPED '{$name}' - already linked to local member id " . $localByDlbId[$dlbId]['id']);
                 $results['skipped']++;
                 $results['skipped_members'][] = ['name' => $name, 'reason' => 'Already linked'];
                 continue;
@@ -561,32 +527,25 @@ class SyncService
 
             // Check if exists by exact name match first
             $local = null;
-            $matchType = 'none';
             if (isset($localByName[$nameKey])) {
                 $local = $localByName[$nameKey];
-                $matchType = 'exact';
             } elseif (isset($localByNormalizedName[$normalizedKey])) {
                 // Try normalized name match (strips rank prefixes like "CFO ", "FF ", etc.)
                 $local = $localByNormalizedName[$normalizedKey];
-                $matchType = 'normalized';
             }
-
-            error_log("DEBUG: Match result for '{$name}': " . ($local ? "FOUND via {$matchType} match -> local '{$local['name']}' (id={$local['id']})" : "NO MATCH"));
 
             if ($local !== null) {
                 // Link existing member to DLB
-                error_log("DEBUG: LINKING '{$name}' to local member '{$local['name']}' (id={$local['id']})");
                 $updateStmt = $this->db->prepare('UPDATE members SET dlb_member_id = ?, rank = COALESCE(rank, ?) WHERE id = ?');
                 $updateStmt->execute([$dlbId, $rank, $local['id']]);
 
                 $results['linked']++;
-                $results['linked_members'][] = ['name' => $name, 'local_id' => $local['id'], 'match_type' => $matchType];
+                $results['linked_members'][] = ['name' => $name, 'local_id' => $local['id']];
                 continue;
             }
 
             // Create new member (without email - they'll need to be invited separately)
             try {
-                error_log("DEBUG: IMPORTING '{$name}' as new member (no local match found)");
                 $insertStmt = $this->db->prepare("
                     INSERT INTO members (brigade_id, email, name, role, rank, status, dlb_member_id, created_at)
                     VALUES (?, ?, ?, 'firefighter', ?, 'active', ?, datetime('now', 'localtime'))
@@ -608,7 +567,6 @@ class SyncService
                 $results['imported_members'][] = ['name' => $name, 'local_id' => $newId, 'dlb_id' => $dlbId];
 
             } catch (\PDOException $e) {
-                error_log("DEBUG: IMPORT FAILED for '{$name}': " . $e->getMessage());
                 $results['errors'][] = "Failed to import {$name}: " . $e->getMessage();
             }
         }

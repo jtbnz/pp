@@ -88,7 +88,19 @@ if ($user) {
 
                 <div class="user-menu">
                     <button type="button" class="user-toggle" aria-label="User menu" aria-expanded="false">
-                        <span class="user-avatar"><?= strtoupper(substr($user['name'], 0, 1)) ?></span>
+                        <?php
+                        // Get first name initial (skip rank prefix like CFO, SO, FF, etc.)
+                        $nameParts = preg_split('/\s+/', trim($user['name']));
+                        $rankPrefixes = ['CFO', 'DCFO', 'ACFO', 'SSO', 'SO', 'SFF', 'QFF', 'FF', 'RFF', 'RCFF'];
+                        $firstNameInitial = 'U';
+                        foreach ($nameParts as $part) {
+                            if (!in_array(strtoupper($part), $rankPrefixes, true)) {
+                                $firstNameInitial = strtoupper(substr($part, 0, 1));
+                                break;
+                            }
+                        }
+                        ?>
+                        <span class="user-avatar"><?= $firstNameInitial ?></span>
                     </button>
                     <div class="user-dropdown" hidden>
                         <div class="user-info">

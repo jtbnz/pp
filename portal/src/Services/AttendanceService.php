@@ -37,10 +37,14 @@ class AttendanceService
     {
         if ($this->dlbClient === null) {
             $dlbConfig = $this->config['dlb'] ?? [];
-            if (!empty($dlbConfig['url']) && !empty($dlbConfig['token'])) {
+            $enabled = $dlbConfig['enabled'] ?? false;
+            $baseUrl = $dlbConfig['base_url'] ?? '';
+            $token = $dlbConfig['api_token'] ?? '';
+
+            if ($enabled && !empty($baseUrl) && !empty($token)) {
                 $this->dlbClient = new DlbClient(
-                    $dlbConfig['url'],
-                    $dlbConfig['token'],
+                    $baseUrl,
+                    $token,
                     (int)($dlbConfig['timeout'] ?? 30)
                 );
             }
