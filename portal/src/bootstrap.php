@@ -91,6 +91,8 @@ class_alias(Portal\Services\CalendarService::class, 'CalendarService');
 class_alias(Portal\Services\EmailService::class, 'EmailService');
 class_alias(Portal\Services\NotificationService::class, 'NotificationService');
 class_alias(Portal\Helpers\Markdown::class, 'Markdown');
+class_alias(Portal\Models\AuditLog::class, 'AuditLog');
+class_alias(Portal\Services\HolidayService::class, 'HolidayService');
 
 // Load configuration based on APP_ENV environment variable
 $appEnv = getenv('APP_ENV') ?: 'production';
