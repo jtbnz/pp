@@ -103,6 +103,7 @@ return [
         'enabled' => true,
         'base_url' => 'https://kiaora.tech/dlb/puke',
         'api_token' => '', // Get from DLB admin
+        'webhook_secret' => '', // Shared secret for DLB webhooks (generate a strong random string)
         'timeout' => 30, // API request timeout in seconds
     ],
 

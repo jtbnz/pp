@@ -238,6 +238,9 @@ $router->group('/api/session', function(Router $router) {
 // Push debug route (NO auth middleware - for debugging push issues)
 $router->get('/api/push/debug', 'Api/PushApiController@debug');
 
+// Webhook routes (NO auth middleware - validated by webhook secret)
+$router->post('/api/webhook/attendance', 'Api/WebhookController@attendance');
+
 // API routes (Protected - Phase 2+)
 $router->group('/api', function(Router $router) {
     // Members (Phase 3)
