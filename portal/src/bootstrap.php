@@ -86,7 +86,7 @@ class_alias(Portal\Models\MagicLink::class, 'MagicLink');
 class_alias(Portal\Models\RateLimit::class, 'RateLimit');
 class_alias(Portal\Models\Notification::class, 'Notification');
 class_alias(Portal\Services\PushService::class, 'PushService');
-class_alias(Portal\Services\DlbService::class, 'DlbService');
+class_alias(Portal\Services\DlbClient::class, 'DlbClient');
 class_alias(Portal\Services\CalendarService::class, 'CalendarService');
 class_alias(Portal\Services\EmailService::class, 'EmailService');
 class_alias(Portal\Services\NotificationService::class, 'NotificationService');
