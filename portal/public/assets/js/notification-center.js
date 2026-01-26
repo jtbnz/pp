@@ -27,6 +27,7 @@ class NotificationCenter {
         this.preferences = null;
         this.preferencesTypes = null;
         this.pollTimer = null;
+        this.savedScrollY = 0;
 
         // Elements (will be set in init)
         this.bellButton = null;
@@ -136,6 +137,11 @@ class NotificationCenter {
         this.panel.classList.add('open');
         this.bellButton?.classList.add('active');
 
+        // Lock body scroll on mobile
+        this.savedScrollY = window.scrollY;
+        document.body.classList.add('notification-panel-open');
+        document.body.style.top = `-${this.savedScrollY}px`;
+
         // Reset and load notifications
         this.notifications = [];
         this.offset = 0;
@@ -148,6 +154,11 @@ class NotificationCenter {
         this.isOpen = false;
         this.panel.classList.remove('open');
         this.bellButton?.classList.remove('active');
+
+        // Unlock body scroll and restore position
+        document.body.classList.remove('notification-panel-open');
+        document.body.style.top = '';
+        window.scrollTo(0, this.savedScrollY || 0);
     }
 
     async fetchUnreadCount() {

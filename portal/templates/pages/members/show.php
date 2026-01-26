@@ -34,7 +34,7 @@ ob_start();
     <div class="page-header">
         <div class="page-header-content">
             <div class="page-header-back">
-                <?php if (hasRole('admin')): ?>
+                <?php if (isAdmin()): ?>
                     <a href="<?= url('/members') ?>" class="btn-back" aria-label="Back to members">
                         <span class="back-icon">&larr;</span>
                     </a>

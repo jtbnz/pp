@@ -47,7 +47,7 @@ class NoticeApiController
         }
 
         // Only admins can see inactive notices
-        if (!hasRole('admin') || empty($_GET['include_inactive'])) {
+        if (!isAdmin() || empty($_GET['include_inactive'])) {
             $filters['active_only'] = true;
         }
 
@@ -100,7 +100,7 @@ class NoticeApiController
         }
 
         // Check if notice is active (unless admin)
-        if (!hasRole('admin') && !$this->noticeModel->isActive($notice)) {
+        if (!isAdmin() && !$this->noticeModel->isActive($notice)) {
             jsonResponse(['error' => 'Notice not found'], 404);
             return;
         }
@@ -118,7 +118,7 @@ class NoticeApiController
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -164,7 +164,7 @@ class NoticeApiController
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -235,7 +235,7 @@ class NoticeApiController
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }

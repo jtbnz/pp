@@ -73,23 +73,19 @@ ob_start();
             </div>
 
             <div class="form-row">
-                <div class="form-group <?= isset($formErrors['role']) ? 'has-error' : '' ?>">
-                    <label for="role" class="form-label">Role *</label>
-                    <select id="role" name="role" class="form-select" required>
-                        <?php foreach ($roles as $role): ?>
-                        <?php if ($role !== 'superadmin' || hasRole('superadmin')): ?>
-                        <option value="<?= e($role) ?>" <?= ($formData['role'] ?? 'firefighter') === $role ? 'selected' : '' ?>>
-                            <?= e(Member::getRoleDisplayName($role)) ?>
+                <div class="form-group <?= isset($formErrors['operational_role']) ? 'has-error' : '' ?>">
+                    <label for="operational_role" class="form-label">Operational Role *</label>
+                    <select id="operational_role" name="operational_role" class="form-select" required>
+                        <?php foreach ($operationalRoles as $opRole): ?>
+                        <option value="<?= e($opRole) ?>" <?= ($formData['operational_role'] ?? 'firefighter') === $opRole ? 'selected' : '' ?>>
+                            <?= e(Member::getOperationalRoleDisplayName($opRole)) ?>
                         </option>
-                        <?php endif; ?>
                         <?php endforeach; ?>
                     </select>
-                    <?php if (isset($formErrors['role'])): ?>
-                    <span class="form-error"><?= e($formErrors['role']) ?></span>
+                    <?php if (isset($formErrors['operational_role'])): ?>
+                    <span class="form-error"><?= e($formErrors['operational_role']) ?></span>
                     <?php endif; ?>
-                    <span class="form-hint">
-                        Firefighter: Basic access. Officer: Can approve leave. Admin: Full management.
-                    </span>
+                    <span class="form-hint">Officers can approve leave requests</span>
                 </div>
 
                 <div class="form-group <?= isset($formErrors['rank']) ? 'has-error' : '' ?>">
@@ -108,6 +104,36 @@ ob_start();
                 </div>
             </div>
 
+            <div class="form-group <?= isset($formErrors['is_admin']) ? 'has-error' : '' ?>">
+                <label class="form-checkbox-label">
+                    <input type="hidden" name="is_admin" value="0">
+                    <input type="checkbox" name="is_admin" value="1" <?= !empty($formData['is_admin']) ? 'checked' : '' ?>>
+                    <span class="checkbox-text">Admin Access</span>
+                </label>
+                <?php if (isset($formErrors['is_admin'])): ?>
+                <span class="form-error"><?= e($formErrors['is_admin']) ?></span>
+                <?php endif; ?>
+                <span class="form-hint">Admins can manage members, events, notices and settings</span>
+            </div>
+
+            <?php if (hasRole('superadmin')): ?>
+            <div class="form-group <?= isset($formErrors['role']) ? 'has-error' : '' ?>">
+                <label for="role" class="form-label">System Role (Superadmin only)</label>
+                <select id="role" name="role" class="form-select">
+                    <?php foreach ($roles as $role): ?>
+                    <option value="<?= e($role) ?>" <?= ($formData['role'] ?? 'firefighter') === $role ? 'selected' : '' ?>>
+                        <?= e(Member::getRoleDisplayName($role)) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+                <?php if (isset($formErrors['role'])): ?>
+                <span class="form-error"><?= e($formErrors['role']) ?></span>
+                <?php endif; ?>
+            </div>
+            <?php else: ?>
+            <input type="hidden" name="role" value="firefighter">
+            <?php endif; ?>
+
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Send Invitation</button>
                 <a href="<?= url('/admin/members') ?>" class="btn btn-secondary">Cancel</a>
@@ -121,6 +147,12 @@ ob_start();
             <li>The member will receive an email with a magic link to activate their account.</li>
             <li>Access is valid for 5 years from activation.</li>
             <li>They can optionally set a 6-digit PIN for quick re-authentication.</li>
+        </ul>
+        <h3 class="mt-3">Role Guide</h3>
+        <ul>
+            <li><strong>Firefighter:</strong> Can request leave for up to 3 trainings</li>
+            <li><strong>Officer:</strong> Can approve/deny leave requests from firefighters</li>
+            <li><strong>Admin Access:</strong> Can manage members, events, notices and brigade settings</li>
         </ul>
     </div>
 </div>
@@ -216,6 +248,23 @@ ob_start();
 
 .info-box li {
     margin-bottom: 0.25rem;
+}
+
+.form-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.form-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.checkbox-text {
+    font-weight: 500;
 }
 </style>
 

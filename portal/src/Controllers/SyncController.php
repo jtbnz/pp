@@ -103,7 +103,7 @@ class SyncController
     public function members(): void
     {
         // Check admin permission
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -143,7 +143,7 @@ class SyncController
     public function musters(): void
     {
         // Check admin permission
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -190,7 +190,7 @@ class SyncController
     public function revealToday(): void
     {
         // Check admin permission
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -233,7 +233,7 @@ class SyncController
     public function importMembers(): void
     {
         // Check admin permission
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -278,7 +278,7 @@ class SyncController
     public function testConnection(): void
     {
         // Check admin permission
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }

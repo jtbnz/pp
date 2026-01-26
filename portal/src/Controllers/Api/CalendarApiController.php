@@ -113,7 +113,7 @@ class CalendarApiController
         }
 
         // Only admins can create events
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -170,7 +170,7 @@ class CalendarApiController
         }
 
         // Only admins can update events
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -238,7 +238,7 @@ class CalendarApiController
         }
 
         // Only admins can delete events
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -342,7 +342,7 @@ class CalendarApiController
         }
 
         // Only admins can generate training nights
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }

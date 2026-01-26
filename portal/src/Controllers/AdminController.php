@@ -109,6 +109,7 @@ class AdminController
         render('pages/admin/members/invite', [
             'pageTitle' => 'Invite Member',
             'roles' => Member::getValidRoles(),
+            'operationalRoles' => Member::getValidOperationalRoles(),
             'ranks' => Member::getValidRanks()
         ]);
     }
@@ -132,6 +133,8 @@ class AdminController
         $name = trim($_POST['name'] ?? '');
         $phone = trim($_POST['phone'] ?? '') ?: null;
         $role = $_POST['role'] ?? 'firefighter';
+        $operationalRole = $_POST['operational_role'] ?? 'firefighter';
+        $isAdmin = isset($_POST['is_admin']) && $_POST['is_admin'] === '1';
         $rank = $_POST['rank'] ?? null;
 
         $errors = [];
@@ -146,6 +149,10 @@ class AdminController
 
         if (!in_array($role, Member::getValidRoles(), true)) {
             $errors['role'] = 'Invalid role selected';
+        }
+
+        if (!in_array($operationalRole, Member::getValidOperationalRoles(), true)) {
+            $errors['operational_role'] = 'Invalid operational role selected';
         }
 
         if ($rank !== null && !in_array($rank, Member::getValidRanks(), true)) {
@@ -179,6 +186,8 @@ class AdminController
                 'name' => $name,
                 'phone' => $phone,
                 'role' => $role,
+                'operational_role' => $operationalRole,
+                'is_admin' => $isAdmin,
                 'rank' => $rank,
                 'access_token' => $accessToken,
                 'access_expires' => $accessExpires
@@ -189,7 +198,8 @@ class AdminController
                 'member_id' => $memberId,
                 'email' => $email,
                 'name' => $name,
-                'role' => $role
+                'operational_role' => $operationalRole,
+                'is_admin' => $isAdmin
             ]);
 
             // Create invite token - store expiry in UTC
@@ -265,6 +275,7 @@ class AdminController
             'servicePeriods' => $servicePeriods,
             'serviceInfo' => $serviceInfo,
             'roles' => Member::getValidRoles(),
+            'operationalRoles' => Member::getValidOperationalRoles(),
             'ranks' => Member::getValidRanks()
         ]);
     }
@@ -372,6 +383,8 @@ class AdminController
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '') ?: null;
         $role = $_POST['role'] ?? $member['role'];
+        $operationalRole = $_POST['operational_role'] ?? $member['operational_role'] ?? 'firefighter';
+        $isAdmin = isset($_POST['is_admin']) && $_POST['is_admin'] === '1';
         $rank = $_POST['rank'] ?? null;
         $status = $_POST['status'] ?? $member['status'];
 
@@ -397,6 +410,11 @@ class AdminController
             $errors['role'] = 'Invalid role selected';
         }
 
+        // Validate operational_role (allow null for superadmins)
+        if ($role !== 'superadmin' && !in_array($operationalRole, Member::getValidOperationalRoles(), true)) {
+            $errors['operational_role'] = 'Invalid operational role selected';
+        }
+
         if ($rank !== null && $rank !== '' && !in_array($rank, Member::getValidRanks(), true)) {
             $errors['rank'] = 'Invalid rank selected';
         }
@@ -406,11 +424,10 @@ class AdminController
         }
 
         // Prevent self-demotion for last admin
-        if ($memberId === $user['id'] && $role !== 'admin' && $role !== 'superadmin') {
-            $adminCount = $this->memberModel->countByBrigade($brigadeId, ['role' => 'admin']);
-            $superadminCount = $this->memberModel->countByBrigade($brigadeId, ['role' => 'superadmin']);
-            if (($adminCount + $superadminCount) <= 1) {
-                $errors['role'] = 'Cannot demote yourself as you are the only admin';
+        if ($memberId === $user['id'] && !$isAdmin && $role !== 'superadmin') {
+            $adminCount = $this->memberModel->countAdmins($brigadeId);
+            if ($adminCount <= 1) {
+                $errors['is_admin'] = 'Cannot remove admin access as you are the only admin';
             }
         }
 
@@ -427,6 +444,8 @@ class AdminController
             if ($name !== $member['name']) $changes['name'] = ['from' => $member['name'], 'to' => $name];
             if (strtolower($email) !== strtolower($member['email'])) $changes['email'] = ['from' => $member['email'], 'to' => $email];
             if ($role !== $member['role']) $changes['role'] = ['from' => $member['role'], 'to' => $role];
+            if ($operationalRole !== ($member['operational_role'] ?? null)) $changes['operational_role'] = ['from' => $member['operational_role'] ?? null, 'to' => $operationalRole];
+            if ($isAdmin !== (bool)($member['is_admin'] ?? false)) $changes['is_admin'] = ['from' => (bool)($member['is_admin'] ?? false), 'to' => $isAdmin];
             if ($rank !== $member['rank']) $changes['rank'] = ['from' => $member['rank'], 'to' => $rank];
             if ($status !== $member['status']) $changes['status'] = ['from' => $member['status'], 'to' => $status];
 
@@ -436,6 +455,8 @@ class AdminController
                 'email' => $email,
                 'phone' => $phone,
                 'role' => $role,
+                'operational_role' => $role === 'superadmin' ? null : $operationalRole,
+                'is_admin' => $isAdmin,
                 'rank' => $rank !== '' ? $rank : null,
                 'status' => $status
             ]);

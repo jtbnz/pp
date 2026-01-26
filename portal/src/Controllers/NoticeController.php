@@ -37,7 +37,7 @@ class NoticeController
         $brigadeId = (int)$user['brigade_id'];
 
         // Get active notices for regular view, all for admins
-        if (hasRole('admin')) {
+        if (isAdmin()) {
             $filters = $_GET;
             $filters['limit'] = 50;
             $notices = $this->noticeModel->findAll($brigadeId, $filters);
@@ -52,7 +52,7 @@ class NoticeController
             'pageTitle' => 'Notices',
             'notices' => $notices,
             'totalNotices' => $totalNotices,
-            'isAdmin' => hasRole('admin'),
+            'isAdmin' => isAdmin(),
         ]);
     }
 
@@ -81,7 +81,7 @@ class NoticeController
         }
 
         // Check if notice is active (unless admin)
-        if (!hasRole('admin') && !$this->noticeModel->isActive($notice)) {
+        if (!isAdmin() && !$this->noticeModel->isActive($notice)) {
             http_response_code(404);
             render('pages/errors/404', ['message' => 'Notice not found']);
             return;
@@ -94,7 +94,7 @@ class NoticeController
             'pageTitle' => $notice['title'],
             'notice' => $notice,
             'remainingSeconds' => $remainingSeconds,
-            'isAdmin' => hasRole('admin'),
+            'isAdmin' => isAdmin(),
         ]);
     }
 
@@ -208,7 +208,7 @@ class NoticeController
         }
 
         // Check if user can edit (creator or admin)
-        $canEdit = hasRole('admin') || (int)$notice['author_id'] === (int)$user['id'];
+        $canEdit = isAdmin() || (int)$notice['author_id'] === (int)$user['id'];
         if (!$canEdit) {
             http_response_code(403);
             render('pages/errors/403');
@@ -255,7 +255,7 @@ class NoticeController
         }
 
         // Check if user can update (creator or admin)
-        $canEdit = hasRole('admin') || (int)$notice['author_id'] === (int)$user['id'];
+        $canEdit = isAdmin() || (int)$notice['author_id'] === (int)$user['id'];
         if (!$canEdit) {
             http_response_code(403);
             render('pages/errors/403');
@@ -338,7 +338,7 @@ class NoticeController
         }
 
         // Check if user can delete (creator or admin)
-        $canDelete = hasRole('admin') || (int)$notice['author_id'] === (int)$user['id'];
+        $canDelete = isAdmin() || (int)$notice['author_id'] === (int)$user['id'];
         if (!$canDelete) {
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Forbidden'], 403);

@@ -41,7 +41,7 @@ class LeaveApiController
         $brigadeId = (int)$user['brigade_id'];
 
         // Officers can view all pending requests
-        if (hasRole('officer') && ($_GET['pending'] ?? false)) {
+        if (canApproveLeave() && ($_GET['pending'] ?? false)) {
             $requests = $this->leaveModel->findPending($brigadeId);
             jsonResponse([
                 'data' => $requests,
@@ -55,7 +55,7 @@ class LeaveApiController
 
         // Get specific training date
         if (!empty($_GET['date'])) {
-            if (!hasRole('officer')) {
+            if (!canApproveLeave()) {
                 jsonResponse(['error' => 'Forbidden'], 403);
                 return;
             }
@@ -115,7 +115,7 @@ class LeaveApiController
 
         // Check access: own request or officer viewing brigade request
         $isOwn = $request['member_id'] === $memberId;
-        $isOfficerWithAccess = hasRole('officer') && $this->leaveModel->belongsToBrigade($leaveId, $brigadeId);
+        $isOfficerWithAccess = canApproveLeave() && $this->leaveModel->belongsToBrigade($leaveId, $brigadeId);
 
         if (!$isOwn && !$isOfficerWithAccess) {
             jsonResponse(['error' => 'Forbidden'], 403);
@@ -230,7 +230,7 @@ class LeaveApiController
             return;
         }
 
-        if (!hasRole('officer')) {
+        if (!canApproveLeave()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -283,7 +283,7 @@ class LeaveApiController
             return;
         }
 
-        if (!hasRole('officer')) {
+        if (!canApproveLeave()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -350,7 +350,7 @@ class LeaveApiController
         // Users can only cancel their own pending requests
         // Officers can cancel any pending request in their brigade
         $isOwn = $request['member_id'] === $memberId;
-        $isOfficerWithAccess = hasRole('officer') && $this->leaveModel->belongsToBrigade($leaveId, $brigadeId);
+        $isOfficerWithAccess = canApproveLeave() && $this->leaveModel->belongsToBrigade($leaveId, $brigadeId);
 
         if (!$isOwn && !$isOfficerWithAccess) {
             jsonResponse(['error' => 'Cannot cancel this leave request'], 403);
@@ -391,7 +391,7 @@ class LeaveApiController
             return;
         }
 
-        if (!hasRole('officer')) {
+        if (!canApproveLeave()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }

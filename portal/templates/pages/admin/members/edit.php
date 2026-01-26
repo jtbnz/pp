@@ -102,20 +102,19 @@ ob_start();
             </div>
 
             <div class="form-row">
-                <div class="form-group <?= isset($formErrors['role']) ? 'has-error' : '' ?>">
-                    <label for="role" class="form-label">Role *</label>
-                    <select id="role" name="role" class="form-select" required>
-                        <?php foreach ($roles as $role): ?>
-                        <?php if ($role !== 'superadmin' || hasRole('superadmin')): ?>
-                        <option value="<?= e($role) ?>" <?= ($memberData['role'] ?? '') === $role ? 'selected' : '' ?>>
-                            <?= e(Member::getRoleDisplayName($role)) ?>
+                <div class="form-group <?= isset($formErrors['operational_role']) ? 'has-error' : '' ?>">
+                    <label for="operational_role" class="form-label">Operational Role *</label>
+                    <select id="operational_role" name="operational_role" class="form-select" required>
+                        <?php foreach ($operationalRoles as $opRole): ?>
+                        <option value="<?= e($opRole) ?>" <?= ($memberData['operational_role'] ?? 'firefighter') === $opRole ? 'selected' : '' ?>>
+                            <?= e(Member::getOperationalRoleDisplayName($opRole)) ?>
                         </option>
-                        <?php endif; ?>
                         <?php endforeach; ?>
                     </select>
-                    <?php if (isset($formErrors['role'])): ?>
-                    <span class="form-error"><?= e($formErrors['role']) ?></span>
+                    <?php if (isset($formErrors['operational_role'])): ?>
+                    <span class="form-error"><?= e($formErrors['operational_role']) ?></span>
                     <?php endif; ?>
+                    <span class="form-hint">Officers can approve leave requests</span>
                 </div>
 
                 <div class="form-group <?= isset($formErrors['rank']) ? 'has-error' : '' ?>">
@@ -133,6 +132,37 @@ ob_start();
                     <?php endif; ?>
                 </div>
             </div>
+
+            <div class="form-group <?= isset($formErrors['is_admin']) ? 'has-error' : '' ?>">
+                <label class="form-checkbox-label">
+                    <input type="hidden" name="is_admin" value="0">
+                    <input type="checkbox" name="is_admin" value="1" <?= !empty($memberData['is_admin']) ? 'checked' : '' ?>>
+                    <span class="checkbox-text">Admin Access</span>
+                </label>
+                <?php if (isset($formErrors['is_admin'])): ?>
+                <span class="form-error"><?= e($formErrors['is_admin']) ?></span>
+                <?php endif; ?>
+                <span class="form-hint">Admins can manage members, events, notices and settings</span>
+            </div>
+
+            <?php if (hasRole('superadmin')): ?>
+            <div class="form-group <?= isset($formErrors['role']) ? 'has-error' : '' ?>">
+                <label for="role" class="form-label">System Role (Superadmin only)</label>
+                <select id="role" name="role" class="form-select">
+                    <?php foreach ($roles as $role): ?>
+                    <option value="<?= e($role) ?>" <?= ($memberData['role'] ?? '') === $role ? 'selected' : '' ?>>
+                        <?= e(Member::getRoleDisplayName($role)) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+                <?php if (isset($formErrors['role'])): ?>
+                <span class="form-error"><?= e($formErrors['role']) ?></span>
+                <?php endif; ?>
+                <span class="form-hint">Legacy role field - use operational role and admin access instead</span>
+            </div>
+            <?php else: ?>
+            <input type="hidden" name="role" value="<?= e($memberData['role'] ?? 'firefighter') ?>">
+            <?php endif; ?>
 
             <div class="form-group <?= isset($formErrors['status']) ? 'has-error' : '' ?>">
                 <label for="status" class="form-label">Status</label>
@@ -407,6 +437,23 @@ ob_start();
     flex: 1;
     font-family: monospace;
     font-size: 0.875rem;
+}
+
+.form-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.form-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.checkbox-text {
+    font-weight: 500;
 }
 </style>
 

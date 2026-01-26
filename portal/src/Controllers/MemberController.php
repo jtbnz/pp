@@ -44,7 +44,7 @@ class MemberController
             exit;
         }
 
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             http_response_code(403);
             render('pages/errors/403');
             return;
@@ -106,7 +106,7 @@ class MemberController
         // Check if user can view this member
         // Users can view their own profile, admins can view all in their brigade
         $canView = ($member['id'] === $user['id'])
-            || (hasRole('admin') && $member['brigade_id'] === $user['brigade_id']);
+            || (isAdmin() && $member['brigade_id'] === $user['brigade_id']);
 
         if (!$canView) {
             http_response_code(403);
@@ -119,7 +119,7 @@ class MemberController
         $serviceInfo = $this->memberModel->calculateServiceForHonors($memberId);
 
         // Can the current user edit this member?
-        $canEdit = hasRole('admin') && $member['brigade_id'] === $user['brigade_id'];
+        $canEdit = isAdmin() && $member['brigade_id'] === $user['brigade_id'];
 
         render('pages/members/show', [
             'pageTitle' => $member['name'],
@@ -137,7 +137,7 @@ class MemberController
     public function edit(string $id): void
     {
         $user = currentUser();
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             http_response_code(403);
             render('pages/errors/403');
             return;
@@ -181,7 +181,7 @@ class MemberController
     public function store(): void
     {
         $user = currentUser();
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -338,7 +338,7 @@ class MemberController
     public function update(string $id): void
     {
         $user = currentUser();
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -441,7 +441,7 @@ class MemberController
     public function destroy(string $id): void
     {
         $user = currentUser();
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -522,7 +522,7 @@ class MemberController
         }
 
         // Only admins can view/edit service periods
-        if (!hasRole('admin') || $member['brigade_id'] !== $user['brigade_id']) {
+        if (!isAdmin() || $member['brigade_id'] !== $user['brigade_id']) {
             http_response_code(403);
             render('pages/errors/403');
             return;
@@ -545,7 +545,7 @@ class MemberController
     public function addServicePeriod(string $id): void
     {
         $user = currentUser();
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -602,7 +602,7 @@ class MemberController
     public function updateServicePeriod(string $id, string $periodId): void
     {
         $user = currentUser();
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -672,7 +672,7 @@ class MemberController
     public function deleteServicePeriod(string $id, string $periodId): void
     {
         $user = currentUser();
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }

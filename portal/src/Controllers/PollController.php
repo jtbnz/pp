@@ -98,7 +98,7 @@ class PollController
         }
 
         // User can edit if they created it or are an admin
-        $canEdit = hasRole('admin') || (int)$poll['created_by'] === (int)$user['id'];
+        $canEdit = isAdmin() || (int)$poll['created_by'] === (int)$user['id'];
 
         render('pages/polls/show', [
             'pageTitle' => $poll['title'],
@@ -292,7 +292,7 @@ class PollController
         }
 
         // Check if user can edit (creator or admin)
-        $canEdit = hasRole('admin') || (int)$poll['created_by'] === (int)$user['id'];
+        $canEdit = isAdmin() || (int)$poll['created_by'] === (int)$user['id'];
         if (!$canEdit) {
             http_response_code(403);
             render('pages/errors/403');
@@ -338,7 +338,7 @@ class PollController
         }
 
         // Check if user can edit (creator or admin)
-        $canEdit = hasRole('admin') || (int)$poll['created_by'] === $memberId;
+        $canEdit = isAdmin() || (int)$poll['created_by'] === $memberId;
         if (!$canEdit) {
             http_response_code(403);
             render('pages/errors/403');
@@ -417,7 +417,7 @@ class PollController
         }
 
         // Check if user can close (creator or admin)
-        $canEdit = hasRole('admin') || (int)$poll['created_by'] === $memberId;
+        $canEdit = isAdmin() || (int)$poll['created_by'] === $memberId;
         if (!$canEdit) {
             http_response_code(403);
             render('pages/errors/403');
@@ -474,7 +474,7 @@ class PollController
         }
 
         // Check if user can delete (creator or admin)
-        $canDelete = hasRole('admin') || (int)$poll['created_by'] === $memberId;
+        $canDelete = isAdmin() || (int)$poll['created_by'] === $memberId;
         if (!$canDelete) {
             http_response_code(403);
             render('pages/errors/403');

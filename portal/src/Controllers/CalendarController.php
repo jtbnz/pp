@@ -95,7 +95,7 @@ class CalendarController
             'events' => $events,
             'holidays' => $holidays,
             'upcomingTrainings' => array_slice($upcomingTrainings, 0, 5),
-            'isAdmin' => hasRole('admin'),
+            'isAdmin' => isAdmin(),
             'extraScripts' => '<script src="' . url('/assets/js/calendar.js') . '"></script>',
         ]);
     }
@@ -187,7 +187,7 @@ class CalendarController
         }
 
         // Check visibility (unless admin)
-        if (!hasRole('admin') && !$event['is_visible']) {
+        if (!isAdmin() && !$event['is_visible']) {
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Event not found'], 404);
                 return;
@@ -219,7 +219,7 @@ class CalendarController
         render('pages/calendar/event', [
             'pageTitle' => $event['title'],
             'event' => $event,
-            'isAdmin' => hasRole('admin'),
+            'isAdmin' => isAdmin(),
         ]);
     }
 
@@ -231,7 +231,7 @@ class CalendarController
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Forbidden'], 403);
                 return;
@@ -313,7 +313,7 @@ class CalendarController
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Forbidden'], 403);
                 return;
@@ -408,7 +408,7 @@ class CalendarController
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Forbidden'], 403);
                 return;
@@ -484,7 +484,7 @@ class CalendarController
         }
 
         // Check visibility (unless admin)
-        if (!hasRole('admin') && !$event['is_visible']) {
+        if (!isAdmin() && !$event['is_visible']) {
             http_response_code(404);
             echo 'Event not found';
             return;
@@ -570,7 +570,7 @@ class CalendarController
             'trainings' => $mergedTrainings,
             'from' => $from,
             'months' => $months,
-            'isAdmin' => hasRole('admin'),
+            'isAdmin' => isAdmin(),
         ]);
     }
 
@@ -582,7 +582,7 @@ class CalendarController
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Forbidden'], 403);
                 return;
@@ -646,7 +646,7 @@ class CalendarController
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             http_response_code(403);
             render('pages/errors/403');
             return;
@@ -677,7 +677,7 @@ class CalendarController
     {
         $user = currentUser();
 
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             http_response_code(403);
             render('pages/errors/403');
             return;

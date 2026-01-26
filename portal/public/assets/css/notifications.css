@@ -119,6 +119,8 @@
     flex: 1;
     overflow-y: auto;
     padding: 0.5rem 0;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 /* Individual Notification Item */
@@ -342,6 +344,14 @@
         max-width: none;
         max-height: 70vh;
         border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+    }
+
+    /* Prevent body scroll when notification panel is open on mobile */
+    body.notification-panel-open {
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        height: 100%;
     }
 }
 

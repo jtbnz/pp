@@ -40,7 +40,7 @@ class MemberApiController
             return;
         }
 
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -99,7 +99,7 @@ class MemberApiController
 
         // Users can view their own profile, admins can view all in their brigade
         $canView = ($member['id'] === $user['id'])
-            || (hasRole('admin') && $member['brigade_id'] === $user['brigade_id']);
+            || (isAdmin() && $member['brigade_id'] === $user['brigade_id']);
 
         if (!$canView) {
             jsonResponse(['error' => 'Forbidden'], 403);
@@ -110,7 +110,7 @@ class MemberApiController
         $servicePeriods = [];
         $serviceInfo = null;
 
-        if (hasRole('admin') || $member['id'] === $user['id']) {
+        if (isAdmin() || $member['id'] === $user['id']) {
             $servicePeriods = $this->memberModel->getServicePeriods($memberId);
             $serviceInfo = $this->memberModel->calculateServiceForHonors($memberId);
         }
@@ -134,7 +134,7 @@ class MemberApiController
             return;
         }
 
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -251,7 +251,7 @@ class MemberApiController
             return;
         }
 
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -351,7 +351,7 @@ class MemberApiController
             return;
         }
 
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -411,7 +411,7 @@ class MemberApiController
 
         // Check access: own profile or admin in same brigade
         $canView = ($member['id'] === $user['id'])
-            || (hasRole('admin') && $member['brigade_id'] === $user['brigade_id']);
+            || (isAdmin() && $member['brigade_id'] === $user['brigade_id']);
 
         if (!$canView) {
             jsonResponse(['error' => 'Forbidden'], 403);
@@ -434,7 +434,7 @@ class MemberApiController
     public function addServicePeriod(string $id): void
     {
         $user = currentUser();
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -510,7 +510,7 @@ class MemberApiController
     public function updateServicePeriod(string $id, string $periodId): void
     {
         $user = currentUser();
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -596,7 +596,7 @@ class MemberApiController
     public function deleteServicePeriod(string $id, string $periodId): void
     {
         $user = currentUser();
-        if (!$user || !hasRole('admin')) {
+        if (!$user || !isAdmin()) {
             jsonResponse(['error' => 'Forbidden'], 403);
             return;
         }
@@ -796,7 +796,7 @@ class MemberApiController
 
         // Users can view their own attendance, admins/officers can view all in their brigade
         $canView = ($member['id'] === $user['id'])
-            || ((hasRole('admin') || hasRole('officer')) && $member['brigade_id'] === $user['brigade_id']);
+            || ((isAdmin() || isOfficer()) && $member['brigade_id'] === $user['brigade_id']);
 
         if (!$canView) {
             jsonResponse(['error' => 'Forbidden'], 403);
@@ -841,7 +841,7 @@ class MemberApiController
 
         // Users can view their own attendance, admins/officers can view all in their brigade
         $canView = ($member['id'] === $user['id'])
-            || ((hasRole('admin') || hasRole('officer')) && $member['brigade_id'] === $user['brigade_id']);
+            || ((isAdmin() || isOfficer()) && $member['brigade_id'] === $user['brigade_id']);
 
         if (!$canView) {
             jsonResponse(['error' => 'Forbidden'], 403);
@@ -891,7 +891,7 @@ class MemberApiController
             return;
         }
 
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             jsonResponse(['error' => 'Forbidden - admin only'], 403);
             return;
         }

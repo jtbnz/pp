@@ -73,7 +73,7 @@ if (!$isActive) {
             <?php endif; ?>
         </div>
 
-        <?php if ($showActions && hasRole('admin')): ?>
+        <?php if ($showActions && isAdmin()): ?>
             <div class="notice-card-actions">
                 <a href="<?= url('/notices/' . (int)$notice['id'] . '/edit') ?>" class="btn btn-sm" title="Edit">
                     &#9998;

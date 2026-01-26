@@ -64,8 +64,8 @@ class LeaveController
             'activeCount' => $activeCount,
             'maxPending' => $maxPending,
             'canRequestMore' => $activeCount < $maxPending,
-            'isOfficer' => hasRole('officer'),
-            'isCFO' => $this->isCFO($user),
+            'isOfficer' => canApproveLeave(),
+            'isCFO' => canApproveExtendedLeave(),
         ]);
     }
 
@@ -82,19 +82,19 @@ class LeaveController
             exit;
         }
 
-        if (!hasRole('officer')) {
+        if (!canApproveLeave()) {
             http_response_code(403);
             render('pages/errors/403');
             return;
         }
 
         $brigadeId = (int)$user['brigade_id'];
-        $isCFO = $this->isCFO($user);
+        $canApproveExtended = canApproveExtendedLeave();
 
         // Get all pending requests for the brigade
         $pendingRequests = $this->leaveModel->findPending($brigadeId);
 
-        // Get pending extended leave requests (visible to all officers, but only CFO can approve)
+        // Get pending extended leave requests (visible to all officers, but only CFO/admins can approve)
         $pendingExtendedRequests = $this->extendedLeaveModel->findPending($brigadeId);
 
         // Group by training date for better display
@@ -114,7 +114,7 @@ class LeaveController
             'groupedRequests' => $groupedRequests,
             'pendingCount' => count($pendingRequests),
             'pendingExtendedCount' => count($pendingExtendedRequests),
-            'isCFO' => $isCFO,
+            'isCFO' => $canApproveExtended,
         ]);
     }
 
@@ -142,10 +142,10 @@ class LeaveController
 
         // Check if user has access to this request
         $isOwner = (int)$leaveRequest['member_id'] === (int)$user['id'];
-        $isOfficer = hasRole('officer');
+        $canApprove = canApproveLeave();
         $sameBrigade = (int)$leaveRequest['brigade_id'] === (int)$user['brigade_id'];
 
-        if (!$sameBrigade || (!$isOwner && !$isOfficer)) {
+        if (!$sameBrigade || (!$isOwner && !$canApprove)) {
             http_response_code(403);
             render('pages/errors/403');
             return;
@@ -155,8 +155,8 @@ class LeaveController
             'pageTitle' => 'Leave Request Details',
             'leaveRequest' => $leaveRequest,
             'isOwner' => $isOwner,
-            'isOfficer' => $isOfficer,
-            'canApprove' => $isOfficer && $leaveRequest['status'] === 'pending',
+            'isOfficer' => $canApprove,
+            'canApprove' => $canApprove && $leaveRequest['status'] === 'pending',
         ]);
     }
 
@@ -245,7 +245,7 @@ class LeaveController
             exit;
         }
 
-        if (!hasRole('officer')) {
+        if (!canApproveLeave()) {
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Forbidden'], 403);
             }
@@ -325,7 +325,7 @@ class LeaveController
             exit;
         }
 
-        if (!hasRole('officer')) {
+        if (!canApproveLeave()) {
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Forbidden'], 403);
             }
@@ -428,12 +428,12 @@ class LeaveController
         }
 
         // Users can only cancel their own pending requests
-        // Officers/Admins can cancel any pending request in their brigade
+        // Officers can cancel any pending request in their brigade
         $canCancel = false;
 
         if ($request['member_id'] === $memberId && $request['status'] === 'pending') {
             $canCancel = true;
-        } elseif (hasRole('officer') && $this->leaveModel->belongsToBrigade($leaveId, (int)$user['brigade_id'])) {
+        } elseif (canApproveLeave() && $this->leaveModel->belongsToBrigade($leaveId, (int)$user['brigade_id'])) {
             $canCancel = true;
         }
 
@@ -639,11 +639,11 @@ class LeaveController
 
         // Check access
         $isOwner = (int)$request['member_id'] === (int)$user['id'];
-        $isOfficer = hasRole('officer');
+        $canApprove = canApproveLeave();
         $sameBrigade = (int)$request['brigade_id'] === (int)$user['brigade_id'];
-        $isCFO = $this->isCFO($user);
+        $canApproveExtended = canApproveExtendedLeave();
 
-        if (!$sameBrigade || (!$isOwner && !$isOfficer)) {
+        if (!$sameBrigade || (!$isOwner && !$canApprove)) {
             http_response_code(403);
             render('pages/errors/403');
             return;
@@ -661,14 +661,14 @@ class LeaveController
             'request' => $request,
             'trainings' => $trainingsResult['dates'],
             'isOwner' => $isOwner,
-            'isOfficer' => $isOfficer,
-            'isCFO' => $isCFO,
-            'canApprove' => $isCFO && $request['status'] === 'pending',
+            'isOfficer' => $canApprove,
+            'isCFO' => $canApproveExtended,
+            'canApprove' => $canApproveExtended && $request['status'] === 'pending',
         ]);
     }
 
     /**
-     * Approve extended leave request (CFO only)
+     * Approve extended leave request (CFO or admin only)
      * POST /leave/extended/{id}/approve
      */
     public function approveExtended(string $id): void
@@ -683,12 +683,12 @@ class LeaveController
             exit;
         }
 
-        // Only CFO can approve extended leave
-        if (!$this->isCFO($user)) {
+        // Only CFO or admins can approve extended leave
+        if (!canApproveExtendedLeave()) {
             if ($this->isApiRequest()) {
-                jsonResponse(['error' => 'Only CFO can approve extended leave requests'], 403);
+                jsonResponse(['error' => 'Only CFO or admins can approve extended leave requests'], 403);
             }
-            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Only CFO can approve extended leave requests'];
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Only CFO or admins can approve extended leave requests'];
             header('Location: ' . url('/leave/pending'));
             exit;
         }
@@ -746,7 +746,7 @@ class LeaveController
     }
 
     /**
-     * Deny extended leave request (CFO only)
+     * Deny extended leave request (CFO or admin only)
      * POST /leave/extended/{id}/deny
      */
     public function denyExtended(string $id): void
@@ -761,12 +761,12 @@ class LeaveController
             exit;
         }
 
-        // Only CFO can deny extended leave
-        if (!$this->isCFO($user)) {
+        // Only CFO or admins can deny extended leave
+        if (!canApproveExtendedLeave()) {
             if ($this->isApiRequest()) {
-                jsonResponse(['error' => 'Only CFO can deny extended leave requests'], 403);
+                jsonResponse(['error' => 'Only CFO or admins can deny extended leave requests'], 403);
             }
-            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Only CFO can deny extended leave requests'];
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Only CFO or admins can deny extended leave requests'];
             header('Location: ' . url('/leave/pending'));
             exit;
         }
@@ -936,10 +936,12 @@ class LeaveController
         $brigadeId = $member['brigade_id'];
         $formattedDate = date('l, j F', strtotime($trainingDate));
 
-        // Get officers to notify
+        // Get officers to notify (operational_role = 'officer' or superadmins)
+        // Note: Admins without operational_role='officer' do NOT receive leave notifications
         $stmt = $db->prepare("
             SELECT id, email, name FROM members
-            WHERE brigade_id = ? AND status = 'active' AND role IN ('officer', 'admin', 'superadmin')
+            WHERE brigade_id = ? AND status = 'active'
+              AND (operational_role = 'officer' OR role = 'superadmin')
         ");
         $stmt->execute([$brigadeId]);
         $officers = $stmt->fetchAll();
@@ -1123,10 +1125,11 @@ class LeaveController
         $cfos = $stmt->fetchAll();
 
         if (empty($cfos)) {
-            // Fall back to notifying all officers
+            // Fall back to notifying admins and superadmins (who can approve extended leave)
             $stmt = $db->prepare("
                 SELECT id, email, name FROM members
-                WHERE brigade_id = ? AND status = 'active' AND role IN ('officer', 'admin', 'superadmin')
+                WHERE brigade_id = ? AND status = 'active'
+                  AND (is_admin = 1 OR role = 'superadmin')
             ");
             $stmt->execute([$brigadeId]);
             $cfos = $stmt->fetchAll();

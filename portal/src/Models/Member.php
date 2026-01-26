@@ -252,11 +252,26 @@ class Member
             throw new InvalidArgumentException("Invalid status: {$status}");
         }
 
+        // Derive operational_role and is_admin from role if not explicitly provided
+        $operationalRole = $data['operational_role'] ?? null;
+        $isAdmin = $data['is_admin'] ?? null;
+
+        if ($operationalRole === null || $isAdmin === null) {
+            [$derivedOpRole, $derivedIsAdmin] = self::deriveRoleFields($role);
+            $operationalRole = $operationalRole ?? $derivedOpRole;
+            $isAdmin = $isAdmin ?? $derivedIsAdmin;
+        }
+
+        // Validate operational_role
+        if ($operationalRole !== null && !in_array($operationalRole, ['firefighter', 'officer'], true)) {
+            throw new InvalidArgumentException("Invalid operational_role: {$operationalRole}");
+        }
+
         $sql = '
             INSERT INTO members (
-                brigade_id, email, name, phone, role, rank, rank_date,
-                status, access_token, access_expires, pin_hash
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                brigade_id, email, name, phone, role, operational_role, is_admin,
+                rank, rank_date, status, access_token, access_expires, pin_hash
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ';
 
         $stmt = $this->db->prepare($sql);
@@ -266,6 +281,8 @@ class Member
             trim($data['name']),
             $data['phone'] ?? null,
             $role,
+            $operationalRole,
+            $isAdmin ? 1 : 0,
             $data['rank'] ?? null,
             $data['rank_date'] ?? null,
             $status,
@@ -275,6 +292,23 @@ class Member
         ]);
 
         return (int)$this->db->lastInsertId();
+    }
+
+    /**
+     * Derive operational_role and is_admin from legacy role
+     *
+     * @param string $role Legacy role (firefighter, officer, admin, superadmin)
+     * @return array [operational_role, is_admin]
+     */
+    public static function deriveRoleFields(string $role): array
+    {
+        return match ($role) {
+            'firefighter' => ['firefighter', false],
+            'officer' => ['officer', false],
+            'admin' => ['officer', true],  // Admins are assumed to be officers
+            'superadmin' => [null, true],  // Superadmins have no operational role
+            default => ['firefighter', false],
+        };
     }
 
     /**
@@ -291,15 +325,20 @@ class Member
         $params = [];
 
         $allowedFields = [
-            'name', 'email', 'phone', 'role', 'rank', 'rank_date', 'status',
-            'access_token', 'access_expires', 'pin_hash', 'push_subscription',
-            'last_login_at'
+            'name', 'email', 'phone', 'role', 'operational_role', 'is_admin',
+            'rank', 'rank_date', 'status', 'access_token', 'access_expires',
+            'pin_hash', 'push_subscription', 'last_login_at'
         ];
 
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
                 $updates[] = "{$field} = ?";
-                $params[] = $data[$field];
+                // Convert boolean is_admin to integer
+                if ($field === 'is_admin') {
+                    $params[] = $data[$field] ? 1 : 0;
+                } else {
+                    $params[] = $data[$field];
+                }
             }
         }
 
@@ -312,6 +351,14 @@ class Member
             $validRoles = ['firefighter', 'officer', 'admin', 'superadmin'];
             if (!in_array($data['role'], $validRoles, true)) {
                 throw new InvalidArgumentException("Invalid role: {$data['role']}");
+            }
+        }
+
+        // Validate operational_role if being updated
+        if (isset($data['operational_role']) && $data['operational_role'] !== null) {
+            $validOpRoles = ['firefighter', 'officer'];
+            if (!in_array($data['operational_role'], $validOpRoles, true)) {
+                throw new InvalidArgumentException("Invalid operational_role: {$data['operational_role']}");
             }
         }
 
@@ -702,5 +749,42 @@ class Member
     public static function getValidRanks(): array
     {
         return ['CFO', 'DCFO', 'SSO', 'SO', 'SFF', 'QFF', 'FF', 'RCFF'];
+    }
+
+    /**
+     * Get all valid operational roles
+     */
+    public static function getValidOperationalRoles(): array
+    {
+        return ['firefighter', 'officer'];
+    }
+
+    /**
+     * Get operational role display name
+     */
+    public static function getOperationalRoleDisplayName(string $role): string
+    {
+        $roles = [
+            'firefighter' => 'Firefighter',
+            'officer' => 'Officer',
+        ];
+
+        return $roles[$role] ?? ucfirst($role);
+    }
+
+    /**
+     * Count admins in a brigade (using is_admin flag)
+     */
+    public function countAdmins(int $brigadeId): int
+    {
+        $stmt = $this->db->prepare('
+            SELECT COUNT(*) FROM members
+            WHERE brigade_id = ?
+            AND status = ?
+            AND (is_admin = 1 OR role = ?)
+        ');
+        $stmt->execute([$brigadeId, 'active', 'superadmin']);
+
+        return (int)$stmt->fetchColumn();
     }
 }

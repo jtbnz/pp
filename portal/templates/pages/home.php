@@ -37,10 +37,6 @@ ob_start();
 <div class="page-home">
     <?php if ($user): ?>
         <!-- Authenticated User View -->
-        <section class="welcome-section">
-            <h1>Welcome, <?= e($user['name']) ?></h1>
-            <p class="text-secondary">Puke Volunteer Fire Brigade Portal</p>
-        </section>
 
         <!-- Next Training Card -->
         <?php if ($nextTraining): ?>
@@ -181,7 +177,7 @@ ob_start();
         <?php endif; ?>
 
         <!-- DLB Attendance Link (Officers only) -->
-        <?php if (hasRole('officer') && !empty($config['dlb']['enabled']) && !empty($config['dlb']['base_url'])): ?>
+        <?php if (canApproveLeave() && !empty($config['dlb']['enabled']) && !empty($config['dlb']['base_url'])): ?>
         <section class="dlb-section mb-4">
             <div class="section-header">
                 <h2>Attendance System</h2>
@@ -238,15 +234,6 @@ ob_start();
     padding: var(--spacing-md, 1rem);
     max-width: 600px;
     margin: 0 auto;
-}
-
-.welcome-section {
-    margin-bottom: var(--spacing-lg, 1.5rem);
-}
-
-.welcome-section h1 {
-    margin: 0 0 0.25rem 0;
-    font-size: 1.5rem;
 }
 
 .next-training-card {

@@ -128,7 +128,7 @@ if ($user) {
                             <span class="user-role"><?= ucfirst(e($user['role'])) ?></span>
                         </div>
                         <a href="<?= url('/profile') ?>" class="dropdown-item">Profile</a>
-                        <?php if (hasRole('admin')): ?>
+                        <?php if (isAdmin()): ?>
                             <a href="<?= url('/admin') ?>" class="dropdown-item">Admin</a>
                         <?php endif; ?>
                         <form action="<?= url('/auth/logout') ?>" method="POST" class="logout-form">
@@ -176,7 +176,7 @@ if ($user) {
                 <span class="nav-icon">&#128202;</span>
                 <span class="nav-text">Polls</span>
             </a>
-            <?php if (hasRole('officer')): ?>
+            <?php if (canApproveLeave()): ?>
                 <a href="<?= url('/leave/pending') ?>" class="nav-item <?= str_starts_with($currentPath, '/leave/pending') ? 'active' : '' ?>">
                     <span class="nav-icon">&#9989;</span>
                     <span class="nav-text">Approvals</span>

@@ -36,7 +36,9 @@ CREATE TABLE IF NOT EXISTS members (
     email VARCHAR(255) NOT NULL,
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
-    role VARCHAR(20) NOT NULL DEFAULT 'firefighter',  -- firefighter, officer, admin, superadmin
+    role VARCHAR(20) NOT NULL DEFAULT 'firefighter',  -- firefighter, officer, admin, superadmin (legacy, kept for superadmin detection)
+    operational_role VARCHAR(20) DEFAULT 'firefighter', -- firefighter, officer (for leave workflow)
+    is_admin BOOLEAN DEFAULT 0,                        -- admin panel access (separate from operational role)
     rank VARCHAR(20),                                  -- CFO, DCFO, SSO, SO, SFF, QFF, FF, RCFF
     rank_date DATE,
     status VARCHAR(20) NOT NULL DEFAULT 'active',     -- active, inactive
@@ -51,6 +53,7 @@ CREATE TABLE IF NOT EXISTS members (
     FOREIGN KEY (brigade_id) REFERENCES brigades(id) ON DELETE CASCADE,
     UNIQUE(brigade_id, email),
     CHECK (role IN ('firefighter', 'officer', 'admin', 'superadmin')),
+    CHECK (operational_role IS NULL OR operational_role IN ('firefighter', 'officer')),
     CHECK (status IN ('active', 'inactive'))
 );
 
@@ -289,6 +292,8 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE INDEX IF NOT EXISTS idx_members_brigade ON members(brigade_id);
 CREATE INDEX IF NOT EXISTS idx_members_email ON members(email);
 CREATE INDEX IF NOT EXISTS idx_members_role ON members(role);
+CREATE INDEX IF NOT EXISTS idx_members_operational_role ON members(operational_role);
+CREATE INDEX IF NOT EXISTS idx_members_is_admin ON members(is_admin);
 CREATE INDEX IF NOT EXISTS idx_members_status ON members(status);
 CREATE INDEX IF NOT EXISTS idx_members_dlb_id ON members(dlb_member_id);
 

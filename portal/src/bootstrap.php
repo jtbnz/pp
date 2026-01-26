@@ -244,6 +244,25 @@ try {
     $db->exec("ALTER TABLE members ADD COLUMN preferences TEXT DEFAULT '{}'");
 }
 
+// Ensure operational_role and is_admin columns exist (role refactor)
+try {
+    $result = $db->query("SELECT operational_role FROM members LIMIT 1");
+} catch (PDOException $e) {
+    // Columns don't exist, run the migration
+    $db->exec("ALTER TABLE members ADD COLUMN operational_role VARCHAR(20) DEFAULT 'firefighter'");
+    $db->exec("ALTER TABLE members ADD COLUMN is_admin BOOLEAN DEFAULT 0");
+
+    // Migrate existing data based on current role
+    $db->exec("UPDATE members SET operational_role = 'firefighter', is_admin = 0 WHERE role = 'firefighter'");
+    $db->exec("UPDATE members SET operational_role = 'officer', is_admin = 0 WHERE role = 'officer'");
+    $db->exec("UPDATE members SET operational_role = 'officer', is_admin = 1 WHERE role = 'admin'");
+    $db->exec("UPDATE members SET operational_role = NULL, is_admin = 1 WHERE role = 'superadmin'");
+
+    // Create indexes
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_members_operational_role ON members(operational_role)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_members_is_admin ON members(is_admin)");
+}
+
 // Session configuration (only for web requests, not CLI)
 if (PHP_SAPI !== 'cli') {
     $sessionConfig = $config['session'] ?? [];
@@ -543,6 +562,80 @@ function hasActualRole(string $role): bool
     $requiredLevel = $roleHierarchy[$role] ?? 999;
 
     return $userLevel >= $requiredLevel;
+}
+
+// Helper function to check if user has admin access (separate from operational role)
+function isAdmin(): bool
+{
+    $user = currentUser();
+    if (!$user) {
+        return false;
+    }
+
+    // Superadmins always have admin access
+    if ($user['role'] === 'superadmin') {
+        return true;
+    }
+
+    // Check the is_admin flag
+    return (bool)($user['is_admin'] ?? false);
+}
+
+// Helper function to check if user is an officer (operational role)
+function isOfficer(): bool
+{
+    $user = currentUser();
+    if (!$user) {
+        return false;
+    }
+
+    // Superadmins are not operational officers
+    if ($user['role'] === 'superadmin') {
+        return false;
+    }
+
+    return ($user['operational_role'] ?? 'firefighter') === 'officer';
+}
+
+// Helper function to check if user can approve leave requests
+// Officers can approve leave (regardless of admin status)
+function canApproveLeave(): bool
+{
+    $user = currentUser();
+    if (!$user) {
+        return false;
+    }
+
+    // Superadmins can approve leave
+    if ($user['role'] === 'superadmin') {
+        return true;
+    }
+
+    // Officers (by operational role) can approve leave
+    return ($user['operational_role'] ?? 'firefighter') === 'officer';
+}
+
+// Helper function to check if user can approve extended leave
+// Requires CFO rank OR admin access
+function canApproveExtendedLeave(): bool
+{
+    $user = currentUser();
+    if (!$user) {
+        return false;
+    }
+
+    // Superadmins can always approve
+    if ($user['role'] === 'superadmin') {
+        return true;
+    }
+
+    // Admins can approve extended leave
+    if ($user['is_admin'] ?? false) {
+        return true;
+    }
+
+    // CFO rank can approve extended leave
+    return $user['rank'] === 'CFO';
 }
 
 // Helper function for CSRF token generation/validation

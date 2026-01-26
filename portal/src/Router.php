@@ -289,11 +289,11 @@ class Router
     }
 
     /**
-     * Built-in admin middleware - requires admin or superadmin role
+     * Built-in admin middleware - requires admin access (is_admin flag or superadmin)
      */
     private function adminMiddleware(): bool
     {
-        if (!hasRole('admin')) {
+        if (!isAdmin()) {
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Forbidden'], 403);
             } else {
@@ -306,11 +306,11 @@ class Router
     }
 
     /**
-     * Built-in officer middleware - requires officer or higher role
+     * Built-in officer middleware - requires officer operational role (can approve leave)
      */
     private function officerMiddleware(): bool
     {
-        if (!hasRole('officer')) {
+        if (!canApproveLeave()) {
             if ($this->isApiRequest()) {
                 jsonResponse(['error' => 'Forbidden'], 403);
             } else {
