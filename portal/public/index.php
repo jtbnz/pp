@@ -297,6 +297,16 @@ $router->group('/api', function(Router $router) {
     $router->post('/push/unsubscribe', 'Api/PushApiController@unsubscribe');
     $router->post('/push/test', 'Api/PushApiController@test');
 
+    // Notifications (Issue #26 - Notification Center)
+    $router->get('/notifications', 'Api/NotificationApiController@index');
+    $router->get('/notifications/unread-count', 'Api/NotificationApiController@unreadCount');
+    $router->patch('/notifications/{id}/read', 'Api/NotificationApiController@markRead');
+    $router->post('/notifications/mark-all-read', 'Api/NotificationApiController@markAllRead');
+    $router->delete('/notifications/{id}', 'Api/NotificationApiController@delete');
+    $router->delete('/notifications/clear', 'Api/NotificationApiController@clear');
+    $router->get('/notifications/preferences', 'Api/NotificationApiController@getPreferences');
+    $router->put('/notifications/preferences', 'Api/NotificationApiController@updatePreferences');
+
     // Sync with DLB
     $router->get('/sync/status', 'SyncController@status');
     $router->post('/sync/members', 'SyncController@members');

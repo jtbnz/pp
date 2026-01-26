@@ -948,18 +948,36 @@ class LeaveController
             return;
         }
 
-        // Send push notifications
+        // Send push notifications and create notification records
         $pushService = new PushService($config['push'] ?? [], $db);
+        $basePath = $config['base_path'] ?? '';
+        $notificationUrl = $basePath . '/leave/pending';
+        $notificationTitle = 'New Leave Request';
+        $notificationBody = "{$member['name']} has requested leave for {$formattedDate}";
+
+        // Create in-app notification records
+        $notificationService = new \Portal\Services\NotificationService($db, $basePath);
+        foreach ($officers as $officer) {
+            $notificationService->create(
+                $officer['id'],
+                $brigadeId,
+                \Portal\Services\NotificationService::TYPE_MESSAGE,
+                $notificationTitle,
+                $notificationBody,
+                $notificationUrl,
+                ['type' => 'leave_request']
+            );
+        }
 
         if ($pushService->isEnabled()) {
             foreach ($officers as $officer) {
                 $pushService->send(
                     $officer['id'],
-                    'New Leave Request',
-                    "{$member['name']} has requested leave for {$formattedDate}",
+                    $notificationTitle,
+                    $notificationBody,
                     [
                         'type' => 'leave_request',
-                        'url' => ($config['base_path'] ?? '') . '/leave/pending'
+                        'url' => $notificationUrl
                     ]
                 );
             }
@@ -997,19 +1015,38 @@ class LeaveController
         $decidedBy = currentUser();
         $decidedByName = $decidedBy ? $decidedBy['name'] : 'An officer';
 
-        // Send push notification
+        // Send push notification and create notification record
         require_once __DIR__ . '/../Services/PushService.php';
         $pushService = new PushService($config['push'] ?? [], $db);
+        $basePath = $config['base_path'] ?? '';
+        $notificationUrl = $basePath . '/leave';
+        $notificationTitle = "Leave Request " . ucfirst($decisionText);
+        $notificationBody = "Your leave request for {$formattedDate} has been {$decisionText}";
+        $notificationType = $decision === 'approved'
+            ? \Portal\Services\NotificationService::TYPE_UPDATE
+            : \Portal\Services\NotificationService::TYPE_SYSTEM_ALERT;
+
+        // Create in-app notification record
+        $notificationService = new \Portal\Services\NotificationService($db, $basePath);
+        $notificationService->create(
+            $memberId,
+            $member['brigade_id'],
+            $notificationType,
+            $notificationTitle,
+            $notificationBody,
+            $notificationUrl,
+            ['type' => 'leave_decision', 'decision' => $decision]
+        );
 
         if ($pushService->isEnabled()) {
             $pushService->send(
                 $memberId,
-                "Leave Request {$decisionText}",
-                "Your leave request for {$formattedDate} has been {$decisionText}",
+                $notificationTitle,
+                $notificationBody,
                 [
                     'type' => 'leave_decision',
                     'decision' => $decision,
-                    'url' => ($config['base_path'] ?? '') . '/leave'
+                    'url' => $notificationUrl
                 ]
             );
         }
@@ -1099,18 +1136,36 @@ class LeaveController
             return;
         }
 
-        // Send push notifications
+        // Send push notifications and create notification records
         $pushService = new PushService($config['push'] ?? [], $db);
+        $basePath = $config['base_path'] ?? '';
+        $notificationUrl = $basePath . '/leave/pending';
+        $notificationTitle = 'Extended Leave Request';
+        $notificationBody = "{$member['name']} has requested extended leave ({$formattedStart} - {$formattedEnd}, {$trainingsCount} trainings)";
+
+        // Create in-app notification records
+        $notificationService = new \Portal\Services\NotificationService($db, $basePath);
+        foreach ($cfos as $cfo) {
+            $notificationService->create(
+                $cfo['id'],
+                $brigadeId,
+                \Portal\Services\NotificationService::TYPE_MESSAGE,
+                $notificationTitle,
+                $notificationBody,
+                $notificationUrl,
+                ['type' => 'extended_leave_request']
+            );
+        }
 
         if ($pushService->isEnabled()) {
             foreach ($cfos as $cfo) {
                 $pushService->send(
                     $cfo['id'],
-                    'Extended Leave Request',
-                    "{$member['name']} has requested extended leave ({$formattedStart} - {$formattedEnd}, {$trainingsCount} trainings)",
+                    $notificationTitle,
+                    $notificationBody,
                     [
                         'type' => 'extended_leave_request',
-                        'url' => ($config['base_path'] ?? '') . '/leave/pending'
+                        'url' => $notificationUrl
                     ]
                 );
             }
@@ -1137,19 +1192,38 @@ class LeaveController
             return;
         }
 
-        // Send push notification
+        // Send push notification and create notification record
         require_once __DIR__ . '/../Services/PushService.php';
         $pushService = new PushService($config['push'] ?? [], $db);
+        $basePath = $config['base_path'] ?? '';
+        $notificationUrl = $basePath . '/leave';
+        $notificationTitle = "Extended Leave " . ucfirst($decisionText);
+        $notificationBody = "Your extended leave request ({$formattedStart} - {$formattedEnd}) has been {$decisionText}";
+        $notificationType = $decision === 'approved'
+            ? \Portal\Services\NotificationService::TYPE_UPDATE
+            : \Portal\Services\NotificationService::TYPE_SYSTEM_ALERT;
+
+        // Create in-app notification record
+        $notificationService = new \Portal\Services\NotificationService($db, $basePath);
+        $notificationService->create(
+            $memberId,
+            $member['brigade_id'],
+            $notificationType,
+            $notificationTitle,
+            $notificationBody,
+            $notificationUrl,
+            ['type' => 'extended_leave_decision', 'decision' => $decision]
+        );
 
         if ($pushService->isEnabled()) {
             $pushService->send(
                 $memberId,
-                "Extended Leave {$decisionText}",
-                "Your extended leave request ({$formattedStart} - {$formattedEnd}) has been {$decisionText}",
+                $notificationTitle,
+                $notificationBody,
                 [
                     'type' => 'extended_leave_decision',
                     'decision' => $decision,
-                    'url' => ($config['base_path'] ?? '') . '/leave'
+                    'url' => $notificationUrl
                 ]
             );
         }

@@ -192,13 +192,14 @@ class PushApiController
         }
 
         // Send test notification to current user
+        $basePath = $this->config['base_path'] ?? '';
         $success = $this->pushService->send(
             (int) $user['id'],
             'Test Notification',
-            'This is a test notification from Puke Portal. If you see this, push notifications are working! 🔔',
+            'This is a test notification from Puke Portal. If you see this, push notifications are working!',
             [
                 'type' => 'test',
-                'url' => $this->config['app_url'] ?? '/',
+                'url' => $basePath . '/',
             ]
         );
 

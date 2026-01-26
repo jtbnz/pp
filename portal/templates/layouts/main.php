@@ -46,6 +46,10 @@ if ($user) {
 
     <!-- Styles -->
     <link rel="stylesheet" href="<?= url('/assets/css/app.css') ?>">
+    <link rel="stylesheet" href="<?= url('/assets/css/notifications.css') ?>">
+
+    <!-- Base path for JavaScript -->
+    <meta name="base-path" content="<?= e($config['base_path'] ?? '') ?>">
 
     <!-- Preload critical fonts if any -->
     <!-- <link rel="preload" href="/assets/fonts/..." as="font" type="font/woff2" crossorigin> -->
@@ -81,10 +85,26 @@ if ($user) {
             </a>
 
             <div class="header-actions">
-                <button type="button" class="notifications-toggle" aria-label="Notifications">
-                    <span class="notification-icon">&#128276;</span>
-                    <span class="notification-badge" hidden>0</span>
-                </button>
+                <div class="notification-wrapper">
+                    <button type="button" id="notification-bell" class="notifications-toggle" aria-label="Notifications">
+                        <span class="notification-icon">&#128276;</span>
+                        <span id="notification-badge" class="notification-badge" hidden>0</span>
+                    </button>
+
+                    <!-- Notification Panel (Issue #26) -->
+                    <div id="notification-panel" class="notification-panel">
+                        <div class="notification-panel-header">
+                            <h3>Notifications</h3>
+                            <div class="notification-panel-actions">
+                                <button type="button" data-action="mark-all-read" title="Mark all as read">&#10003;</button>
+                                <button type="button" data-action="clear-all" title="Clear all">&#128465;</button>
+                                <button type="button" data-action="show-settings" title="Settings">&#9881;</button>
+                            </div>
+                        </div>
+                        <div id="notification-list" class="notification-list"></div>
+                        <button type="button" id="notification-load-more" hidden>Load more</button>
+                    </div>
+                </div>
 
                 <div class="user-menu">
                     <button type="button" class="user-toggle" aria-label="User menu" aria-expanded="false">
@@ -286,6 +306,9 @@ if ($user) {
     ?>
     <script src="<?= url('/assets/js/offline-storage.js') ?>"></script>
     <script src="<?= url('/assets/js/app.js') ?>"></script>
+    <?php if ($user): ?>
+    <script src="<?= url('/assets/js/notification-center.js') ?>"></script>
+    <?php endif; ?></script>
 
     <?php if (isset($extraScripts)): ?>
         <?= $extraScripts ?>
