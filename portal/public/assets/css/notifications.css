@@ -360,10 +360,11 @@
     /* Only lock body scroll on mobile when panel is open */
     body.notification-panel-open {
         overflow: hidden;
-        position: fixed;
-        width: 100%;
-        height: 100%;
         touch-action: none;
+    }
+
+    html.notification-panel-open {
+        overflow: hidden;
     }
 
     /* Ensure panel captures touch events */

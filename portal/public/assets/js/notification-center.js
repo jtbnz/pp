@@ -139,9 +139,8 @@ class NotificationCenter {
 
         // Lock body scroll on mobile only (matches CSS media query)
         if (window.innerWidth <= 480) {
-            this.savedScrollY = window.scrollY;
             document.body.classList.add('notification-panel-open');
-            document.body.style.top = `-${this.savedScrollY}px`;
+            document.documentElement.classList.add('notification-panel-open');
 
             // Add touch event handler to prevent body scroll while allowing panel scroll
             this.touchMoveHandler = (e) => {
@@ -204,12 +203,9 @@ class NotificationCenter {
         }
         this.lastTouchY = undefined;
 
-        // Unlock body scroll and restore position (only if it was locked)
-        if (document.body.classList.contains('notification-panel-open')) {
-            document.body.classList.remove('notification-panel-open');
-            document.body.style.top = '';
-            window.scrollTo(0, this.savedScrollY || 0);
-        }
+        // Unlock body scroll
+        document.body.classList.remove('notification-panel-open');
+        document.documentElement.classList.remove('notification-panel-open');
     }
 
     async fetchUnreadCount() {
