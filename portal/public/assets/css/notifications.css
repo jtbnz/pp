@@ -8,6 +8,15 @@
     position: relative;
 }
 
+/* Notification Backdrop - full screen overlay to block background scroll on mobile */
+.notification-backdrop {
+    display: none;
+}
+
+.notification-backdrop[hidden] {
+    display: none;
+}
+
 /* Bell Button */
 #notification-bell {
     position: relative;
@@ -336,6 +345,25 @@
 
 /* Mobile Responsive */
 @media (max-width: 480px) {
+    /* Full-screen backdrop that absorbs all touches to background */
+    .notification-backdrop {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 999;
+        /* Critical: This blocks all touch events from reaching content behind */
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .notification-backdrop.visible {
+        display: block;
+    }
+
     #notification-panel {
         position: fixed;
         top: auto;
@@ -346,34 +374,33 @@
         max-width: none;
         max-height: 70vh;
         border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+        z-index: 1000;
+        /* Panel has normal touch behavior */
+        touch-action: auto;
     }
 
-    /* Explicit height for scrollable area on mobile */
+    /* Scrollable notification list */
     #notification-list {
-        max-height: calc(70vh - 60px); /* Panel height minus header */
+        max-height: calc(70vh - 60px);
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
+        /* Allow vertical pan/scroll */
         touch-action: pan-y;
     }
 
-    /* Only lock body scroll on mobile when panel is open */
+    /* Lock body scroll when panel is open (belt and suspenders) */
     body.notification-panel-open {
         overflow: hidden;
-        touch-action: none;
+        /* Position fixed prevents iOS rubber band scrolling */
+        position: fixed;
+        width: 100%;
+        left: 0;
+        right: 0;
     }
 
     html.notification-panel-open {
         overflow: hidden;
-    }
-
-    /* Ensure panel captures touch events */
-    body.notification-panel-open #notification-panel {
-        touch-action: auto;
-    }
-
-    body.notification-panel-open #notification-list {
-        touch-action: pan-y;
     }
 }
 

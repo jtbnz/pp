@@ -35,6 +35,7 @@ class NotificationCenter {
         this.panel = null;
         this.notificationList = null;
         this.loadMoreButton = null;
+        this.backdrop = null;
 
         this.init();
     }
@@ -46,6 +47,7 @@ class NotificationCenter {
         this.panel = document.getElementById('notification-panel');
         this.notificationList = document.getElementById('notification-list');
         this.loadMoreButton = document.getElementById('notification-load-more');
+        this.backdrop = document.getElementById('notification-backdrop');
 
         if (!this.bellButton) {
             console.warn('NotificationCenter: Bell button not found');
@@ -86,6 +88,13 @@ class NotificationCenter {
         // Handle panel action buttons (using event delegation)
         if (this.panel) {
             this.panel.addEventListener('click', (e) => this.handlePanelClick(e));
+        }
+
+        // Close when clicking on backdrop (mobile)
+        if (this.backdrop) {
+            this.backdrop.addEventListener('click', () => this.close());
+            // Prevent any touch events from passing through the backdrop
+            this.backdrop.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
         }
     }
 
@@ -139,27 +148,19 @@ class NotificationCenter {
 
         // Lock body scroll on mobile only (matches CSS media query)
         if (window.innerWidth <= 480) {
+            // Save current scroll position before locking
+            this.savedScrollY = window.scrollY;
+
+            // Show backdrop (absorbs all touches to background)
+            if (this.backdrop) {
+                this.backdrop.hidden = false;
+                this.backdrop.classList.add('visible');
+            }
+
+            // Lock body scroll - position:fixed is most reliable on iOS
             document.body.classList.add('notification-panel-open');
+            document.body.style.top = `-${this.savedScrollY}px`;
             document.documentElement.classList.add('notification-panel-open');
-
-            // Single handler that checks if touch is inside the scrollable list or panel
-            const panel = this.panel;
-            const list = this.notificationList;
-            this.touchMoveHandler = (e) => {
-                // If touch is inside the notification list, allow scrolling
-                if (list && list.contains(e.target)) {
-                    return;
-                }
-                // If touch is inside the panel but not the list, prevent to avoid awkward scroll
-                if (panel && panel.contains(e.target)) {
-                    e.preventDefault();
-                    return;
-                }
-                // Otherwise prevent body scrolling
-                e.preventDefault();
-            };
-
-            document.addEventListener('touchmove', this.touchMoveHandler, { passive: false });
         }
 
         // Reset and load notifications
@@ -175,15 +176,20 @@ class NotificationCenter {
         this.panel.classList.remove('open');
         this.bellButton?.classList.remove('active');
 
-        // Remove touch event handler
-        if (this.touchMoveHandler) {
-            document.removeEventListener('touchmove', this.touchMoveHandler);
-            this.touchMoveHandler = null;
+        // Hide backdrop
+        if (this.backdrop) {
+            this.backdrop.classList.remove('visible');
+            this.backdrop.hidden = true;
         }
 
-        // Unlock body scroll
-        document.body.classList.remove('notification-panel-open');
-        document.documentElement.classList.remove('notification-panel-open');
+        // Unlock body scroll and restore position
+        if (document.body.classList.contains('notification-panel-open')) {
+            document.body.classList.remove('notification-panel-open');
+            document.body.style.top = '';
+            document.documentElement.classList.remove('notification-panel-open');
+            // Restore scroll position
+            window.scrollTo(0, this.savedScrollY || 0);
+        }
     }
 
     async fetchUnreadCount() {

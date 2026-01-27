@@ -91,6 +91,9 @@ if ($user) {
                         <span id="notification-badge" class="notification-badge" hidden>0</span>
                     </button>
 
+                    <!-- Notification Backdrop - absorbs touches to prevent background scroll on iOS -->
+                    <div id="notification-backdrop" class="notification-backdrop" hidden></div>
+
                     <!-- Notification Panel (Issue #26) -->
                     <div id="notification-panel" class="notification-panel">
                         <div class="notification-panel-header">
