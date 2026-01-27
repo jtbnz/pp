@@ -228,7 +228,7 @@ class ExtendedLeaveRequest
             FROM event_exceptions ee
             INNER JOIN events e ON ee.event_id = e.id
             WHERE e.brigade_id = ?
-                AND e.is_training = 1
+                AND (e.is_training = 1 OR e.event_type = 'training')
                 AND ee.exception_date BETWEEN ? AND ?
         ";
         $exStmt = $this->db->prepare($exceptionsSql);

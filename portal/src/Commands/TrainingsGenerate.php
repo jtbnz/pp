@@ -95,7 +95,7 @@ class TrainingsGenerate
                 SELECT id FROM events
                 WHERE brigade_id = ?
                 AND DATE(start_time) = ?
-                AND is_training = 1
+                AND (is_training = 1 OR event_type = \'training\')
             ');
             $stmt->execute([$brigadeId, $dateStr]);
 

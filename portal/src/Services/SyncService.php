@@ -132,7 +132,7 @@ class SyncService
         $stmt = $this->db->prepare("
             SELECT id, date(start_time) as event_date
             FROM events
-            WHERE is_training = 1
+            WHERE (is_training = 1 OR event_type = 'training')
                 AND date(start_time) >= ?
                 AND date(start_time) <= ?
             ORDER BY start_time
@@ -189,7 +189,7 @@ class SyncService
         // Check if today is a training day
         $stmt = $this->db->prepare("
             SELECT id FROM events
-            WHERE is_training = 1
+            WHERE (is_training = 1 OR event_type = 'training')
                 AND date(start_time) = ?
             LIMIT 1
         ");

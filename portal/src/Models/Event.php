@@ -98,6 +98,8 @@ class Event
     /**
      * Find training nights within a date range
      *
+     * Considers events where is_training=1 OR event_type='training'
+     *
      * @param int $brigadeId Brigade ID
      * @param string $from Start date (Y-m-d)
      * @param string $to End date (Y-m-d)
@@ -110,13 +112,13 @@ class Event
             FROM events e
             LEFT JOIN members m ON e.created_by = m.id
             WHERE e.brigade_id = ?
-              AND e.is_training = 1
+              AND (e.is_training = 1 OR e.event_type = ?)
               AND e.is_visible = 1
               AND DATE(e.start_time) >= ?
               AND DATE(e.start_time) <= ?
             ORDER BY e.start_time ASC
         ');
-        $stmt->execute([$brigadeId, $from, $to]);
+        $stmt->execute([$brigadeId, 'training', $from, $to]);
 
         return $stmt->fetchAll();
     }
@@ -510,10 +512,10 @@ class Event
             $stmt = $this->db->prepare('
                 SELECT id FROM events
                 WHERE brigade_id = ?
-                  AND is_training = 1
+                  AND (is_training = 1 OR event_type = ?)
                   AND DATE(start_time) = ?
             ');
-            $stmt->execute([$brigadeId, $training['date']]);
+            $stmt->execute([$brigadeId, 'training', $training['date']]);
 
             if ($stmt->fetch()) {
                 continue; // Skip if already exists
