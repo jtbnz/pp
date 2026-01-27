@@ -107,6 +107,7 @@ class Event
      */
     public function findTrainingNights(int $brigadeId, string $from, string $to): array
     {
+        // Get non-recurring training events in date range
         $stmt = $this->db->prepare('
             SELECT e.*, m.name as creator_name
             FROM events e
@@ -114,13 +115,43 @@ class Event
             WHERE e.brigade_id = ?
               AND (e.is_training = 1 OR e.event_type = ?)
               AND e.is_visible = 1
+              AND e.recurrence_rule IS NULL
               AND DATE(e.start_time) >= ?
               AND DATE(e.start_time) <= ?
             ORDER BY e.start_time ASC
         ');
         $stmt->execute([$brigadeId, 'training', $from, $to]);
+        $singleEvents = $stmt->fetchAll();
 
-        return $stmt->fetchAll();
+        // Get recurring training events that could have instances in date range
+        $stmt = $this->db->prepare('
+            SELECT e.*, m.name as creator_name
+            FROM events e
+            LEFT JOIN members m ON e.created_by = m.id
+            WHERE e.brigade_id = ?
+              AND (e.is_training = 1 OR e.event_type = ?)
+              AND e.is_visible = 1
+              AND e.recurrence_rule IS NOT NULL
+              AND DATE(e.start_time) <= ?
+            ORDER BY e.start_time ASC
+        ');
+        $stmt->execute([$brigadeId, 'training', $to]);
+        $recurringEvents = $stmt->fetchAll();
+
+        // Expand recurring events
+        $expandedEvents = [];
+        foreach ($recurringEvents as $event) {
+            $instances = $this->expandRecurring($event, $from, $to);
+            $expandedEvents = array_merge($expandedEvents, $instances);
+        }
+
+        // Combine and sort by start time
+        $allEvents = array_merge($singleEvents, $expandedEvents);
+        usort($allEvents, function ($a, $b) {
+            return strcmp($a['start_time'], $b['start_time']);
+        });
+
+        return $allEvents;
     }
 
     /**
