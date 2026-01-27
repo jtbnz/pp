@@ -348,12 +348,31 @@
         border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
     }
 
+    /* Explicit height for scrollable area on mobile */
+    #notification-list {
+        max-height: calc(70vh - 60px); /* Panel height minus header */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+    }
+
     /* Only lock body scroll on mobile when panel is open */
     body.notification-panel-open {
         overflow: hidden;
         position: fixed;
         width: 100%;
         height: 100%;
+        touch-action: none;
+    }
+
+    /* Ensure panel captures touch events */
+    body.notification-panel-open #notification-panel {
+        touch-action: auto;
+    }
+
+    body.notification-panel-open #notification-list {
+        touch-action: pan-y;
     }
 }
 

@@ -142,6 +142,42 @@ class NotificationCenter {
             this.savedScrollY = window.scrollY;
             document.body.classList.add('notification-panel-open');
             document.body.style.top = `-${this.savedScrollY}px`;
+
+            // Add touch event handler to prevent body scroll while allowing panel scroll
+            this.touchMoveHandler = (e) => {
+                const list = this.list;
+                if (!list) return;
+
+                // Check if touch is inside the notification list
+                if (list.contains(e.target)) {
+                    // Allow scrolling inside the list
+                    const isAtTop = list.scrollTop <= 0;
+                    const isAtBottom = list.scrollTop + list.clientHeight >= list.scrollHeight;
+
+                    // Get touch direction
+                    if (this.lastTouchY !== undefined) {
+                        const touchY = e.touches[0].clientY;
+                        const isScrollingUp = touchY > this.lastTouchY;
+                        const isScrollingDown = touchY < this.lastTouchY;
+
+                        // Prevent overscroll at boundaries
+                        if ((isAtTop && isScrollingUp) || (isAtBottom && isScrollingDown)) {
+                            e.preventDefault();
+                        }
+                    }
+                    this.lastTouchY = e.touches[0].clientY;
+                } else {
+                    // Prevent all scrolling outside the list
+                    e.preventDefault();
+                }
+            };
+
+            this.touchStartHandler = (e) => {
+                this.lastTouchY = e.touches[0].clientY;
+            };
+
+            document.addEventListener('touchstart', this.touchStartHandler, { passive: true });
+            document.addEventListener('touchmove', this.touchMoveHandler, { passive: false });
         }
 
         // Reset and load notifications
@@ -156,6 +192,17 @@ class NotificationCenter {
         this.isOpen = false;
         this.panel.classList.remove('open');
         this.bellButton?.classList.remove('active');
+
+        // Remove touch event handlers
+        if (this.touchMoveHandler) {
+            document.removeEventListener('touchmove', this.touchMoveHandler);
+            this.touchMoveHandler = null;
+        }
+        if (this.touchStartHandler) {
+            document.removeEventListener('touchstart', this.touchStartHandler);
+            this.touchStartHandler = null;
+        }
+        this.lastTouchY = undefined;
 
         // Unlock body scroll and restore position (only if it was locked)
         if (document.body.classList.contains('notification-panel-open')) {
