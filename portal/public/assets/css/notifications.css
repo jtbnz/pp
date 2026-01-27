@@ -355,9 +355,12 @@
         bottom: 0;
         background: rgba(0, 0, 0, 0.3);
         z-index: 999;
-        /* Critical: This blocks all touch events from reaching content behind */
+        /* Critical: Capture all touch/pointer events */
         touch-action: none;
+        pointer-events: auto;
         -webkit-tap-highlight-color: transparent;
+        /* Ensure it's above everything except the panel */
+        isolation: isolate;
     }
 
     .notification-backdrop.visible {
@@ -389,18 +392,11 @@
         touch-action: pan-y;
     }
 
-    /* Lock body scroll when panel is open (belt and suspenders) */
-    body.notification-panel-open {
-        overflow: hidden;
-        /* Position fixed prevents iOS rubber band scrolling */
-        position: fixed;
-        width: 100%;
-        left: 0;
-        right: 0;
-    }
-
+    /* Lock body scroll when panel is open */
+    body.notification-panel-open,
     html.notification-panel-open {
-        overflow: hidden;
+        overflow: hidden !important;
+        height: 100% !important;
     }
 }
 

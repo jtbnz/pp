@@ -28,6 +28,9 @@ class NotificationCenter {
         this.preferencesTypes = null;
         this.pollTimer = null;
         this.savedScrollY = 0;
+        this.lastTouchY = undefined;
+        this.documentTouchHandler = null;
+        this.documentTouchStartHandler = null;
 
         // Elements (will be set in init)
         this.bellButton = null;
@@ -94,7 +97,14 @@ class NotificationCenter {
         if (this.backdrop) {
             this.backdrop.addEventListener('click', () => this.close());
             // Prevent any touch events from passing through the backdrop
-            this.backdrop.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+            this.backdrop.addEventListener('touchstart', (e) => {
+                // Allow the click to register for closing, but mark as handled
+                e.stopPropagation();
+            }, { passive: true });
+            this.backdrop.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, { passive: false });
         }
     }
 
@@ -148,19 +158,47 @@ class NotificationCenter {
 
         // Lock body scroll on mobile only (matches CSS media query)
         if (window.innerWidth <= 480) {
-            // Save current scroll position before locking
-            this.savedScrollY = window.scrollY;
-
             // Show backdrop (absorbs all touches to background)
             if (this.backdrop) {
                 this.backdrop.hidden = false;
                 this.backdrop.classList.add('visible');
             }
 
-            // Lock body scroll - position:fixed is most reliable on iOS
+            // Lock body scroll via CSS classes
             document.body.classList.add('notification-panel-open');
-            document.body.style.top = `-${this.savedScrollY}px`;
             document.documentElement.classList.add('notification-panel-open');
+
+            // Add touch handler to control scrolling
+            const list = this.notificationList;
+            this.documentTouchHandler = (e) => {
+                // Allow scrolling only inside the notification list
+                if (list && list.contains(e.target)) {
+                    // Check if list is scrollable and at boundaries
+                    const atTop = list.scrollTop <= 0;
+                    const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight;
+
+                    // Get touch direction
+                    if (this.lastTouchY !== undefined) {
+                        const deltaY = e.touches[0].clientY - this.lastTouchY;
+                        // Prevent scroll if at boundary and trying to scroll further
+                        if ((atTop && deltaY > 0) || (atBottom && deltaY < 0)) {
+                            e.preventDefault();
+                        }
+                        // Otherwise allow natural scroll within list
+                    }
+                    this.lastTouchY = e.touches[0].clientY;
+                } else {
+                    // Block all scrolling outside the list
+                    e.preventDefault();
+                }
+            };
+
+            this.documentTouchStartHandler = (e) => {
+                this.lastTouchY = e.touches[0].clientY;
+            };
+
+            document.addEventListener('touchstart', this.documentTouchStartHandler, { passive: true });
+            document.addEventListener('touchmove', this.documentTouchHandler, { passive: false });
         }
 
         // Reset and load notifications
@@ -182,14 +220,20 @@ class NotificationCenter {
             this.backdrop.hidden = true;
         }
 
-        // Unlock body scroll and restore position
-        if (document.body.classList.contains('notification-panel-open')) {
-            document.body.classList.remove('notification-panel-open');
-            document.body.style.top = '';
-            document.documentElement.classList.remove('notification-panel-open');
-            // Restore scroll position
-            window.scrollTo(0, this.savedScrollY || 0);
+        // Remove touch handlers
+        if (this.documentTouchHandler) {
+            document.removeEventListener('touchmove', this.documentTouchHandler);
+            this.documentTouchHandler = null;
         }
+        if (this.documentTouchStartHandler) {
+            document.removeEventListener('touchstart', this.documentTouchStartHandler);
+            this.documentTouchStartHandler = null;
+        }
+        this.lastTouchY = undefined;
+
+        // Unlock body scroll
+        document.body.classList.remove('notification-panel-open');
+        document.documentElement.classList.remove('notification-panel-open');
     }
 
     async fetchUnreadCount() {
