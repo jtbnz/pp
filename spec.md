@@ -25,29 +25,47 @@ A mobile-first Progressive Web App (PWA) for the Puke Volunteer Fire Brigade. Th
 
 ## User Roles & Permissions
 
-### Role Hierarchy
+### Role Architecture
 
-```
-Super Admin (system-wide)
-    └── Admin (brigade-level)
-            └── Officer (can approve leave)
-                    └── Firefighter (standard member)
-```
+The system uses a **dual-role architecture** separating operational duties from administrative access:
+
+1. **Operational Role** (`operational_role`): Determines fire service duties
+   - `firefighter` - Standard brigade member
+   - `officer` - Can approve leave requests (CFO, DCFO, officers, etc.)
+
+2. **Admin Access** (`is_admin`): Boolean flag for administrative capabilities
+   - Admins can manage members, events, notices, and settings
+   - Admin access is independent of operational role
+
+3. **System Role** (`role`): Legacy field for superadmin designation
+   - `firefighter`, `officer`, `admin`, `superadmin`
+   - Superadmin grants system-wide access
+
+### Role Examples
+
+| Member | Operational Role | Admin Access | Result |
+|--------|-----------------|:------------:|--------|
+| Station Officer | officer | No | Can approve leave, no admin panel |
+| Admin Secretary | firefighter | Yes | Has admin panel, cannot approve leave |
+| Chief Fire Officer | officer | Yes | Full access: approve leave + admin panel |
 
 ### Role Capabilities
 
 | Capability | Firefighter | Officer | Admin | Super Admin |
 |------------|:-----------:|:-------:|:-----:|:-----------:|
 | View calendar/notices | ✓ | ✓ | ✓ | ✓ |
+| View own attendance stats | ✓ | ✓ | ✓ | ✓ |
 | Request leave (3 trainings) | ✓ | ✓ | ✓ | ✓ |
-| Approve leave requests | | ✓ | ✓ | ✓ |
+| Approve leave requests | | ✓ | | ✓ |
 | Manage extended leave | | | ✓ | ✓ |
 | Create/edit events | | | ✓ | ✓ |
 | Manage notices | | | ✓ | ✓ |
 | Invite users (magic link) | | | ✓ | ✓ |
-| Regenerate access codes | | | ✓ | ✓ |
 | Manage members | | | ✓ | ✓ |
+| Manage service history | | | ✓ | ✓ |
 | Manage brigades | | | | ✓ |
+
+**Note:** Officers who are also admins can both approve leave AND access admin functions.
 
 ---
 
@@ -78,15 +96,21 @@ Super Admin (system-wide)
 | Field | Type | Required | Notes |
 |-------|------|:--------:|-------|
 | id | INTEGER | ✓ | Primary key |
-| email | VARCHAR(255) | ✓ | Unique, used for magic links |
+| brigade_id | INTEGER | ✓ | FK to brigades |
+| email | VARCHAR(255) | ✓ | Unique per brigade, used for magic links |
 | name | VARCHAR(100) | ✓ | Display name |
 | phone | VARCHAR(20) | | Mobile for push notifications |
-| role | ENUM | ✓ | firefighter, officer, admin |
+| role | ENUM | ✓ | firefighter, officer, admin, superadmin (legacy) |
+| operational_role | ENUM | ✓ | firefighter, officer |
+| is_admin | BOOLEAN | ✓ | Admin panel access (default: false) |
 | rank | VARCHAR(20) | | CFO, DCFO, SSO, SO, SFF, QFF, FF, RCFF |
 | rank_date | DATE | | Date of current rank promotion |
 | status | ENUM | ✓ | active, inactive |
+| dlb_member_id | INTEGER | | FK to DLB member for sync |
+| access_token | VARCHAR(64) | | Session token |
 | access_expires | DATETIME | ✓ | 5 years from invite acceptance |
 | pin_hash | VARCHAR(255) | | Optional quick-access PIN |
+| preferences | JSON | | User preferences (color_blind_mode, etc.) |
 | created_at | DATETIME | ✓ | |
 | updated_at | DATETIME | ✓ | |
 
@@ -113,6 +137,49 @@ Each member has a status per training/muster:
 | I | In Attendance | Present at training/muster |
 | L | Leave | Approved leave |
 | A | Absent | Did not attend, no leave requested |
+
+### Attendance Statistics (Member Profile)
+
+Each member's profile displays rolling 12-month attendance statistics:
+
+#### Training Attendance Gauge
+- Percentage of trainings attended (excluding leave days)
+- Threshold: 20% (green above, red below)
+- Shows: attended / total eligible
+
+#### Callout Attendance Gauge
+- Percentage of callouts attended (excluding leave days)
+- Threshold: 60% (green above, red below)
+- Shows: attended / total eligible
+
+#### Position Statistics
+- OIC count and percentage
+- Driver count and percentage
+- Crew count and percentage
+
+#### Recent Events
+- List of last 10 attendance events
+- Shows date, event type, status, position, and truck
+- Callouts display ICAD number and call type
+
+### Attendance Records Table
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | INTEGER | Primary key |
+| member_id | INTEGER | FK to members |
+| dlb_muster_id | INTEGER | FK to DLB muster |
+| event_date | DATE | Date of event |
+| event_type | ENUM | training, callout |
+| status | CHAR(1) | I, L, or A |
+| position | VARCHAR(50) | OIC, Driver, Crew, etc. |
+| truck | VARCHAR(50) | Vehicle identifier |
+| icad_number | VARCHAR(50) | ICAD incident number (callouts) |
+| call_type | VARCHAR(100) | Type of callout |
+| notes | TEXT | Additional notes |
+| source | ENUM | dlb, manual |
+| created_at | DATETIME | |
+| updated_at | DATETIME | |
 
 ---
 
@@ -242,7 +309,8 @@ Firefighter                    Officer/Admin               DLB System
 This portal integrates with the existing dlb attendance system to:
 1. Pre-populate future muster records with leave statuses
 2. Keep member lists synchronized
-3. Pull attendance history for reporting
+3. Pull attendance history for statistics and reporting
+4. Receive real-time attendance updates via webhook
 
 ### Integration Points
 
@@ -253,6 +321,50 @@ This portal integrates with the existing dlb attendance system to:
 | Reveal muster (make visible) | Portal → DLB | API PUT |
 | Sync member list | DLB → Portal | API GET |
 | Get attendance history | DLB → Portal | API GET |
+| Receive attendance updates | DLB → Portal | Webhook POST |
+
+### Webhook Integration
+
+DLB can push attendance data to the portal via webhook:
+
+**Endpoint:** `POST /api/webhook/dlb/attendance`
+
+**Headers:**
+- `X-DLB-Signature`: HMAC-SHA256 signature of payload
+- `Content-Type`: application/json
+
+**Payload:**
+```json
+{
+  "muster": {
+    "id": 123,
+    "call_date": "2024-01-15",
+    "call_type": "Training",
+    "icad_number": null
+  },
+  "attendance": [
+    {
+      "member_id": 45,
+      "status": "I",
+      "position": "Driver",
+      "truck": "Puke 811"
+    }
+  ]
+}
+```
+
+### Sync Status Tracking
+
+The portal tracks sync status per brigade:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| brigade_id | INTEGER | FK to brigades |
+| status | ENUM | syncing, completed, failed |
+| last_sync_at | DATETIME | Last successful sync |
+| sync_from_date | DATE | Start of sync period |
+| sync_to_date | DATE | End of sync period |
+| error_message | TEXT | Error details if failed |
 
 ### Invisible Muster Workflow
 
@@ -302,12 +414,43 @@ This portal integrates with the existing dlb attendance system to:
 
 ## Notifications
 
+### Notification Center (In-App)
+
+The notification center provides a persistent notification history accessible from the header bell icon.
+
+#### Features
+
+- **Bell Icon Badge** - Shows unread count (max "99+")
+- **Notification Panel** - Dropdown panel on desktop, slide-up sheet on mobile
+- **Notification Types:**
+  - `system_alert` (Red) - Urgent system notifications
+  - `message` (Blue) - General messages and communications
+  - `update` (Green) - Status updates and changes
+  - `reminder` (Yellow) - Training and event reminders
+- **Actions:** Mark as read, mark all as read, delete individual, clear all
+- **Preferences** - Users can enable/disable notification types
+
+#### Notification Fields
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | INTEGER | Primary key |
+| member_id | INTEGER | FK to members |
+| brigade_id | INTEGER | FK to brigades |
+| type | ENUM | system_alert, message, update, reminder |
+| title | VARCHAR(200) | Notification headline |
+| body | TEXT | Optional detailed message |
+| link | VARCHAR(500) | Optional action URL |
+| data | JSON | Additional metadata |
+| read_at | DATETIME | NULL if unread |
+| created_at | DATETIME | |
+
 ### Email Notifications
 
 | Event | Recipients |
 |-------|------------|
-| New invite | Invited member |
-| Leave requested | All Officers + Admins |
+| New invite / Magic link | Invited member |
+| Leave requested | Officers only (not admins unless also officers) |
 | Leave approved/denied | Requesting member |
 | Urgent notice posted | All active members |
 | Access expiring (30 days) | Affected member + Admins |
@@ -319,13 +462,16 @@ This portal integrates with the existing dlb attendance system to:
 | Leave request decision | Requesting member |
 | New urgent notice | All active members |
 | Training reminder (24h before) | Active members without leave |
-| New leave request | Officers + Admins |
+| New leave request | Officers only |
+| Test notification | Requesting user (creates both push and in-app) |
 
 ### Implementation
 
 - Web Push API with VAPID keys
 - Service Worker handles push events
-- Fallback to email if push not available
+- In-app notification center for persistent history
+- Polling for badge count updates (60-second interval)
+- User preferences stored in `notification_preferences` table
 
 ---
 
@@ -446,6 +592,31 @@ push_subscriptions (
 public_holidays (
     id, date, name, region, created_at
 )
+
+-- In-app notifications (Issue #26)
+notifications (
+    id, member_id, brigade_id, type, title, body, link,
+    data, read_at, created_at
+)
+
+-- Notification preferences
+notification_preferences (
+    id, member_id, system_alerts, messages, updates, reminders,
+    created_at, updated_at
+)
+
+-- Attendance records (synced from DLB)
+attendance_records (
+    id, member_id, dlb_muster_id, event_date, event_type,
+    status, position, truck, icad_number, call_type,
+    notes, source, created_at, updated_at
+)
+
+-- Attendance sync status
+attendance_sync (
+    id, brigade_id, status, last_sync_at, sync_from_date,
+    sync_to_date, error_message
+)
 ```
 
 ---
@@ -516,6 +687,44 @@ DELETE /api/leave/{id}         # Cancel own request
 GET  /api/sync/status          # Get sync status with dlb
 POST /api/sync/members         # Sync members with dlb
 POST /api/sync/musters         # Sync musters with dlb
+```
+
+### Notifications
+
+```
+GET    /api/notifications              # List notifications (paginated)
+GET    /api/notifications/unread-count # Get unread badge count
+PATCH  /api/notifications/{id}/read    # Mark notification as read
+POST   /api/notifications/mark-all-read # Mark all as read
+DELETE /api/notifications/{id}         # Delete single notification
+DELETE /api/notifications/clear        # Clear all notifications
+GET    /api/notifications/preferences  # Get notification preferences
+PUT    /api/notifications/preferences  # Update notification preferences
+```
+
+### Push Notifications
+
+```
+GET  /api/push/key             # Get VAPID public key
+POST /api/push/subscribe       # Register push subscription
+POST /api/push/unsubscribe     # Remove push subscription
+POST /api/push/test            # Send test notification (creates push + in-app)
+GET  /api/push/status          # Get subscription status
+GET  /api/push/debug           # Debug endpoint (dev only)
+```
+
+### Attendance
+
+```
+GET  /api/members/{id}/attendance        # Get attendance statistics
+GET  /api/members/{id}/attendance/recent # Get recent attendance events
+POST /api/attendance/sync                # Trigger DLB sync (admin only)
+```
+
+### Webhooks
+
+```
+POST /api/webhook/dlb/attendance  # Receive attendance data from DLB
 ```
 
 ---
@@ -637,6 +846,8 @@ For looking up documentation for libraries and frameworks.
 
 - Multi-brigade support (already architected)
 - Mobile app wrapper (Capacitor/PWABuilder)
-- Advanced reporting and analytics
+- Advanced reporting and analytics dashboard
 - Integration with FENZ systems
-- Training attendance history and stats
+- Training course tracking and qualifications
+- Equipment inventory management
+- Incident reporting integration

@@ -334,14 +334,6 @@
     --notification-color: #FBC02D;
 }
 
-/* Prevent body scroll when notification panel is open */
-body.notification-panel-open {
-    overflow: hidden;
-    position: fixed;
-    width: 100%;
-    height: 100%;
-}
-
 /* Mobile Responsive */
 @media (max-width: 480px) {
     #notification-panel {
@@ -354,6 +346,14 @@ body.notification-panel-open {
         max-width: none;
         max-height: 70vh;
         border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+    }
+
+    /* Only lock body scroll on mobile when panel is open */
+    body.notification-panel-open {
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        height: 100%;
     }
 }
 

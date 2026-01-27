@@ -137,10 +137,12 @@ class NotificationCenter {
         this.panel.classList.add('open');
         this.bellButton?.classList.add('active');
 
-        // Lock body scroll on mobile
-        this.savedScrollY = window.scrollY;
-        document.body.classList.add('notification-panel-open');
-        document.body.style.top = `-${this.savedScrollY}px`;
+        // Lock body scroll on mobile only (matches CSS media query)
+        if (window.innerWidth <= 480) {
+            this.savedScrollY = window.scrollY;
+            document.body.classList.add('notification-panel-open');
+            document.body.style.top = `-${this.savedScrollY}px`;
+        }
 
         // Reset and load notifications
         this.notifications = [];
@@ -155,10 +157,12 @@ class NotificationCenter {
         this.panel.classList.remove('open');
         this.bellButton?.classList.remove('active');
 
-        // Unlock body scroll and restore position
-        document.body.classList.remove('notification-panel-open');
-        document.body.style.top = '';
-        window.scrollTo(0, this.savedScrollY || 0);
+        // Unlock body scroll and restore position (only if it was locked)
+        if (document.body.classList.contains('notification-panel-open')) {
+            document.body.classList.remove('notification-panel-open');
+            document.body.style.top = '';
+            window.scrollTo(0, this.savedScrollY || 0);
+        }
     }
 
     async fetchUnreadCount() {
