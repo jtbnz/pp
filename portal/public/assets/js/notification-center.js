@@ -142,15 +142,20 @@ class NotificationCenter {
             document.body.classList.add('notification-panel-open');
             document.documentElement.classList.add('notification-panel-open');
 
-            // Single handler that checks if touch is inside the scrollable list
-            const list = this.list;
+            // Single handler that checks if touch is inside the scrollable list or panel
+            const panel = this.panel;
+            const list = this.notificationList;
             this.touchMoveHandler = (e) => {
-                // If touch is inside the notification list, allow it
+                // If touch is inside the notification list, allow scrolling
                 if (list && list.contains(e.target)) {
-                    // Allow the scroll
                     return;
                 }
-                // Otherwise prevent scrolling
+                // If touch is inside the panel but not the list, prevent to avoid awkward scroll
+                if (panel && panel.contains(e.target)) {
+                    e.preventDefault();
+                    return;
+                }
+                // Otherwise prevent body scrolling
                 e.preventDefault();
             };
 
@@ -170,14 +175,10 @@ class NotificationCenter {
         this.panel.classList.remove('open');
         this.bellButton?.classList.remove('active');
 
-        // Remove touch event handlers
-        if (this.bodyTouchMoveHandler) {
-            document.body.removeEventListener('touchmove', this.bodyTouchMoveHandler);
-            this.bodyTouchMoveHandler = null;
-        }
-        if (this.listTouchMoveHandler && this.list) {
-            this.list.removeEventListener('touchmove', this.listTouchMoveHandler);
-            this.listTouchMoveHandler = null;
+        // Remove touch event handler
+        if (this.touchMoveHandler) {
+            document.removeEventListener('touchmove', this.touchMoveHandler);
+            this.touchMoveHandler = null;
         }
 
         // Unlock body scroll
@@ -261,6 +262,11 @@ class NotificationCenter {
         if (!this.notificationList) return;
 
         if (this.notifications.length === 0) {
+            // Ensure badge is cleared when list is empty
+            // (handles edge cases like stale cache or deleted notifications)
+            if (this.unreadCount !== 0) {
+                this.updateBadge(0);
+            }
             this.notificationList.innerHTML = `
                 <div class="notification-empty">
                     <span class="notification-empty-icon">&#128276;</span>
