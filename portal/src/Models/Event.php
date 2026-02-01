@@ -92,7 +92,14 @@ class Event
             return strcmp($a['start_time'], $b['start_time']);
         });
 
-        return $allEvents;
+        // Filter out events that have already started (compare full datetime, not just date)
+        $now = new \DateTime('now', new \DateTimeZone('Pacific/Auckland'));
+        $allEvents = array_filter($allEvents, function ($event) use ($now) {
+            $eventStart = new \DateTime($event['start_time'], new \DateTimeZone('Pacific/Auckland'));
+            return $eventStart > $now;
+        });
+
+        return array_values($allEvents);
     }
 
     /**
@@ -151,7 +158,14 @@ class Event
             return strcmp($a['start_time'], $b['start_time']);
         });
 
-        return $allEvents;
+        // Filter out events that have already started (compare full datetime, not just date)
+        $now = new \DateTime('now', new \DateTimeZone('Pacific/Auckland'));
+        $allEvents = array_filter($allEvents, function ($event) use ($now) {
+            $eventStart = new \DateTime($event['start_time'], new \DateTimeZone('Pacific/Auckland'));
+            return $eventStart > $now;
+        });
+
+        return array_values($allEvents);
     }
 
     /**
