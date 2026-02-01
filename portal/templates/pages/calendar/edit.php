@@ -129,7 +129,7 @@ ob_start();
                         <option value="custom">Custom...</option>
                     </select>
                     <input type="hidden" id="recurrence_rule" name="recurrence_rule" value="<?= e($event['recurrence_rule'] ?? '') ?>">
-                    <span class="form-hint">For training nights, use the training generator instead.</span>
+                    <span class="form-hint">For weekly training nights, select "Weekly" and enable "Auto-adjust for public holidays".</span>
                 </div>
 
                 <div class="form-actions">
