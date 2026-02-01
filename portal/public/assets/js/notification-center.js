@@ -156,7 +156,7 @@ class NotificationCenter {
         this.bellButton?.classList.add('active');
 
         // Lock body scroll on mobile (full-screen modal handles its own scroll)
-        if (window.innerWidth <= 480) {
+        if (window.innerWidth <= 768) {
             // Show backdrop
             if (this.backdrop) {
                 this.backdrop.hidden = false;
