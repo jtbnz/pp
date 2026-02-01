@@ -262,6 +262,7 @@ class CalendarController
             'recurrence_rule' => $input['recurrence_rule'] ?? null,
             'is_training' => !empty($input['is_training']) ? 1 : 0,
             'is_visible' => !empty($input['is_visible']) || !isset($input['is_visible']) ? 1 : 0,
+            'adjust_for_holidays' => !empty($input['adjust_for_holidays']) ? 1 : 0,
             'event_type' => $input['event_type'] ?? 'other',
             'created_by' => (int)$user['id'],
         ];
@@ -350,11 +351,11 @@ class CalendarController
 
         $data = [];
         $allowedFields = ['title', 'description', 'location', 'start_time', 'end_time',
-            'all_day', 'recurrence_rule', 'is_training', 'is_visible', 'event_type'];
+            'all_day', 'recurrence_rule', 'is_training', 'is_visible', 'adjust_for_holidays', 'event_type'];
 
         foreach ($allowedFields as $field) {
             if (isset($input[$field])) {
-                if (in_array($field, ['all_day', 'is_training', 'is_visible'], true)) {
+                if (in_array($field, ['all_day', 'is_training', 'is_visible', 'adjust_for_holidays'], true)) {
                     $data[$field] = !empty($input[$field]) ? 1 : 0;
                 } else {
                     $data[$field] = is_string($input[$field]) ? trim($input[$field]) : $input[$field];

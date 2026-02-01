@@ -6,6 +6,7 @@ namespace Portal\Models;
 use PDO;
 use DateTime;
 use DateTimeZone;
+use Portal\Services\HolidayService;
 
 /**
  * Event Model
@@ -194,11 +195,11 @@ class Event
             INSERT INTO events (
                 brigade_id, title, description, location,
                 start_time, end_time, all_day, recurrence_rule,
-                is_training, event_type, is_visible, created_by
+                is_training, event_type, is_visible, adjust_for_holidays, created_by
             ) VALUES (
                 :brigade_id, :title, :description, :location,
                 :start_time, :end_time, :all_day, :recurrence_rule,
-                :is_training, :event_type, :is_visible, :created_by
+                :is_training, :event_type, :is_visible, :adjust_for_holidays, :created_by
             )
         ');
 
@@ -214,6 +215,7 @@ class Event
             'is_training' => $data['is_training'] ?? 0,
             'event_type' => $eventType,
             'is_visible' => $data['is_visible'] ?? 1,
+            'adjust_for_holidays' => $data['adjust_for_holidays'] ?? 0,
             'created_by' => $data['created_by'] ?? null,
         ]);
 
@@ -234,7 +236,8 @@ class Event
 
         $allowedFields = [
             'title', 'description', 'location', 'start_time', 'end_time',
-            'all_day', 'recurrence_rule', 'is_training', 'is_visible', 'event_type'
+            'all_day', 'recurrence_rule', 'is_training', 'is_visible', 'event_type',
+            'adjust_for_holidays'
         ];
 
         foreach ($allowedFields as $field) {
@@ -411,15 +414,40 @@ class Event
                     $instance['instance_date'] = $replacementDate->format('Y-m-d');
                     $instances[] = $instance;
                 } else {
-                    // Normal instance
+                    // Normal instance - check for holiday adjustment
+                    $instanceDate = clone $current;
+                    $isMovedForHoliday = false;
+                    $holidayName = null;
+
+                    // Check if this event should auto-adjust for holidays
+                    if (!empty($event['adjust_for_holidays'])) {
+                        $holidayService = new HolidayService();
+                        $checkDate = $instanceDate->format('Y-m-d');
+
+                        if ($holidayService->isPublicHoliday($checkDate, 'auckland')) {
+                            // Get the holiday name for display
+                            $holidayName = $holidayService->getHolidayName($checkDate, 'auckland');
+                            // Move to next day
+                            $instanceDate->modify('+1 day');
+                            $isMovedForHoliday = true;
+                        }
+                    }
+
                     $instance = $event;
-                    $instance['start_time'] = $current->format('Y-m-d H:i:s');
+                    $instance['start_time'] = $instanceDate->format('Y-m-d H:i:s');
                     if ($duration) {
-                        $endInstance = clone $current;
+                        $endInstance = clone $instanceDate;
                         $endInstance->add($duration);
                         $instance['end_time'] = $endInstance->format('Y-m-d H:i:s');
                     }
-                    $instance['instance_date'] = $dateStr;
+                    $instance['instance_date'] = $instanceDate->format('Y-m-d');
+
+                    if ($isMovedForHoliday) {
+                        $instance['original_date'] = $dateStr;
+                        $instance['is_moved'] = true;
+                        $instance['move_reason'] = $holidayName;
+                    }
+
                     $instances[] = $instance;
                 }
             }

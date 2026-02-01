@@ -103,6 +103,14 @@ ob_start();
 
                 <div class="form-group">
                     <label class="checkbox-label">
+                        <input type="checkbox" name="adjust_for_holidays" id="adjust_for_holidays" value="1" <?= !empty($event['adjust_for_holidays']) ? 'checked' : '' ?>>
+                        <span>Auto-adjust for public holidays (moves to next day)</span>
+                    </label>
+                    <span class="form-hint">For recurring events: automatically shifts instances that fall on Auckland public holidays to the following day.</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
                         <input type="checkbox" name="is_visible" value="1" <?= ($event['is_visible'] ?? 1) ? 'checked' : '' ?>>
                         <span>Visible to members</span>
                     </label>
@@ -194,18 +202,35 @@ document.getElementById('recurrence_preset').addEventListener('change', function
     }
 });
 
-// Sync is_training checkbox with event_type dropdown
+// Sync is_training checkbox with event_type dropdown and holiday adjustment
 const isTrainingCheckbox = document.getElementById('is_training');
 const eventTypeSelect = document.getElementById('event_type');
+const adjustForHolidaysCheckbox = document.getElementById('adjust_for_holidays');
+const recurrencePreset = document.getElementById('recurrence_preset');
 
 isTrainingCheckbox.addEventListener('change', function() {
     if (this.checked) {
         eventTypeSelect.value = 'training';
+        // Auto-enable holiday adjustment for training events with recurrence
+        if (recurrencePreset.value) {
+            adjustForHolidaysCheckbox.checked = true;
+        }
     }
 });
 
 eventTypeSelect.addEventListener('change', function() {
     isTrainingCheckbox.checked = (this.value === 'training');
+    // Auto-enable holiday adjustment for training events
+    if (this.value === 'training' && recurrencePreset.value) {
+        adjustForHolidaysCheckbox.checked = true;
+    }
+});
+
+// When setting recurrence on a training, suggest holiday adjustment
+recurrencePreset.addEventListener('change', function() {
+    if (this.value && isTrainingCheckbox.checked) {
+        adjustForHolidaysCheckbox.checked = true;
+    }
 });
 </script>
 
