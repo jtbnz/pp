@@ -97,6 +97,7 @@ if ($user) {
                     <!-- Notification Panel (Issue #26) -->
                     <div id="notification-panel" class="notification-panel">
                         <div class="notification-panel-header">
+                            <button type="button" class="notification-close-btn" data-action="close" title="Close">&times;</button>
                             <h3>Notifications</h3>
                             <div class="notification-panel-actions">
                                 <button type="button" data-action="mark-all-read" title="Mark all as read">&#10003;</button>
