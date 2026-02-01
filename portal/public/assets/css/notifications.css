@@ -101,21 +101,30 @@
     display: none;
     background: none;
     border: none;
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     line-height: 1;
-    padding: 0.25rem 0.5rem;
+    padding: 0.5rem;
     color: var(--color-text-secondary, #666);
     cursor: pointer;
     margin-right: 0.5rem;
+    /* Ensure good touch target */
+    min-width: 44px;
+    min-height: 44px;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
 }
 
-.notification-close-btn:hover {
+.notification-close-btn:hover,
+.notification-close-btn:active {
     color: var(--color-text, #333);
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
 }
 
 @media screen and (max-width: 768px) {
     .notification-close-btn {
-        display: block !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
     }
 }
 
@@ -369,16 +378,17 @@
 /* Mobile Responsive - Full screen modal approach for iOS */
 /* Using 768px to catch all mobile/tablet devices */
 @media screen and (max-width: 768px) {
-    /* Full-screen backdrop */
+    /* Full-screen backdrop - above bottom nav */
     .notification-backdrop {
         display: none !important;
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        bottom: 0 !important;
+        /* Account for bottom nav: 56px + safe area */
+        bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
         width: 100% !important;
-        height: 100% !important;
+        height: auto !important;
         background: rgba(0, 0, 0, 0.5) !important;
         z-index: 9998 !important;
         touch-action: none;
@@ -389,24 +399,25 @@
         display: block !important;
     }
 
-    /* Full-screen modal panel - override all desktop positioning */
+    /* Full-screen modal panel - positioned above bottom nav */
     #notification-panel {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        bottom: 0 !important;
+        /* Account for bottom nav: 56px + safe area */
+        bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
         width: 100% !important;
-        height: 100% !important;
+        height: auto !important;
         max-width: 100% !important;
-        max-height: 100% !important;
+        max-height: none !important;
         border-radius: 0 !important;
         z-index: 9999 !important;
         display: none !important;
         flex-direction: column !important;
-        /* iOS safe areas */
+        /* iOS safe areas - only top needed now */
         padding-top: env(safe-area-inset-top, 0);
-        padding-bottom: env(safe-area-inset-bottom, 0);
+        padding-bottom: 0 !important;
         background: var(--color-surface, #fff) !important;
         box-shadow: none !important;
     }
@@ -419,7 +430,7 @@
     .notification-panel-header {
         flex-shrink: 0 !important;
         padding: 1rem !important;
-        padding-top: max(1rem, env(safe-area-inset-top, 0)) !important;
+        padding-top: calc(1rem + env(safe-area-inset-top, 0)) !important;
         border-bottom: 1px solid var(--color-border, #e0e0e0) !important;
         background: var(--color-surface, #fff) !important;
     }
@@ -439,7 +450,7 @@
     /* Load more button at bottom */
     #notification-load-more {
         flex-shrink: 0 !important;
-        margin-bottom: calc(1rem + env(safe-area-inset-bottom, 0)) !important;
+        margin-bottom: 1rem !important;
     }
 
     /* Lock body scroll when panel is open */

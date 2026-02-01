@@ -87,6 +87,22 @@ class NotificationCenter {
         // Handle panel action buttons (using event delegation)
         if (this.panel) {
             this.panel.addEventListener('click', (e) => this.handlePanelClick(e));
+
+            // Direct handler for close button (backup for iOS)
+            const closeBtn = this.panel.querySelector('.notification-close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.close();
+                });
+                // Also handle touch for iOS
+                closeBtn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.close();
+                });
+            }
         }
 
         // Close when clicking on backdrop (mobile)
